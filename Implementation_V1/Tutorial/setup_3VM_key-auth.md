@@ -1,4 +1,4 @@
-# Setup
+# Setup of the 3 VMs and the auth-key plugin
 
 ## Step 1: Create the VMs
 
