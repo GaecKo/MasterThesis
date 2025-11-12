@@ -33,17 +33,24 @@ client.on("error", (err) => {
 });
 
 
-const commandTopic = `device/${DEVICE_ID}/commands`;
-client.subscribe(commandTopic, (err) => {
-  if (!err) console.log(`Subscribed to ${commandTopic} for commands`);
+const BROKER_MQTT = process.env.BROKER_MQTT || "mqtt://10.15.146.222:1883";
+const client2 = mqtt.connect(BROKER_MQTT);
+
+const DEVICE_ID2 = process.env.DEVICE_ID || 2;
+
+client2.on("connect", () => {
+  console.log(`Device ${DEVICE_ID2} connected directly to MQTT broker`);
+
+  // Subscribe to commands sent from backend via APISIX → Broker
+  const commandTopic = `device/${DEVICE_ID2}/commands`;
+  client2.subscribe(commandTopic, (err) => {
+    if (!err) console.log(`Subscribed to ${commandTopic} for commands`);
+  });
 });
 
-client.on("message", (topic, message) => {
-  if (topic === commandTopic) {
-    console.log(`Device ${DEVICE_ID} received command:`, message.toString());
-  } else {
-    console.log(`Received message on ${topic}:`, message.toString());
-  }
+client2.on("message", (topic, message) => {
+  console.log(`Device ${DEVICE_ID2} received message from broker on ${topic}:`, message.toString());
 });
+
 
 
