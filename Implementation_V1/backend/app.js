@@ -12,6 +12,7 @@ app.use(express.json()); // Parse JSON bodies
 
 // Health check endpoint
 app.get('/health', (req, res) => {
+    console.log("health endpoint reached...")
     res.json({
         status: 'healthy',
         backend_ip: process.env.BACKEND_IP,

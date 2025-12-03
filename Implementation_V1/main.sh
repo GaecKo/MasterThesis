@@ -91,7 +91,6 @@ if [ -d "./api_gateway" ] && [ -f "./api_gateway/setup.sh" ]; then
     APISIX_SETUP_CONTENT=$(cat "./api_gateway/setup.sh")
     
     multipass exec apisix-vm -- bash -c "
-        echo '=== Starting APISIX setup ==='
         export APISIX_IP='$APISIX_IP'
         export BACKEND_IP='$BACKEND_IP'
         cd /home/ubuntu/api_gateway
@@ -166,3 +165,5 @@ echo ""
 echo -e "${YELLOW}VM Management:${RESET}"
 echo "  multipass shell apisix-vm    # Enter APISIX VM"
 echo "  multipass shell backend-vm   # Enter Backend VM"
+echo "  multipass exec backend-vm -- docker logs -f backend-app         # see logs of backend app"
+echo "  multipass exec apisix-vm -- docker logs -f apisix-quickstart    # see logs of backend app"
