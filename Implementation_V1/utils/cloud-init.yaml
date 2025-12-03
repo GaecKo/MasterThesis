@@ -1,0 +1,7 @@
+#cloud-config
+package_update: true
+
+runcmd:
+  - curl -fsSL https://get.docker.com  | sh  
+  - sudo usermod -aG docker ubuntu
+  - newgrp docker
