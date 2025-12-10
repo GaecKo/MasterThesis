@@ -25,7 +25,8 @@ create_vm() {
     local name=$1
 
     if multipass list --format csv | awk -F, 'NR>1{print $1}' | grep -xq "$name"; then
-        warn "VM '$name' already exists — skipping creation."
+        warn "VM '$name' already exists — starting it."
+        multipass start $name 
     else
         info "Creating VM '$name'..."
         multipass launch --name "$name" --memory 2G --disk 10G --cloud-init utils/cloud-init.yaml
@@ -86,9 +87,9 @@ info "APISIX VM IP: $APISIX_IP"
 info "Backend VM IP: $BACKEND_IP"
 
 info "=== STEP 4: Setting up APISIX ==="
-if [ -d "./api_gateway" ] && [ -f "./api_gateway/setup.sh" ]; then
+if [ -d "./api_gateway" ] && [ -f "./api_gateway/api_gateway.sh" ]; then
     # Read the script content and execute it directly with bash
-    APISIX_SETUP_CONTENT=$(cat "./api_gateway/setup.sh")
+    APISIX_SETUP_CONTENT=$(cat "./api_gateway/api_gateway.sh")
     
     multipass exec apisix-vm -- bash -c "
         export APISIX_IP='$APISIX_IP'
@@ -97,13 +98,13 @@ if [ -d "./api_gateway" ] && [ -f "./api_gateway/setup.sh" ]; then
         $APISIX_SETUP_CONTENT
     "
 else
-    warn "api_gateway/setup.sh not found"
+    warn "api_gateway/api_gateway.sh not found"
 fi
 
 info "=== STEP 5: Setting up Backend ==="
-if [ -d "./backend" ] && [ -f "./backend/setup.sh" ]; then
+if [ -d "./backend" ] && [ -f "./backend/backend.sh" ]; then
     # Read the script content and execute it directly with bash
-    BACKEND_SETUP_CONTENT=$(cat "./backend/setup.sh")
+    BACKEND_SETUP_CONTENT=$(cat "./backend/backend.sh")
     
     multipass exec backend-vm -- bash -c "
         echo '=== Starting Backend setup ==='
@@ -113,7 +114,7 @@ if [ -d "./backend" ] && [ -f "./backend/setup.sh" ]; then
         $BACKEND_SETUP_CONTENT
     "
 else
-    warn "backend/setup.sh not found"
+    warn "backend/backend.sh not found"
 fi
 
 # info "=== STEP 6: Configuring APISIX Route ==="
@@ -158,6 +159,7 @@ echo "  Backend API IP: $BACKEND_IP"
 echo ""
 echo -e "${YELLOW}Access URLs:${RESET}"
 echo "  Backend direct:      http://$BACKEND_IP:8000"
+echo "  APISIX interface:    http://$APISIX_IP:9180/ui"
 echo ""
 echo -e "${YELLOW}Test the Backend health:${RESET}"
 echo "  curl http://$BACKEND_IP:8000/health"
