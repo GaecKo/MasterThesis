@@ -21,6 +21,7 @@ The script `api_gateway.sh` should be launched from the APISIX VM.
 The admin UI interface should be accessible at `http://<VM_IP>:9180/ui`
 
 ## Test:
+> To test in the APISIX VM, if from outside, replace localhost with VM IP
 1. Admin API works:
 ```sh
 curl -H "X-API-KEY: admin" http://localhost:9180/apisix/admin/routes
