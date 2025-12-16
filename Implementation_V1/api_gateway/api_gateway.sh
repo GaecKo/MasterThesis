@@ -19,7 +19,7 @@ error()   { echo -e "${RED}[ERROR]${RESET} $*"; }
 ###   Start APISIX
 ### ============================================================
 
-info "Building APISIX standalone image"
+info "Building APISIX and etcd images"
 docker compose up -d --build
 
 success "APISIX is running"
