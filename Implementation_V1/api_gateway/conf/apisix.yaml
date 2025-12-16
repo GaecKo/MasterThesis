@@ -1,0 +1,14 @@
+routes: {}
+services: {}
+upstreams: {}
+consumers: {}
+consumer_groups: {}
+global_rules: {}
+secrets: {}
+plugin_configs: {}
+plugins: {}
+plugin_metadata: {}
+protos: {}
+ssls: {}
+
+#END
