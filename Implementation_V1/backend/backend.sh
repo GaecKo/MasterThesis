@@ -39,7 +39,7 @@ cd /home/ubuntu/backend
 
 # Build the Docker image
 if [ -f "Dockerfile" ]; then
-    sudo docker build -t backend-app .
+    sudo docker build -t backend-app . 
     
     # Stop and remove existing container
     sudo docker rm -f backend-app 2>/dev/null || true
