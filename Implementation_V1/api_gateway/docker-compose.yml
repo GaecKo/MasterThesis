@@ -16,23 +16,27 @@ services:
       - apisix
 
   apisix:
-    image: apache/apisix:3.14.1-debian
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: apisix
     restart: unless-stopped
     depends_on:
       - etcd
     volumes:
       - ./conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+      - ./java-plugins/protocol-translation/target/protocol-translation-0.0.1-SNAPSHOT.jar:/usr/local/apisix/java-plugins/protocol-translation/target/protocol-translation-0.0.1-SNAPSHOT.jar
     ulimits:
       nofile:
         soft: 65536
         hard: 65536
     ports:
-      - "9080:9080"   # Data plane
-      - "9180:9180"   # Admin API
-      - "9092:9092"   # Control API
+      - "9080:9080"
+      - "9180:9180"
+      - "9092:9092"
     networks:
       - apisix
+
 
 networks:
   apisix:

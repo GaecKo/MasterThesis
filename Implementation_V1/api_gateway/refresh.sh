@@ -15,13 +15,23 @@ success() { echo -e "${GREEN}[OK]${RESET} $*"; }
 warn()    { echo -e "${YELLOW}[WARN]${RESET} $*"; }
 error()   { echo -e "${RED}[ERROR]${RESET} $*"; }
 
+
 ### ============================================================
-###   Start APISIX
+###   1. rebuild jar
 ### ============================================================
 
-info "Building APISIX and etcd images"
-docker compose up -d --build 
-success "APISIX is running"
+info "Stoping and removing the containers..."
+docker stop apisix apisix-etcd 
+sucess "Stopped the containers successfully" 
 
-info "Listening on http://localhost:9080 (HTTP)"
-info "Listening on http://localhost:9180 (ADMIN)"
+info "Rebuilding the jar..."
+cd java-plugins/ 
+./refresh.sh >/dev/null 2>&1
+success ".jar rebuilt"
+
+info "Relaunching docker containers"
+cd ../ 
+./api_gateway.sh 
+success ".APISIX and ETCD containers relaunched"
+
+success "API Gateway refreshed!"
