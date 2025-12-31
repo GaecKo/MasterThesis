@@ -26,6 +26,7 @@ services:
     volumes:
       - ./conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
       - ./java-plugins/protocol-translation/target/protocol-translation-0.0.1-SNAPSHOT.jar:/usr/local/apisix/java-plugins/protocol-translation/target/protocol-translation-0.0.1-SNAPSHOT.jar
+      - ./java-plugins/protocol-translation/logs:/usr/local/apisix/java-plugins/protocol-translation/logs
     ulimits:
       nofile:
         soft: 65536

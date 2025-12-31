@@ -10,47 +10,7 @@ This will produce a jar file in `java-plugins/protocol-translation/target`, in o
 ```
 java-plugins/protocol-translation/target/protocol-translation-0.0.1-SNAPSHOT.jar
 ```
-!**Warning**: This will work as long as the `pom.xml` is correctly configured, such as:
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.1</version>
-        <relativePath/> <!-- lookup parent from repository -->
-    </parent>
-    <groupId>com.example</groupId>
-    <artifactId>protocol-translation</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>protocol-translation</name>
-    <description>protocol-translation</description>
-    <properties>
-        <java.version>11</java.version>
-        <compiler.version>11</compiler.version>
-        <spring-boot.version>2.7.1</spring-boot.version>
-    </properties>
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.apisix</groupId>
-            <artifactId>apisix-runner-starter</artifactId>
-            <version>0.3.0</version>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
-</project>
-
-```
+!**Warning**: This will work as long as the `pom.xml` is correctly configured, such as: [pom.xml](#pomxml)
 
 ## 2. Make the jar file usable in the docker container
 Add the .jar to your container by specifying it in the volumes, in our case it would give:
@@ -81,7 +41,7 @@ ext-plugin:
 ```
 
 ## Test your plugin:
-From within the apisix VM: 
+**From within the apisix VM:**
 1. Configure a route with that plugin enabled:
 ```sh
 curl -i http://127.0.0.1:9180/apisix/admin/routes/1  -H 'X-API-KEY: admin' -X PUT -d '
@@ -154,3 +114,47 @@ logging:
 ```
 This setup prints a lot, simply remove the whole `logging` entry to lower logs. However, you won't see event the log message you code from your plugin. 
 
+
+
+# Appendix
+## pom.xml
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.7.1</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+    <groupId>com.example</groupId>
+    <artifactId>protocol-translation</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>protocol-translation</name>
+    <description>protocol-translation</description>
+    <properties>
+        <java.version>11</java.version>
+        <compiler.version>11</compiler.version>
+        <spring-boot.version>2.7.1</spring-boot.version>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.apisix</groupId>
+            <artifactId>apisix-runner-starter</artifactId>
+            <version>0.3.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+
+```

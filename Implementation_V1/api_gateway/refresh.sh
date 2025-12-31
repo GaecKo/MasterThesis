@@ -26,7 +26,7 @@ sucess "Stopped the containers successfully"
 
 info "Rebuilding the jar..."
 cd java-plugins/ 
-./refresh.sh >/dev/null 2>&1
+./refresh.sh 
 success ".jar rebuilt"
 
 info "Relaunching docker containers"

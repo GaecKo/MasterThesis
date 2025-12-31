@@ -8,14 +8,14 @@
         <version>2.7.1</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.example</groupId>
+    <groupId>protocol_translation</groupId> <!-- null here -->
     <artifactId>protocol-translation</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>protocol-translation</name>
     <description>protocol-translation</description>
     <properties>
-        <java.version>11</java.version>
-        <compiler.version>11</compiler.version>
+        <java.version>17</java.version>
+        <compiler.version>17</compiler.version>
         <spring-boot.version>2.7.1</spring-boot.version>
     </properties>
     <dependencies>
