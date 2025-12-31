@@ -47,6 +47,27 @@ The script `api_gateway.sh` should be launched from the APISIX VM.
 ## UI interface 
 The admin UI interface should be accessible at `http://<VM_IP>:9180/ui`
 
+## Debug setup
+To debug the protocol plugin, here are some steps: 
+### 1. Log your code:
+In your Java code, make sure to import and use `ProtocolTranslationLogger`. Such as with:
+```java
+private final ProtocolTranslationLogger logger = ProtocolTranslationLogger.getInstance();
+... 
+logger.debug("Message to log")
+```
+This will, on run, be appended to the `java-plugins/protocol-translation/logs` file. 
+
+This file is synchronized between the VM and the docker container, so you can view it easily. For instance, if you can to see it as it gets filled, you can use:
+```sh
+tail -n 100 -f java-plugins/protocol-translation/logs
+# You should see something like:
+[DEBUG] hello logs
+```
+
+### 2. Refresh your code
+As your code needs to be recomputed as a `.jar` to see the updates, you can use the script `java-plugins/refresh.sh`, which will stop the docker, refresh the jar and relaunch the `api_gateway.sh` script. 
+
 ## Test:
 > To test in the APISIX VM, if from outside, replace localhost with VM IP
 

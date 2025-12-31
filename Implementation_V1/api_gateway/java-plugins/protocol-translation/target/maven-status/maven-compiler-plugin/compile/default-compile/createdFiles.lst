@@ -1,2 +1,3 @@
-com/example/protocol_translation/ProtocolTranslationFilter.class
-com/example/protocol_translation/ProtocolTranslationApplication.class
+protocol_translation/ProtocolTranslationApplication.class
+protocol_translation/ProtocolTranslationFilter.class
+protocol_translation/ProtocolTranslationLogger.class

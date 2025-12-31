@@ -1,2 +1,3 @@
-/home/ubuntu/api_gateway/java-plugins/protocol-translation/src/main/java/com/example/protocol_translation/ProtocolTranslationApplication.java
-/home/ubuntu/api_gateway/java-plugins/protocol-translation/src/main/java/com/example/protocol_translation/ProtocolTranslationFilter.java
+/home/ubuntu/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/ProtocolTranslationFilter.java
+/home/ubuntu/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/ProtocolTranslationLogger.java
+/home/ubuntu/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/ProtocolTranslationApplication.java
