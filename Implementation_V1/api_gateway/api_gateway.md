@@ -66,7 +66,7 @@ tail -n 100 -f java-plugins/protocol-translation/logs
 ```
 
 ### 2. Refresh your code
-As your code needs to be recomputed as a `.jar` to see the updates, you can use the script `java-plugins/refresh.sh`, which will stop the docker, refresh the jar and relaunch the `api_gateway.sh` script. 
+As your code needs to be recomputed as a `.jar` to see the updates, you can use the script `refresh.sh`, which will stop the docker, refresh the jar and relaunch the `api_gateway.sh` script. 
 
 ## Test:
 > To test in the APISIX VM, if from outside, replace localhost with VM IP

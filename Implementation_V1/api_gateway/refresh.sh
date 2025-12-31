@@ -22,16 +22,29 @@ error()   { echo -e "${RED}[ERROR]${RESET} $*"; }
 
 info "Stoping and removing the containers..."
 docker stop apisix apisix-etcd 
-sucess "Stopped the containers successfully" 
+success "Stopped the containers successfully" 
 
 info "Rebuilding the jar..."
 cd java-plugins/ 
-./refresh.sh 
+./refresh_jar.sh 
 success ".jar rebuilt"
 
 info "Relaunching docker containers"
 cd ../ 
 ./api_gateway.sh 
-success ".APISIX and ETCD containers relaunched"
+success "APISIX and ETCD containers relaunched"
+
+success "API Gateway refreshed!"
+
+
+### ============================================================
+###   Launch configuration script
+### ============================================================
+info "Waiting 5 sec before configuring api-gateway..."
+sleep 5
+
+info "Launching configuration script (configure.sh)"
+./configure.sh 
+success "Configuration script executed"
 
 success "API Gateway refreshed!"
