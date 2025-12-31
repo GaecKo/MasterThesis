@@ -25,3 +25,15 @@ success "APISIX is running"
 
 info "Listening on http://localhost:9080 (HTTP)"
 info "Listening on http://localhost:9180 (ADMIN)"
+
+### ============================================================
+###   Launch configuration script
+### ============================================================
+info "Waiting 5 sec before configuring api-gateway..."
+sleep 5
+
+info "Launching configuration script (configure.sh)"
+./configure.sh 
+success "Configuration script executed"
+
+success "API Gateway launched and configured!"
