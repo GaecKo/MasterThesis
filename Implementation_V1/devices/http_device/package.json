@@ -1,7 +1,7 @@
 {
-  "name": "http-broker",
+  "name": "http-device",
   "version": "1.0.0",
-  "main": "app.js",
+  "main": "device.js",
   "dependencies": {
     "express": "^4.18.2"
   }
