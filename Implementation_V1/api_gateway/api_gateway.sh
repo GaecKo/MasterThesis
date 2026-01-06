@@ -29,8 +29,8 @@ info "Listening on http://localhost:9180 (ADMIN)"
 ### ============================================================
 ###   Launch configuration script
 ### ============================================================
-info "Waiting 5 sec before configuring api-gateway..."
-sleep 5
+info "Waiting 10 sec before configuring api-gateway..."
+sleep 10
 
 info "Launching configuration script (configure.sh)"
 ./configure.sh 
