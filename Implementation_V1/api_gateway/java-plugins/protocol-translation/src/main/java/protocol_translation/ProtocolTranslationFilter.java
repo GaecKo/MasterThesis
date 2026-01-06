@@ -12,9 +12,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ProtocolTranslationFilter implements PluginFilter {
-    private final Logger logger = LoggerFactory.getLogger(ProtocolTranslationFilter.class);
+    private final Logger API_logger = LoggerFactory.getLogger(ProtocolTranslationFilter.class);
 
-    private final ProtocolTranslationLogger logger2 = ProtocolTranslationLogger.getInstance();
+    private final ProtocolTranslationLogger logger = ProtocolTranslationLogger.getInstance();
 
     @Override
     public String name() {
@@ -23,8 +23,8 @@ public class ProtocolTranslationFilter implements PluginFilter {
 
     @Override
     public void filter(HttpRequest request, HttpResponse response, PluginFilterChain chain) {
-        logger2.debug("hello logs");
-        logger.warn("ProtocolTranslation is running");
+        logger.debug("hello logs");
+        API_logger.warn("ProtocolTranslation is running");
         chain.filter(request, response);
     }
 

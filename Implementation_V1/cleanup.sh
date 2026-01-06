@@ -3,7 +3,7 @@
 echo "Cleaning up APISIX/Backend VMs..."
 
 # Stop and delete specific VMs
-for vm in apisix-vm backend-vm device1-vm; do
+for vm in apisix-vm backend-vm device1-vm brokers-vm; do
     if multipass list | grep -q "$vm"; then
         echo "Stopping $vm..."
         multipass stop "$vm" 2>/dev/null || true
