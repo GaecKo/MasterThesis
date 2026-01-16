@@ -20,3 +20,23 @@
 [DEBUG] hello logs
 [DEBUG] hello logs
 [DEBUG] hello logs
+[DEBUG] hello logs
+[INFO] Protocol Translation initialized...
+[DEBUG] hello logs
+[DEBUG] hello logs
+[DEBUG] hello logs
+[INFO] Protocol Translation initialized...
+[DEBUG] hello logs
+[DEBUG] hello logs
+[INFO] Protocol Translation initialized...
+[INFO] Protocol Translation initialized...
+[INFO] Protocol Translation initialized...
+[DEBUG] Request received:
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[INFO] Protocol Translation initialized...
+[DEBUG] Request received:
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Body: 

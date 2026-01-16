@@ -67,7 +67,6 @@ mount_folder() {
 info "=== STEP 1: Creating VMs (using cloud-init) ==="
 create_vm "apisix-vm"
 create_vm "backend-vm"
-create_vm "brokers-vm"
 create_vm "devices-vm"
 
 info "=== STEP 2: Mounting folders to VMs ==="
@@ -78,26 +77,20 @@ mount_folder "./api_gateway" "apisix-vm" "/home/ubuntu/api_gateway"
 # Mount backend folder to backend-vm
 mount_folder "./backend" "backend-vm" "/home/ubuntu/backend"
 
-# Mount brokers folder to brokers-vm
-mount_folder "./brokers" "brokers-vm" "/home/ubuntu/brokers/"
-
-# Mount brokers folder to brokers-vm
+# Mount device folder to device-vm
 mount_folder "./devices" "devices-vm" "/home/ubuntu/devices/"
 
 info "=== STEP 3: Getting VM IPs for configuration ==="
 APISIX_IP=$(get_vm_ip "apisix-vm")
 BACKEND_IP=$(get_vm_ip "backend-vm")
-BROKERS_IP=$(get_vm_ip "brokers-vm")
 DEVICES_IP=$(get_vm_ip "devices-vm")
 
 [ -z "$APISIX_IP" ] && die "Could not get APISIX VM IP"
 [ -z "$BACKEND_IP" ] && die "Could not get Backend VM IP"
-[ -z "$BROKERS_IP" ] && die "Could not get Brokers VM IP"
 [ -z "$DEVICES_IP" ] && die "Could not get Devices VM IP"
 
 info "APISIX VM IP: $APISIX_IP"
 info "Backend VM IP: $BACKEND_IP"
-info "Brokers VM IP: $BROKERS_IP"
 info "Devices VM IP: $DEVICES_IP"
 
 info "=== STEP 4: Setting up APISIX ==="
@@ -136,22 +129,6 @@ else
     warn "backend/backend.sh not found"
 fi
 
-info "=== STEP 6: Setting up http-brokers ==="
-if [ -d "./brokers/http_broker" ] && [ -f "./brokers/http_broker/http_broker.sh" ]; then
-    # Read the script content and execute it directly with bash
-    HTTP_BROKER_SETUP_CONTENT=$(cat "./brokers/http_broker/http_broker.sh")
-    
-    multipass exec brokers-vm -- bash -c "
-        echo '=== Starting HTTP Broker setup ==='
-        export APISIX_IP='$APISIX_IP'
-        export BROKERS_IP='$BROKERS_IP'
-        cd /home/ubuntu/brokers/http_broker
-        $HTTP_BROKER_SETUP_CONTENT
-    "
-else
-    warn "brokers/http_broker/http_broker.sh not found"
-fi
-
 info "=== STEP 7: Setting up http-device ==="
 if [ -d "./devices/http_device" ] && [ -f "./devices/http_device/http_device.sh" ]; then
     # Read the script content and execute it directly with bash
@@ -160,7 +137,6 @@ if [ -d "./devices/http_device" ] && [ -f "./devices/http_device/http_device.sh"
     multipass exec devices-vm -- bash -c "
         echo '=== Starting HTTP Device setup ==='
         export DEVICES_IP='$DEVICES_IP'
-        export BROKERS_IP='$BROKERS_IP'
         cd /home/ubuntu/devices/http_device
         $HTTP_DEVICE_SETUP_CONTENTh
     "
@@ -172,20 +148,15 @@ success "Setup complete!"
 echo -e "${YELLOW}Summary:${RESET}"
 echo "  APISIX Gateway IP: $APISIX_IP"
 echo "  Backend IP: $BACKEND_IP"
-echo "  Brokers IP: $BROKERS_IP"
 echo "  Devices IP: $DEVICES_IP"
 echo ""
 echo -e "${YELLOW}Access URLs:${RESET}"
 echo "  Backend direct:      http://$BACKEND_IP:8000"
-echo "  HTTP Broker direct:  http://$BROKERS_IP:8000"
 echo "  HTTP Device direct:  http://$DEVICES_IP:8000"
 echo "  APISIX interface:    http://$APISIX_IP:9180/ui"
 echo ""
 echo -e "${YELLOW}Test the Backend health:${RESET}"
 echo "  curl http://$BACKEND_IP:8000/health"
-echo ""
-echo -e "${YELLOW}Test the HTTP Broker health:${RESET}"
-echo "  curl http://$BROKERS_IP:8000/health"
 echo ""
 echo -e "${YELLOW}Test the HTTP Device health:${RESET}"
 echo "  curl http://$DEVICES_IP:8000/health"
@@ -193,9 +164,7 @@ echo ""
 echo -e "${YELLOW}VM Management:${RESET}"
 echo "  multipass shell apisix-vm    # Enter APISIX VM"
 echo "  multipass shell backend-vm   # Enter Backend VM"
-echo "  multipass shell broker-vm    # Enter Brokers VM"
 echo "  multipass shell device-vm    # Enter Device VM"
 echo "  multipass exec backend-vm -- docker logs -f backend-app         # see logs of backend app"
-echo "  multipass exec brokers-vm -- docker logs -f http-broker-app     # see logs of  http-broker-app"
-echo "  multipass exec device-vm -- docker logs -f http-broker-app     # see logs of  http-broker-app"
+echo "  multipass exec device-vm -- docker logs -f http-device-app     # see logs of  http-device-app"
 echo "  multipass exec apisix-vm -- docker logs -f apisix               # see logs of apisix app"
