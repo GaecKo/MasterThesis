@@ -1,6 +1,7 @@
 package protocol_translation;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import org.apache.apisix.plugin.runner.HttpRequest;
 import org.apache.apisix.plugin.runner.HttpResponse;
@@ -16,6 +17,11 @@ public class ProtocolTranslationFilter implements PluginFilter {
 
     private final ProtocolTranslationLogger logger = ProtocolTranslationLogger.getInstance();
 
+    ProtocolTranslationFilter() {
+        logger.info("Protocol Translation initialized...");
+        API_logger.warn("ProtocolTranslation is running...");
+    }
+
     @Override
     public String name() {
         return "ProtocolTranslation";
@@ -23,8 +29,15 @@ public class ProtocolTranslationFilter implements PluginFilter {
 
     @Override
     public void filter(HttpRequest request, HttpResponse response, PluginFilterChain chain) {
-        logger.debug("hello logs");
-        API_logger.warn("ProtocolTranslation is running");
+        logger.debug("Request received:");
+        logger.debug("Path: " + request.getPath());
+        logger.debug("Method: " + request.getMethod());
+        logger.debug("Body: " + request.getBody());
+
+        request.setHeader("X-Processed-By", "Java-plugins:ProtocolTranslation");
+
+        // use response.exit(error_code, "reason") to stop the packet (won't be forwarded)
+
         chain.filter(request, response);
     }
 

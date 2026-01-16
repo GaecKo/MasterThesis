@@ -42,3 +42,4 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/1  -H 'X-API-KEY: admin' -X PU
 success "Route setup"
 # Check 
 info "Test it with: curl http://127.0.0.1:9080/get"
+

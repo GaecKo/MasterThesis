@@ -15,15 +15,12 @@ warn()    { echo -e "${YELLOW}[WARN]${RESET} $*"; }
 
 info "=== HTTP device Setup ==="
 info "Device VM IP: $DEVICES_IP"
-info "Broker IP: $BROKERS_IP"
 
 info "Setting up environment variables..."
 
 # Create .env file with APISIX_IP for Node.js app
 cat > /home/ubuntu/devices/http_device/.env <<EOF
 # API Gateway configuration
-HTTP_BROKER_URL=http://$BROKERS_IP:8000
-HTTP_BROKER_IP=$BROKERS_IP
 HTTP_DEVICE_IP=$DEVICES_IP
 DEVICE_ID=1
 
