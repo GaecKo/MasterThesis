@@ -35,16 +35,3 @@ cd ../
 success "APISIX and ETCD containers relaunched"
 
 success "API Gateway refreshed!"
-
-
-### ============================================================
-###   Launch configuration script
-### ============================================================
-info "Waiting 5 sec before configuring api-gateway..."
-sleep 5
-
-info "Launching configuration script (configure.sh)"
-./configure.sh 
-success "Configuration script executed"
-
-success "API Gateway refreshed!"

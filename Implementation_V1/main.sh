@@ -78,7 +78,7 @@ mount_folder "./api_gateway" "apisix-vm" "/home/ubuntu/api_gateway"
 mount_folder "./backend" "backend-vm" "/home/ubuntu/backend"
 
 # Mount device folder to device-vm
-mount_folder "./devices" "devices-vm" "/home/ubuntu/devices/"
+mount_folder "./devices" "devices-vm" "/home/ubuntu/devices"
 
 info "=== STEP 3: Getting VM IPs for configuration ==="
 APISIX_IP=$(get_vm_ip "apisix-vm")
@@ -94,9 +94,9 @@ info "Backend VM IP: $BACKEND_IP"
 info "Devices VM IP: $DEVICES_IP"
 
 info "=== STEP 4: Setting up APISIX ==="
-info "Installing OpenJDK 17 on APISIX VM..."
+info "Installing OpenJDK 21 on APISIX VM..."
 multipass exec apisix-vm -- bash -c "
-    yes | sudo apt install openjdk-17-jdk >/dev/null 2>&1
+    yes | sudo apt install openjdk-21-jdk >/dev/null 2>&1
 "
 success "OpenJDK 17 installed on APISIX VM"
 if [ -d "./api_gateway" ] && [ -f "./api_gateway/api_gateway.sh" ]; then
@@ -129,7 +129,7 @@ else
     warn "backend/backend.sh not found"
 fi
 
-info "=== STEP 7: Setting up http-device ==="
+info "=== STEP 6: Setting up http-device ==="
 if [ -d "./devices/http_device" ] && [ -f "./devices/http_device/http_device.sh" ]; then
     # Read the script content and execute it directly with bash
     HTTP_DEVICE_SETUP_CONTENT=$(cat "./devices/http_device/http_device.sh")
@@ -138,7 +138,7 @@ if [ -d "./devices/http_device" ] && [ -f "./devices/http_device/http_device.sh"
         echo '=== Starting HTTP Device setup ==='
         export DEVICES_IP='$DEVICES_IP'
         cd /home/ubuntu/devices/http_device
-        $HTTP_DEVICE_SETUP_CONTENTh
+        $HTTP_DEVICE_SETUP_CONTENT
     "
 else
     warn "devices/http_device/http_device.sh not found"
