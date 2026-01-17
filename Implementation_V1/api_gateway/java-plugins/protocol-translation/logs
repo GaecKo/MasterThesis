@@ -12,29 +12,16 @@
 [DEBUG] hello logs
 [DEBUG] hello logs
 [DEBUG] hello logs
-[DEBUG] hello logs
-[DEBUG] hello logs
-[DEBUG] hello logs
-[DEBUG] hello logs
-[DEBUG] hello logs
-[DEBUG] hello logs
-[DEBUG] hello logs
-[DEBUG] hello logs
-[DEBUG] hello logs
-[INFO] Protocol Translation initialized...
-[DEBUG] hello logs
-[DEBUG] hello logs
-[DEBUG] hello logs
-[INFO] Protocol Translation initialized...
-[DEBUG] hello logs
-[DEBUG] hello logs
-[INFO] Protocol Translation initialized...
 [INFO] Protocol Translation initialized...
 [INFO] Protocol Translation initialized...
 [DEBUG] Request received:
 [DEBUG] Path: /get
 [DEBUG] Method: GET
 [DEBUG] Body: 
+[DEBUG] Request received:
+[DEBUG] Path: /get
+[DEBUG] Method: POST
+[DEBUG] Body: {"username":"xyz","password":"xyz"}
 [INFO] Protocol Translation initialized...
 [DEBUG] Request received:
 [DEBUG] Path: /get
