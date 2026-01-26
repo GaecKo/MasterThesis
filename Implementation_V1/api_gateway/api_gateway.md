@@ -21,6 +21,7 @@ apisix-docker/
 │
 ├── api_gateway.md              # this file
 ├── api_gateway.sh              # api_gateway launch scripts (launches containers)
+├── refresh.sh                  # refresh the api gateway 
 ├── docker-compose.yml          # docker compose config 
 ├── Dockerfile                  # custom APISIX image with Java 17
 ```
@@ -35,11 +36,11 @@ volumes:
 > APISIX will therefore reads its configuration in `/usr/local/apisix/conf/config.yaml`
 
 ## Java plugins 
-!**Warning**: It is mentioned to use JDK 21 for plugin dev. We currently use JDK 17 on the APISIX container. It doesn't seem to cause any problem but to keep in mind. 
+!**Warning**: It is mentioned to use JDK 21 for plugin dev. We currently use JDK 21 on the APISIX container. It doesn't seem to cause any problem but to keep in mind. 
 
-Java-plugins related information are in ![`java_plugins/`](./java-plugins/java-plugins.md). 
+Java-plugins related information are in [`java_plugins/`](./java-plugins/java-plugins.md). 
 
-To refresh the jar, you can use the `refresh_jar.sh` script from within the `apisix` VM. 
+To refresh the jar, you can use the [`refresh.sh`](./refresh.sh) script **from within** the `apisix` VM. 
 
 ## Launch
 The script `api_gateway.sh` should be launched from the APISIX VM. 
@@ -56,19 +57,19 @@ private final ProtocolTranslationLogger logger = ProtocolTranslationLogger.getIn
 ... 
 logger.debug("Message to log")
 ```
-This will, on run, be appended to the `java-plugins/protocol-translation/logs` file. 
+This will, on run, append the messages to the `java-plugins/protocol-translation/logs` file. 
 
 This file is synchronized between the VM and the docker container, so you can view it easily. For instance, if you can to see it as it gets filled, you can use:
 ```sh
 tail -n 100 -f java-plugins/protocol-translation/logs
 # You should see something like:
-[DEBUG] hello logs
+[DEBUG] Message to log
 ```
 
 ### 2. Refresh your code
 As your code needs to be recomputed as a `.jar` to see the updates, you can use the script `refresh.sh`, which will stop the docker, refresh the jar and relaunch the `api_gateway.sh` script. 
 
-## Test:
+## Test that API Gateway is up and running:
 > To test in the APISIX VM, if from outside, replace localhost with VM IP
 
 1. Admin API works:
