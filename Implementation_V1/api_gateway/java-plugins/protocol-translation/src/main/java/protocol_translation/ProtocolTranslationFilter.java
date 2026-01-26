@@ -32,6 +32,7 @@ public class ProtocolTranslationFilter implements PluginFilter {
         logger.debug("Path: " + request.getPath());
         logger.debug("Method: " + request.getMethod());
         logger.debug("Body: " + request.getBody());
+        logger.debug("Source IP: " + request.getSourceIP());
 
         request.setHeader("X-Processed-By", "Java-plugins:ProtocolTranslation");
 

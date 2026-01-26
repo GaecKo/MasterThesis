@@ -27,3 +27,14 @@
 [DEBUG] Path: /get
 [DEBUG] Method: GET
 [DEBUG] Body: 
+[INFO] Protocol Translation initialized...
+[DEBUG] Request received:
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[INFO] Protocol Translation initialized...
+[DEBUG] Request received:
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1

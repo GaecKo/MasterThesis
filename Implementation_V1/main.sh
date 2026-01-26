@@ -98,7 +98,7 @@ info "Installing OpenJDK 21 on APISIX VM..."
 multipass exec apisix-vm -- bash -c "
     yes | sudo apt install openjdk-21-jdk >/dev/null 2>&1
 "
-success "OpenJDK 17 installed on APISIX VM"
+success "OpenJDK 21 installed on APISIX VM"
 if [ -d "./api_gateway" ] && [ -f "./api_gateway/api_gateway.sh" ]; then
     # Read the script content and execute it directly with bash
     APISIX_SETUP_CONTENT=$(cat "./api_gateway/api_gateway.sh")
