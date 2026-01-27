@@ -547,3 +547,108 @@
 [INFO] Refreshing device registry ...
 [INFO] Refreshing device registry ...
 [INFO] Refreshing device registry ...
+[INFO] Refreshing device registry ...
+[INFO] Refreshing device registry ...
+[INFO] Refreshing device registry ...
+[INFO] Refreshing device registry ...
+[INFO] Refreshing device registry ...
+[INFO] Refreshing device registry ...
+[INFO] Refreshing device registry ...
+[INFO] Refreshing device registry ...
+[INFO] Refreshing device registry ...
+[INFO] Refreshing device registry ...
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /devices
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Incoming request
+[DEBUG] Path: /devices
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[INFO] Protocol Translation initialized
+[INFO] Protocol Translation initialized
+[INFO] Protocol Translation initialized
+[INFO] Protocol Translation initialized
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /devices
+[DEBUG] Method: POST
+[DEBUG] Source IP: 192.168.64.1
+[INFO] Creating adapter for device: 1
+[INFO] Rebuilding device: 1
+[INFO] Protocol Translation initialized
+[INFO] Rebuilding device: 1
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /health
+[DEBUG] Method: GET
+[DEBUG] Source IP: 192.168.64.1
+[DEBUG] Health endpoint reached
+[INFO] Syncing device: 1
+[INFO] Rebuilding device: 1
+[INFO] Protocol Translation initialized
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1
+[INFO] Syncing device: 1

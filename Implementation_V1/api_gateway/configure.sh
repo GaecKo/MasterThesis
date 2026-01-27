@@ -54,3 +54,22 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/devices -H 'X-API-KEY: admin' 
 success "Route setup"
 # Check
 info "Test it with: curl http://127.0.0.1:9080/devices"
+
+# Setup the health route:
+info "Setting route /health with ProtocolTranslation plugin enabled..."
+curl -i http://127.0.0.1:9180/apisix/admin/routes/health -H 'X-API-KEY: admin' -X PUT -d '
+{
+    "uri": "/health",
+    "plugins": {
+        "ext-plugin-pre-req": {
+            "conf" : [
+                {"name": "ProtocolTranslation", "value": "{\"enable\":\"feature\"}"}
+            ]
+        }
+    }
+}'
+
+success "Route setup"
+# Check
+info "Test it with: curl http://127.0.0.1:9080/health"
+

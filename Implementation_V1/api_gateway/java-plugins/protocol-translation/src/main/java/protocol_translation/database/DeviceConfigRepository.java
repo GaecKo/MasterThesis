@@ -33,7 +33,7 @@ public class DeviceConfigRepository {
         return new DeviceConfig(
                 doc.getString("deviceId"),
                 doc.getString("adapter"),
-                new JSONObject(doc.get("config", Document.class).toJson())
+                new JSONObject(doc.toJson())
         );
     }
 

@@ -8,7 +8,7 @@ public final class MongoClientProvider {
 
     private static final MongoClient client =
             MongoClients.create(
-                    "mongodb://root:example@mongodb:27017/yourdb?authSource=admin"
+                    "mongodb://root:example@mongodb:27017/devices?authSource=admin"
             );
 
 

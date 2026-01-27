@@ -28,6 +28,7 @@ public class DeviceRegistry {
         ScheduledExecutorService scheduler =
                 Executors.newSingleThreadScheduledExecutor();
 
+        // TODO: change delay to something else
         scheduler.scheduleAtFixedRate(
                 new Runnable() {
                     @Override
@@ -61,9 +62,12 @@ public class DeviceRegistry {
             String deviceId = config.getDeviceId();
             String fingerprint = config.fingerprint();
 
+            logger.info("Syncing device: " + deviceId);
+
             seen.add(deviceId);
 
             if (!fingerprint.equals(fingerprints.get(deviceId))) {
+                logger.info("Rebuilding device: " + deviceId);
                 rebuild(deviceId, config, fingerprint);
             }
         }
