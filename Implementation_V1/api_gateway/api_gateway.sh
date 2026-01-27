@@ -27,7 +27,7 @@ info "Listening on http://localhost:9080 (HTTP)"
 info "Listening on http://localhost:9180 (ADMIN)"
 
 info "MongoDB is running"
-info "MongoDB-expression listening on http://localhost:8081/"
+info "MongoDB-express is listening on http://localhost:8081/"
 
 ### ============================================================
 ###   Launch configuration script

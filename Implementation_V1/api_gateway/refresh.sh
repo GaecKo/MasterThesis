@@ -22,10 +22,11 @@ error()   { echo -e "${RED}[ERROR]${RESET} $*"; }
 
 info "Stoping and removing the containers..."
 docker stop apisix apisix-etcd mongodb mongo-express
+docker rm apisix apisix-etcd mongodb mongo-express
 success "Stopped the containers successfully" 
 
 info "Rebuilding the jar..."
-cd java-plugins/ 
+cd java-plugins/
 ./refresh_jar.sh 
 success ".jar rebuilt"
 

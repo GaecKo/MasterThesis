@@ -51,8 +51,14 @@ public class ProtocolTranslationFilter implements PluginFilter {
         request.setHeader("X-Processed-By", "Java-plugins:ProtocolTranslation");
 
         try {
-            // Management endpoints
-            if (request.getPath().startsWith("/devices")) {
+
+            if (request.getPath().startsWith("/health")) {
+                logger.debug("Health endpoint reached");
+                response.setStatusCode(200);
+                response.setBody("Health Check reacted!\n");
+
+            } else if (request.getPath().startsWith("/devices")) {
+                // Management endpoints
                 handleManagementRequest(request, response);
 
             } else {
@@ -109,7 +115,20 @@ public class ProtocolTranslationFilter implements PluginFilter {
 
         switch (request.getMethod()) {
             // create new device
-            case POST:
+            case POST: {
+                try {
+                    deviceManager.createAdapter(request.getBody());
+                    response.setStatusCode(200);
+                    response.setBody("Adapter for device created!\n");
+                } catch (Exception e) {
+                    response.setStatusCode(500);
+                    response.setHeader("X-Error", "Server Error, adapter creation failed: " + e.getMessage());
+                    response.setBody("Server Error, adapter creation failed: " + e.getMessage() + "\n");
+                }
+
+
+                return;
+            }
         }
 
         response.setStatusCode(501);

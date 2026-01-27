@@ -24,9 +24,9 @@ public class DeviceManager {
         return instance;
     }
 
-    private void createAdapter(String body) {
+    public void createAdapter(String requestBody) {
 
-        JSONObject config = new JSONObject(body);
+        JSONObject config = new JSONObject(requestBody);
         String deviceId = config.getString("deviceId");
         String adapter = config.getString("adapter");
 
