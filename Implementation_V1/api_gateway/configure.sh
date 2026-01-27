@@ -37,29 +37,20 @@ success "Route setup"
 # Check 
 info "Test it with: curl http://127.0.0.1:9080/get"
 
-# Setup a random route:
-#info "Setting route /config with ProtocolTranslation plugin enabled..."
-#curl -i http://127.0.0.1:9180/apisix/admin/routes/config \
-#  -H 'X-API-KEY: admin' \
-#  -X PUT -d '
-#{
-#    "uri": "/config",
-#    "plugins": {
-#        "ext-plugin-pre-req": {
-#            "conf": [
-#              { "name": "ProtocolTranslation", "value": "{}" }
-#            ]
-#        }
-#    },
-#    "upstream": {
-#        "type": "roundrobin",
-#        "nodes": {
-#            "httpbin.org:80": 1
-#        }
-#    }
-#
-#}'
-#
-#success "Route setup"
-## Check
-#info "Test it with: curl http://127.0.0.1:9080/config"
+# Setup the device route:
+info "Setting route /devices with ProtocolTranslation plugin enabled..."
+curl -i http://127.0.0.1:9180/apisix/admin/routes/devices -H 'X-API-KEY: admin' -X PUT -d '
+{
+    "uri": "/devices",
+    "plugins": {
+        "ext-plugin-pre-req": {
+            "conf" : [
+                {"name": "ProtocolTranslation", "value": "{\"enable\":\"feature\"}"}
+            ]
+        }
+    }
+}'
+
+success "Route setup"
+# Check
+info "Test it with: curl http://127.0.0.1:9080/devices"

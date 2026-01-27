@@ -23,6 +23,7 @@ services:
     restart: unless-stopped
     depends_on:
       - etcd
+      - mongodb
     volumes:
       - ./conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
       - ./java-plugins/protocol-translation/target/protocol-translation-0.0.1-SNAPSHOT.jar:/usr/local/apisix/java-plugins/protocol-translation/target/protocol-translation-0.0.1-SNAPSHOT.jar
@@ -38,11 +39,43 @@ services:
     networks:
       - apisix
 
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - apisix
+
+  mongo-express:
+    image: mongo-express:1.0.2
+    container_name: mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      - mongodb
+    networks:
+      - apisix
 
 networks:
   apisix:
     driver: bridge
 
 volumes:
-  etcd_data: 
-    driver: local 
+  etcd_data:
+    driver: local
+  mongo_data:
+    driver: local

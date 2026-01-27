@@ -1,8 +1,5 @@
 package protocol_translation;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.apisix.plugin.runner.HttpRequest;
 import org.apache.apisix.plugin.runner.HttpResponse;
 import org.apache.apisix.plugin.runner.filter.PluginFilter;
@@ -11,8 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import protocol_translation.device_registry.DeviceRegistry;
-import protocol_translation.device_adapter.DeviceAdapter;
+import protocol_translation.device.DeviceManager;
+import protocol_translation.device.adapter.DeviceAdapter;
 import protocol_translation.exceptions.CorruptedConfiguration;
 import protocol_translation.exceptions.IllegalOperation;
 import protocol_translation.exceptions.OperationNotSupported;
@@ -27,8 +24,8 @@ public class ProtocolTranslationFilter implements PluginFilter {
     private final ProtocolTranslationLogger logger =
             ProtocolTranslationLogger.getInstance();
 
-    private final DeviceRegistry deviceRegistry =
-            DeviceRegistry.getInstance(); // or inject if Spring-managed
+    private final DeviceManager deviceManager =
+            DeviceManager.getInstance();
 
     ProtocolTranslationFilter() {
         logger.info("Protocol Translation initialized");
@@ -74,22 +71,23 @@ public class ProtocolTranslationFilter implements PluginFilter {
     private void handleDeviceRequest(HttpRequest request,
                                      HttpResponse response) throws Exception {
 
+        // TODO: move this to deviceManager
         String deviceId = request.getHeader("X-Device-Id");
 
         if (deviceId == null || deviceId.isBlank()) {
             logger.debug("No device ID...");
             response.setStatusCode(400);
             response.setHeader("X-Error", "Missing X-Device-Id header");
-            response.setBody("Missing X-Device-Id header");
+            response.setBody("X-Error: Missing X-Device-Id header");
             return;
         }
 
-        DeviceAdapter adapter = deviceRegistry.get(deviceId);
+        DeviceAdapter adapter = deviceManager.get(deviceId);
 
         if (adapter == null) {
             response.setStatusCode(404);
             response.setHeader("X-Error", "Unknown device: " + deviceId);
-            response.setBody("");
+            response.setBody("X-Error: Unknown device: ");
             return;
         }
 
@@ -109,6 +107,11 @@ public class ProtocolTranslationFilter implements PluginFilter {
         // DELETE /devices/{id} → remove device
         // GET /devices → list devices
 
+        switch (request.getMethod()) {
+            // create new device
+            case POST:
+        }
+
         response.setStatusCode(501);
         response.setHeader("X-Error", "Device management not implemented yet");
         response.setBody("Device management not implemented yet");
@@ -117,36 +120,30 @@ public class ProtocolTranslationFilter implements PluginFilter {
     private void handleException(HttpResponse response, Exception e) {
         logger.error("Request failed: " + e);
 
-        if (e instanceof CorruptedConfiguration) {
-            response.setStatusCode(400);
-            response.setHeader("X-Error", "CorruptedConfiguration: " + e.getMessage());
-            response.setBody("CorruptedConfiguration: " + e.getMessage());
-
-        } else if (e instanceof IllegalOperation) {
-            response.setStatusCode(403);
-            response.setHeader("X-Error", "IllegalOperation: " + e.getMessage());
-            response.setBody("IllegalOperation: " + e.getMessage());
-
-        } else if (e instanceof OperationNotSupported) {
-            response.setStatusCode(501);
-            response.setHeader("X-Error", "OperationNotSupported" + e.getMessage());
-            response.setBody("OperationNotSupported" + e.getMessage());
-
-        } else {
-            response.setStatusCode(500);
-            response.setHeader("X-Error", "InternalError" + e.getMessage());
-            response.setBody("InternalError" + e.getMessage());
+        switch (e) {
+            case CorruptedConfiguration corruptedConfiguration -> {
+                response.setStatusCode(400);
+                response.setHeader("X-Error", "CorruptedConfiguration: " + e.getMessage());
+                response.setBody("CorruptedConfiguration: " + e.getMessage());
+            }
+            case IllegalOperation illegalOperation -> {
+                response.setStatusCode(403);
+                response.setHeader("X-Error", "IllegalOperation: " + e.getMessage());
+                response.setBody("IllegalOperation: " + e.getMessage());
+            }
+            case OperationNotSupported operationNotSupported -> {
+                response.setStatusCode(501);
+                response.setHeader("X-Error", "OperationNotSupported" + e.getMessage());
+                response.setBody("OperationNotSupported" + e.getMessage());
+            }
+            default -> {
+                response.setStatusCode(500);
+                response.setHeader("X-Error", "InternalError" + e.getMessage());
+                response.setBody("InternalError" + e.getMessage());
+            }
         }
     }
 
-
-    @Override
-    public List<String> requiredVars() {
-        List<String> vars = new ArrayList<>();
-        vars.add("remote_addr");
-        vars.add("server_port");
-        return vars;
-    }
 
     @Override
     public Boolean requiredBody() {
