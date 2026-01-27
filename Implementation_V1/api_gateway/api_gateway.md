@@ -38,7 +38,7 @@ volumes:
 ## Java plugins 
 !**Warning**: It is mentioned to use JDK 21 for plugin dev. We currently use JDK 21 on the APISIX container. It doesn't seem to cause any problem but to keep in mind. 
 
-Java-plugins related information are in [`java_plugins/`](./java-plugins/java-plugins.md). 
+Java-plugins related information are in [`java_plugins/`](java-plugins/java-plugins.md). 
 
 To refresh the jar, you can use the [`refresh.sh`](./refresh.sh) script **from within** the `apisix` VM. 
 

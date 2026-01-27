@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="68bcac83-a6f3-48ba-a68f-8995c2fae059" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device/registry/DeviceRegistry.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/api_gateway.md" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/api_gateway.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/configure.sh" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/configure.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/protocol-translation.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/logs" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/logs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/ProtocolTranslationFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/ProtocolTranslationFilter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device_adapter/AdapterFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device/adapter/AdapterFactory.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device_adapter/DeviceAdapter.java" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device/adapter/DeviceAdapter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device_adapter/DeviceConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device/config/DeviceConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device_adapter/HttpDeviceAdapter.java" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device/adapter/HttpDeviceAdapter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device_adapter/MqttDeviceAdapter.java" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device/adapter/MqttDeviceAdapter.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device_registry/DeviceRegistry.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/target/classes/protocol_translation/ProtocolTranslationFilter.class" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/target/classes/protocol_translation/ProtocolTranslationFilter.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/target/maven-status/maven-compiler-plugin/compile/default-compile/createdFiles.lst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/target/maven-status/maven-compiler-plugin/compile/default-compile/inputFiles.lst" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/target/protocol-translation-0.0.1-SNAPSHOT.jar" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/target/protocol-translation-0.0.1-SNAPSHOT.jar" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/target/protocol-translation-0.0.1-SNAPSHOT.jar.original" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/target/protocol-translation-0.0.1-SNAPSHOT.jar.original" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/api_gateway/refresh.sh" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/refresh.sh" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "customColor": "",
+  "associatedIndex": 3
+}]]></component>
+  <component name="ProjectId" id="38q2ESNlhs9Aan8ZEI2Kzi9rIAW" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "SHELLCHECK.PATH": "/Users/arthurdeneyer/Library/Application Support/JetBrains/IntelliJIdea2025.2/plugins/Shell Script/shellcheck",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.2",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RunManager">
+    <configuration name="ProtocolTranslationApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
+      <module name="protocol-translation" />
+      <option name="SPRING_BOOT_MAIN_CLASS" value="protocol_translation.ProtocolTranslationApplication" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.26199.169" />
+        <option value="bundled-js-predefined-d6986cc7102b-9c94529fcfe0-JavaScript-IU-252.26199.169" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="68bcac83-a6f3-48ba-a68f-8995c2fae059" name="Changes" comment="" />
+      <created>1769512668891</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1769512668891</updated>
+      <workItem from="1769512670192" duration="7029000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
