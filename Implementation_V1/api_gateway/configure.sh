@@ -22,7 +22,7 @@ error()   { echo -e "${RED}[ERROR]${RESET} $*"; }
 
 # Setup a random route:
 info "Setting route /get with ProtocolTranslation plugin enabled..."
-curl -i http://127.0.0.1:9180/apisix/admin/routes/1  -H 'X-API-KEY: admin' -X PUT -d '
+curl -i http://127.0.0.1:9180/apisix/admin/routes/get  -H 'X-API-KEY: admin' -X PUT -d '
 {
     "uri": "/get",
     "plugins": {
@@ -31,15 +31,35 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/1  -H 'X-API-KEY: admin' -X PU
                 {"name": "ProtocolTranslation", "value": "{\"enable\":\"feature\"}"}
             ]
         }
-    },
-    "upstream": {
-        "type": "roundrobin",
-        "nodes": {
-            "httpbin.org:80": 1
-        }
     }
 }'
 success "Route setup"
 # Check 
 info "Test it with: curl http://127.0.0.1:9080/get"
 
+# Setup a random route:
+#info "Setting route /config with ProtocolTranslation plugin enabled..."
+#curl -i http://127.0.0.1:9180/apisix/admin/routes/config \
+#  -H 'X-API-KEY: admin' \
+#  -X PUT -d '
+#{
+#    "uri": "/config",
+#    "plugins": {
+#        "ext-plugin-pre-req": {
+#            "conf": [
+#              { "name": "ProtocolTranslation", "value": "{}" }
+#            ]
+#        }
+#    },
+#    "upstream": {
+#        "type": "roundrobin",
+#        "nodes": {
+#            "httpbin.org:80": 1
+#        }
+#    }
+#
+#}'
+#
+#success "Route setup"
+## Check
+#info "Test it with: curl http://127.0.0.1:9080/config"

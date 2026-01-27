@@ -50,16 +50,9 @@ public class ProtocolTranslationFilter implements PluginFilter {
         logger.debug("Method: " + request.getMethod());
         logger.debug("Source IP: " + request.getSourceIP());
 
-        response.setStatusCode(400);
-        response.setHeader("X-Error", "Missing X-Device-Id header");
-        response.setBody("");
-
-        chain.filter(request, response);
-        return;
-
         // Mark request as processed
-        // request.setHeader("X-Processed-By", "Java-plugins:ProtocolTranslation");
-        /*
+        request.setHeader("X-Processed-By", "Java-plugins:ProtocolTranslation");
+
         try {
             // Management endpoints
             if (request.getPath().startsWith("/devices")) {
@@ -76,8 +69,6 @@ public class ProtocolTranslationFilter implements PluginFilter {
 
         // Continue APISIX chain
         chain.filter(request, response);
-
-         */
     }
 
     private void handleDeviceRequest(HttpRequest request,
@@ -85,13 +76,11 @@ public class ProtocolTranslationFilter implements PluginFilter {
 
         String deviceId = request.getHeader("X-Device-Id");
 
-        logger.debug("Handling device !!!!!!");
-
         if (deviceId == null || deviceId.isBlank()) {
             logger.debug("No device ID...");
             response.setStatusCode(400);
             response.setHeader("X-Error", "Missing X-Device-Id header");
-            response.setBody("");
+            response.setBody("Missing X-Device-Id header");
             return;
         }
 
@@ -122,6 +111,7 @@ public class ProtocolTranslationFilter implements PluginFilter {
 
         response.setStatusCode(501);
         response.setHeader("X-Error", "Device management not implemented yet");
+        response.setBody("Device management not implemented yet");
     }
 
     private void handleException(HttpResponse response, Exception e) {
@@ -130,22 +120,22 @@ public class ProtocolTranslationFilter implements PluginFilter {
         if (e instanceof CorruptedConfiguration) {
             response.setStatusCode(400);
             response.setHeader("X-Error", "CorruptedConfiguration: " + e.getMessage());
-            response.setBody("");
+            response.setBody("CorruptedConfiguration: " + e.getMessage());
 
         } else if (e instanceof IllegalOperation) {
             response.setStatusCode(403);
             response.setHeader("X-Error", "IllegalOperation: " + e.getMessage());
-            response.setBody("");
+            response.setBody("IllegalOperation: " + e.getMessage());
 
         } else if (e instanceof OperationNotSupported) {
             response.setStatusCode(501);
             response.setHeader("X-Error", "OperationNotSupported" + e.getMessage());
-            response.setBody("");
+            response.setBody("OperationNotSupported" + e.getMessage());
 
         } else {
             response.setStatusCode(500);
             response.setHeader("X-Error", "InternalError" + e.getMessage());
-            response.setBody("");
+            response.setBody("InternalError" + e.getMessage());
         }
     }
 
