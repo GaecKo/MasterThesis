@@ -15,6 +15,15 @@ import protocol_translation.exceptions.IllegalOperation;
 import protocol_translation.exceptions.OperationNotSupported;
 import protocol_translation.logger.ProtocolTranslationLogger;
 
+/**
+ * APISIX plugin filter that handles protocol translation for devices.
+ *
+ * Responsibilities:
+ * - Routes requests to the appropriate device adapters or management endpoints.
+ * - Handles health checks and device management operations.
+ * - Provides structured logging and error handling.
+ * - Marks requests as processed and continues the APISIX filter chain.
+ */
 @Component
 public class ProtocolTranslationFilter implements PluginFilter {
 
@@ -27,16 +36,32 @@ public class ProtocolTranslationFilter implements PluginFilter {
     private final DeviceManager deviceManager =
             DeviceManager.getInstance();
 
+    /**
+     * Initializes the plugin and logs startup messages.
+     */
     ProtocolTranslationFilter() {
         logger.info("Protocol Translation initialized");
         API_LOGGER.warn("ProtocolTranslation plugin is running");
     }
 
+    /**
+     * Returns the name of this plugin filter.
+     *
+     * @return plugin name
+     */
     @Override
     public String name() {
         return "ProtocolTranslation";
     }
 
+    /**
+     * Main filter method invoked by APISIX.
+     * Routes requests to health check, device management, or device adapters.
+     *
+     * @param request the incoming HTTP request
+     * @param response the HTTP response to populate
+     * @param chain the APISIX plugin filter chain
+     */
     @Override
     public void filter(HttpRequest request,
                        HttpResponse response,
@@ -74,6 +99,14 @@ public class ProtocolTranslationFilter implements PluginFilter {
         chain.filter(request, response);
     }
 
+    /**
+     * Routes incoming requests to the corresponding device adapter.
+     * Responds with errors if device ID is missing or unknown.
+     *
+     * @param request the incoming HTTP request
+     * @param response the HTTP response to populate
+     * @throws Exception if adapter processing fails
+     */
     private void handleDeviceRequest(HttpRequest request,
                                      HttpResponse response) throws Exception {
 
@@ -97,14 +130,17 @@ public class ProtocolTranslationFilter implements PluginFilter {
             return;
         }
 
-        // for later: (smth similar)
-        // DeviceRequest devReq = DeviceRequest.fromHttp(request);
-        // DeviceResponse devRes = adapter.handle(devReq);
-        // devRes.applyTo(response);
-
+        // TODO: future request handling via adapter
         logger.debug("Request routed to device" + deviceId);
     }
 
+    /**
+     * Handles device management requests (e.g., create/update/remove adapters).
+     * Currently supports only POST for creating adapters; other methods return 501.
+     *
+     * @param request the incoming HTTP request
+     * @param response the HTTP response to populate
+     */
     private void handleManagementRequest(HttpRequest request,
                                          HttpResponse response) {
 
@@ -126,7 +162,6 @@ public class ProtocolTranslationFilter implements PluginFilter {
                     response.setBody("Server Error, adapter creation failed: " + e.getMessage() + "\n");
                 }
 
-
                 return;
             }
         }
@@ -136,6 +171,13 @@ public class ProtocolTranslationFilter implements PluginFilter {
         response.setBody("Device management not implemented yet");
     }
 
+    /**
+     * Handles exceptions thrown during request processing.
+     * Maps known exceptions to specific HTTP response codes and headers.
+     *
+     * @param response the HTTP response to populate
+     * @param e the exception to handle
+     */
     private void handleException(HttpResponse response, Exception e) {
         logger.error("Request failed: " + e);
 
@@ -163,12 +205,21 @@ public class ProtocolTranslationFilter implements PluginFilter {
         }
     }
 
-
+    /**
+     * Indicates that the plugin requires the request body to function.
+     *
+     * @return true
+     */
     @Override
     public Boolean requiredBody() {
         return true;
     }
 
+    /**
+     * Indicates that the plugin requires the response body to function.
+     *
+     * @return true
+     */
     @Override
     public Boolean requiredRespBody() {
         return true;

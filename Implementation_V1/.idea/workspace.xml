@@ -6,18 +6,11 @@
   <component name="ChangeListManager">
     <list default="true" id="68bcac83-a6f3-48ba-a68f-8995c2fae059" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api_gateway/api_gateway.sh" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/api_gateway.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api_gateway/configure.sh" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/configure.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/logs" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/logs" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/ProtocolTranslationFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/ProtocolTranslationFilter.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/database/DeviceConfigRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/database/DeviceConfigRepository.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/database/MongoClientProvider.java" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/database/MongoClientProvider.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device/DeviceManager.java" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device/DeviceManager.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device/registry/DeviceRegistry.java" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device/registry/DeviceRegistry.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/target/classes/protocol_translation/ProtocolTranslationFilter.class" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/target/classes/protocol_translation/ProtocolTranslationFilter.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/target/protocol-translation-0.0.1-SNAPSHOT.jar" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/target/protocol-translation-0.0.1-SNAPSHOT.jar" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/target/protocol-translation-0.0.1-SNAPSHOT.jar.original" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/target/protocol-translation-0.0.1-SNAPSHOT.jar.original" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api_gateway/refresh.sh" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/refresh.sh" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -89,7 +82,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1769512668891</updated>
-      <workItem from="1769512670192" duration="9267000" />
+      <workItem from="1769512670192" duration="9887000" />
     </task>
     <servers />
   </component>

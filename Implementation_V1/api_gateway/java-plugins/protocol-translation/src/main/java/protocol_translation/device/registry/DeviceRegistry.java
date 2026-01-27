@@ -12,6 +12,18 @@ import protocol_translation.device.adapter.AdapterFactory;
 import protocol_translation.database.DeviceConfigRepository;
 import protocol_translation.logger.ProtocolTranslationLogger;
 
+/**
+ * Singleton registry that manages all device adapters in the system.
+ *
+ * Responsibilities:
+ * - Maintains active DeviceAdapter instances keyed by device ID.
+ * - Tracks device fingerprints to detect configuration changes.
+ * - Periodically refreshes adapters based on the repository state.
+ * - Handles creation, update (rebuild), and removal of adapters.
+ *
+ * Provides thread-safe methods to get adapters, refresh the registry,
+ * upsert device configurations, and remove adapters.
+ */
 public class DeviceRegistry {
 
     private static DeviceRegistry instance;
@@ -24,6 +36,10 @@ public class DeviceRegistry {
 
     private static final ProtocolTranslationLogger logger = ProtocolTranslationLogger.getInstance();
 
+    /**
+     * Private constructor that initializes the singleton and schedules
+     * periodic refreshes of the device registry.
+     */
     private DeviceRegistry() {
         ScheduledExecutorService scheduler =
                 Executors.newSingleThreadScheduledExecutor();
@@ -42,6 +58,12 @@ public class DeviceRegistry {
         );
     }
 
+    /**
+     * Returns the singleton instance of the DeviceRegistry,
+     * triggering an initial refresh if necessary.
+     *
+     * @return DeviceRegistry singleton
+     */
     public static DeviceRegistry getInstance() {
         if (instance == null) {
             instance = new DeviceRegistry();
@@ -50,10 +72,21 @@ public class DeviceRegistry {
         return instance;
     }
 
+    /**
+     * Retrieves the adapter for a given device ID.
+     *
+     * @param deviceId the ID of the device
+     * @return DeviceAdapter instance, or null if not registered
+     */
     public DeviceAdapter get(String deviceId) {
         return adapters.get(deviceId);
     }
 
+    /**
+     * Synchronizes the registry with the current repository state.
+     * - Updates adapters whose configuration fingerprint has changed.
+     * - Removes adapters that no longer exist in the repository.
+     */
     public synchronized void refresh() {
         List<DeviceConfig> configs = repository.findAll();
         Set<String> seen = new HashSet<>();
@@ -80,9 +113,19 @@ public class DeviceRegistry {
         }
     }
 
+    /**
+     * Rebuilds a device adapter using the provided configuration and fingerprint.
+     * - Removes any existing adapter for the device.
+     * - Creates and initializes a new adapter.
+     * - Updates the fingerprints and adapters maps.
+     *
+     * @param deviceId the ID of the device
+     * @param config the configuration to use
+     * @param fingerprint the configuration fingerprint
+     */
     public void rebuild(String deviceId,
-                         DeviceConfig config,
-                         String fingerprint) {
+                        DeviceConfig config,
+                        String fingerprint) {
         remove(deviceId);
 
         DeviceAdapter adapter = adapterFactory.create(config.getAdapter());
@@ -96,6 +139,11 @@ public class DeviceRegistry {
         fingerprints.put(deviceId, fingerprint);
     }
 
+    /**
+     * Removes a device adapter from the registry and shuts it down.
+     *
+     * @param deviceId the ID of the device to remove
+     */
     public void remove(String deviceId) {
         DeviceAdapter existing = adapters.remove(deviceId);
         if (existing != null) {
@@ -104,6 +152,12 @@ public class DeviceRegistry {
         fingerprints.remove(deviceId);
     }
 
+    /**
+     * Inserts or updates a device configuration in the repository
+     * and rebuilds the corresponding adapter.
+     *
+     * @param config the device configuration to upsert
+     */
     public synchronized void upsert(DeviceConfig config) {
         repository.save(config);
 
