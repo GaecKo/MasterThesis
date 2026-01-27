@@ -38,3 +38,388 @@
 [DEBUG] Method: GET
 [DEBUG] Body: 
 [DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Request received:
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Body: 
+[DEBUG] Source IP: 172.18.0.1
+[INFO] Protocol Translation initialized...
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[INFO] Protocol Translation initialized
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[INFO] Protocol Translation initialized
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 192.168.64.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 192.168.64.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 192.168.64.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 192.168.64.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 192.168.64.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /get
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
+[DEBUG] Handling device !!!!!!
+[DEBUG] No device ID...
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request
+[DEBUG] Path: /config
+[DEBUG] Method: GET
+[DEBUG] Source IP: 172.18.0.1
