@@ -3,6 +3,7 @@
 /home/ubuntu/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/exceptions/IllegalOperation.java
 /home/ubuntu/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/exceptions/OperationNotSupported.java
 /home/ubuntu/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/database/DeviceConfigRepository.java
+/home/ubuntu/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/OtherFilter.java
 /home/ubuntu/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/exceptions/CorruptedConfiguration.java
 /home/ubuntu/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/ProtocolTranslationApplication.java
 /home/ubuntu/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device/config/DeviceConfig.java

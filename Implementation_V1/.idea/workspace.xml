@@ -5,12 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="68bcac83-a6f3-48ba-a68f-8995c2fae059" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/Implementation_V1.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Implementation_V1.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/logs" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/logs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/ProtocolTranslationFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/ProtocolTranslationFilter.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/database/DeviceConfigRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/database/DeviceConfigRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/database/MongoClientProvider.java" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/database/MongoClientProvider.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device/registry/DeviceRegistry.java" beforeDir="false" afterPath="$PROJECT_DIR$/api_gateway/java-plugins/protocol-translation/src/main/java/protocol_translation/device/registry/DeviceRegistry.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,10 +24,10 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "customColor": "",
-  "associatedIndex": 3
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 3
+}</component>
   <component name="ProjectId" id="38q2ESNlhs9Aan8ZEI2Kzi9rIAW" />
   <component name="ProjectLevelVcsManager">
     <ConfirmationsSetting value="1" id="Add" />
@@ -39,25 +36,31 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "SHELLCHECK.PATH": "/Users/arthurdeneyer/Library/Application Support/JetBrains/IntelliJIdea2025.2/plugins/Shell Script/shellcheck",
-    "git-widget-placeholder": "main",
-    "kotlin-language-version-configured": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "project.structure.last.edited": "Project",
-    "project.structure.proportion": "0.0",
-    "project.structure.side.proportion": "0.2",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHELLCHECK.PATH&quot;: &quot;/Users/arthurdeneyer/Library/Application Support/JetBrains/IntelliJIdea2025.2/plugins/Shell Script/shellcheck&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/arthurdeneyer/MasterThesis/Implementation_V1/api_gateway/java-plugins&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/api_gateway/java-plugins" />
+    </key>
+  </component>
   <component name="RunManager">
     <configuration name="ProtocolTranslationApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <module name="protocol-translation" />
@@ -82,7 +85,8 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1769512668891</updated>
-      <workItem from="1769512670192" duration="9887000" />
+      <workItem from="1769512670192" duration="14471000" />
+      <workItem from="1769603966634" duration="31000" />
     </task>
     <servers />
   </component>

@@ -22,6 +22,10 @@ error()   { echo -e "${RED}[ERROR]${RESET} $*"; }
 info "Updating jar of Protocol Translation ..."
 cd protocol-translation/ 
 ./mvnw clean package
-success "Protocol Translation refreshed and available at protocol-translation/target/"
+success "Protocol Translation plugin refreshed and available at protocol-translation/target/"
 
+cd ../
 
+cd onboarding/
+./mvnw clean package 
+success "Onboarding plugin refreshed and available at onboarding/target/"
