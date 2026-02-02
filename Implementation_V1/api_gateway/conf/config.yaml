@@ -30,4 +30,5 @@ deployment:
 ext-plugin:
   cmd: ['java', '-jar', '-Xmx1g', '/usr/local/apisix/java-plugins/protocol-translation/target/protocol-translation-0.0.1-SNAPSHOT.jar']
   path_for_test: /tmp/runner.sock   
+  
 

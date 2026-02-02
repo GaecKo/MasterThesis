@@ -95,7 +95,7 @@ public class DeviceRegistry {
             String deviceId = config.getDeviceId();
             String fingerprint = config.fingerprint();
 
-            logger.info("Syncing device: " + deviceId);
+            // logger.info("Syncing device: " + deviceId);
 
             seen.add(deviceId);
 

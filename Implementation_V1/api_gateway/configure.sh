@@ -73,3 +73,22 @@ success "Route setup"
 # Check
 info "Test it with: curl http://127.0.0.1:9080/health"
 
+
+# Setup the health route:
+info "Setting route /test with OtherFilter enabled..."
+curl -i http://127.0.0.1:9180/apisix/admin/routes/other -H 'X-API-KEY: admin' -X PUT -d '
+{
+    "uri": "/other",
+    "plugins": {
+        "ext-plugin-pre-req": {
+            "conf" : [
+                {"name": "OtherFilter", "value": "{\"enable\":\"feature\"}"},
+                {"name": "ProtocolTranslation", "value": "{\"enable\":\"feature\"}"}
+            ]
+        }
+    }
+}'
+
+success "Route setup"
+# Check
+info "Test it with: curl http://127.0.0.1:9080/other"

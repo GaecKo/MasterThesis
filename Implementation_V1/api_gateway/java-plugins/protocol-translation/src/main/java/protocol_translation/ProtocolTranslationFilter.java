@@ -67,7 +67,7 @@ public class ProtocolTranslationFilter implements PluginFilter {
                        HttpResponse response,
                        PluginFilterChain chain) {
 
-        logger.debug("Incoming request");
+        logger.debug("Incoming request in " + name());
         logger.debug("Path: " + request.getPath());
         logger.debug("Method: " + request.getMethod());
         logger.debug("Source IP: " + request.getSourceIP());
