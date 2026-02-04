@@ -19,13 +19,9 @@ error()   { echo -e "${RED}[ERROR]${RESET} $*"; }
 ###   Refresh jars
 ### ============================================================
 
-info "Updating jar of Protocol Translation ..."
-cd protocol-translation/ 
+info "Updating jar of EdgeControl ..."
+cd edge-control/ 
 ./mvnw clean package
-success "Protocol Translation plugin refreshed and available at protocol-translation/target/"
+success "EdgeControl plugin refreshed and available at edge-control/target/"
 
-cd ../
 
-cd onboarding/
-./mvnw clean package 
-success "Onboarding plugin refreshed and available at onboarding/target/"

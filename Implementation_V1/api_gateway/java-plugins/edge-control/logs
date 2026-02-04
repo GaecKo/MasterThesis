@@ -1,0 +1,45 @@
+[INFO] EdgeControlApplication is starting ...
+[INFO] Other Filter initialized
+[INFO] Rebuilding device: 1
+[INFO] Protocol Translation initialized
+[DEBUG] Incoming request in ProtocolTranslation
+[DEBUG] Path: /health
+[DEBUG] Method: GET
+[DEBUG] Source IP: 192.168.64.1
+[DEBUG] Health endpoint reached
+[DEBUG] Incoming request in OtherFilter
+[DEBUG] Path: /other
+[DEBUG] Method: GET
+[DEBUG] Source IP: 192.168.64.1
+[DEBUG] Incoming request in ProtocolTranslation
+[DEBUG] Path: /other
+[DEBUG] Method: GET
+[DEBUG] Source IP: 192.168.64.1
+[DEBUG] No device ID...
+[DEBUG] Incoming request in OtherFilter
+[DEBUG] Path: /other
+[DEBUG] Method: GET
+[DEBUG] Source IP: 192.168.64.1
+[DEBUG] Incoming request in ProtocolTranslation
+[DEBUG] Path: /other
+[DEBUG] Method: GET
+[DEBUG] Source IP: 192.168.64.1
+[DEBUG] No device ID...
+[DEBUG] Incoming request in OtherFilter
+[DEBUG] Path: /other
+[DEBUG] Method: GET
+[DEBUG] Source IP: 192.168.64.1
+[DEBUG] Incoming request in ProtocolTranslation
+[DEBUG] Path: /other
+[DEBUG] Method: GET
+[DEBUG] Source IP: 192.168.64.1
+[DEBUG] No device ID...
+[DEBUG] Incoming request in OtherFilter
+[DEBUG] Path: /other
+[DEBUG] Method: GET
+[DEBUG] Source IP: 192.168.64.1
+[DEBUG] Incoming request in ProtocolTranslation
+[DEBUG] Path: /other
+[DEBUG] Method: GET
+[DEBUG] Source IP: 192.168.64.1
+[DEBUG] No device ID...
