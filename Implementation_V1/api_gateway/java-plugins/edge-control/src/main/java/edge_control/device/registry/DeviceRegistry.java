@@ -1,6 +1,6 @@
 package edge_control.device.registry;
 
-import edge_control.database.DeviceConfigRepository;
+import edge_control.database.DevicesTranslationConfigRepository;
 import edge_control.device.adapter.AdapterFactory;
 import edge_control.device.adapter.DeviceAdapter;
 import edge_control.device.config.DeviceConfig;
@@ -32,7 +32,7 @@ public class DeviceRegistry {
     private final Map<String, String> fingerprints = new ConcurrentHashMap<>();
 
     private final AdapterFactory adapterFactory = new AdapterFactory();
-    private final DeviceConfigRepository repository = new DeviceConfigRepository();
+    private final DevicesTranslationConfigRepository repository = new DevicesTranslationConfigRepository();
 
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
@@ -46,12 +46,7 @@ public class DeviceRegistry {
 
         // TODO: change delay to something else
         scheduler.scheduleAtFixedRate(
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        refresh();
-                    }
-                },
+                this::refresh,
                 5,          // initial delay
                 5,          // period
                 TimeUnit.SECONDS
