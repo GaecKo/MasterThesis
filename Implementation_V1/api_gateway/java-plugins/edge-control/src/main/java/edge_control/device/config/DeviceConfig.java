@@ -13,11 +13,20 @@ public class DeviceConfig {
         this.config = config;
         this.deviceId = deviceId;
         this.adapter = adapter;
-        // TODO: retrieve adapter type and deviceId
+    }
+
+    public DeviceConfig(String adapter, JSONObject config) {
+        this.config = config;
+        this.deviceId = null;
+        this.adapter = adapter;
     }
 
     public JSONObject getConfig() {
         return config;
+    }
+
+    public void setDeviceId(String deviceId) {
+        this.deviceId = deviceId;
     }
 
     public String getDeviceId() {

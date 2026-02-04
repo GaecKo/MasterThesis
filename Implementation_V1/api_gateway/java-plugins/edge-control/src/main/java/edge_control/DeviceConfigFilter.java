@@ -1,5 +1,12 @@
 package edge_control;
 
+import edge_control.device.DeviceManager;
+import edge_control.exceptions.CorruptedConfiguration;
+import edge_control.exceptions.EdgeControlException;
+import edge_control.exceptions.IllegalOperation;
+import edge_control.exceptions.OperationNotSupported;
+import edge_control.logger.EdgeControlLogger;
+
 import org.apache.apisix.plugin.runner.HttpRequest;
 import org.apache.apisix.plugin.runner.HttpResponse;
 import org.apache.apisix.plugin.runner.filter.PluginFilter;
@@ -8,23 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import edge_control.device.DeviceManager;
-import edge_control.logger.EdgeControlLogger;
-import edge_control.device.adapter.DeviceAdapter;
-import edge_control.exceptions.*;
-
-/**
- * APISIX plugin filter that handles protocol translation for devices.
- *
- * Responsibilities:
- * - Routes requests to the appropriate device adapters or management endpoints.
- * - Handles health checks and device management operations.
- * - Provides structured logging and error handling.
- * - Marks requests as processed and continues the APISIX filter chain.
- */
 @Component
-public class ProtocolTranslationFilter implements PluginFilter {
-
+public class DeviceConfigFilter implements PluginFilter {
     private static final Logger API_LOGGER =
             LoggerFactory.getLogger(ProtocolTranslationFilter.class);
 
@@ -40,9 +32,9 @@ public class ProtocolTranslationFilter implements PluginFilter {
     /**
      * Initializes the plugin and logs startup messages.
      */
-    ProtocolTranslationFilter() {
-        logger.info("ProtocolTranslation Filter initialized");
-        API_LOGGER.warn("ProtocolTranslation Filter is running");
+    DeviceConfigFilter() {
+        logger.info("DeviceConfig Filter initialized");
+        API_LOGGER.warn("DeviceConfig Filter is running");
     }
 
     /**
@@ -52,7 +44,7 @@ public class ProtocolTranslationFilter implements PluginFilter {
      */
     @Override
     public String name() {
-        return "ProtocolTranslation";
+        return "DeviceConfig";
     }
 
     /**
@@ -67,7 +59,10 @@ public class ProtocolTranslationFilter implements PluginFilter {
     public void filter(HttpRequest request,
                        HttpResponse response,
                        PluginFilterChain chain) {
-        logger.debug("Incoming request in " + name() + ", index: " + chain.getIndex());
+
+        // notice about reached filter / route
+        logger.debug("Incoming request in " + name() + ", index: " + chain.getIndex() + " | Path: " + request.getPath());
+
         // register request
         requestHandler.register(request);
 
@@ -78,24 +73,19 @@ public class ProtocolTranslationFilter implements PluginFilter {
             return;
         }
 
-
-//        logger.debug("Path: " + request.getPath());
-//        logger.debug("Method: " + request.getMethod());
-//        logger.debug("Source IP: " + request.getSourceIP());
-
         // Mark request as processed
-        request.setHeader("X-Processed-By", "Java-plugins:ProtocolTranslation");
+        request.setHeader("X-Processed-By", "Java-plugins:DeviceConfig");
 
         try {
-
-            if (request.getPath().startsWith("/health")) {
-                logger.debug("Health endpoint reached");
-                response.setStatusCode(200);
-                response.setBody("Health Check reacted!\n");
+            if (request.getPath().startsWith("/devices")) {
+                // Management endpoints
+                handleManagementRequest(request, response);
 
             } else {
-                // Device traffic
-                handleDeviceRequest(request, response);
+                // stop chain
+                requestHandler.skipChain(request);
+                throw new EdgeControlException("Cannot use another route than /devices with the DeviceConfig filter. " +
+                        "Used route: " + request.getPath());
 
             }
         } catch (Exception e) {
@@ -107,38 +97,38 @@ public class ProtocolTranslationFilter implements PluginFilter {
     }
 
     /**
-     * Routes incoming requests to the corresponding device adapter.
-     * Responds with errors if device ID is missing or unknown.
+     * Handles device management requests (e.g., create/update/remove adapters).
+     * Currently supports only POST for creating adapters; other methods return 501.
      *
      * @param request the incoming HTTP request
      * @param response the HTTP response to populate
-     * @throws Exception if adapter processing fails
      */
-    private void handleDeviceRequest(HttpRequest request,
-                                     HttpResponse response) throws Exception {
+    private void handleManagementRequest(HttpRequest request,
+                                         HttpResponse response) {
 
-        // TODO: move this to deviceManager
-        String deviceId = request.getHeader("X-Device-Id");
+        // Placeholder for:
+        // POST /devices → add/update device
+        // DELETE /devices/{id} → remove device
+        // GET /devices → list devices
 
-        if (deviceId == null || deviceId.isBlank()) {
-            logger.debug("No device ID...");
-            response.setStatusCode(400);
-            response.setHeader("X-Error", "Missing X-Device-Id header");
-            response.setBody("X-Error: Missing X-Device-Id header");
-            return;
+        switch (request.getMethod()) {
+            // create new device
+            case POST: {
+                try {
+                    String deviceId = deviceManager.createAdapter(request.getBody());
+                    response.setStatusCode(200);
+                    response.setBody("Adapter for device created!\n");
+                } catch (Exception e) {
+                    handleException(response, e);
+                }
+
+                return;
+            }
         }
 
-        DeviceAdapter adapter = deviceManager.get(deviceId);
-
-        if (adapter == null) {
-            response.setStatusCode(404);
-            response.setHeader("X-Error", "Unknown device: " + deviceId);
-            response.setBody("X-Error: Unknown device: ");
-            return;
-        }
-
-        // TODO: future request handling via adapter
-        logger.debug("Request routed to device" + deviceId);
+        response.setStatusCode(501);
+        response.setHeader("X-Error", "Device management not implemented yet");
+        response.setBody("Device management not implemented yet");
     }
 
     /**
