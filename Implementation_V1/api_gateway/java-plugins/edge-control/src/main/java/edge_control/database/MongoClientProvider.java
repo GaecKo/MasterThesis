@@ -5,35 +5,23 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoDatabase;
 
 /**
- * Provides a singleton MongoClient and access to the MongoDB database
- * for the protocol_translation application.
+ * Provides access to collection in database using MongoClient
+ * for the edge-control application.
  *
  * Responsibilities:
- * - Maintains a single MongoClient instance for the application.
- * - Provides access to the "protocol_translation" database.
- * - Ensures centralized MongoDB connection configuration.
+ * - Provides access to a collection within a database.
  */
-public final class MongoClientProvider {
-
-    /**
-     * Singleton MongoClient connecting to MongoDB with authentication.
-     */
-    private static final MongoClient client =
-            MongoClients.create(
-                    "mongodb://root:example@mongodb:27017/devices?authSource=admin"
-            );
-
-    /**
-     * Private constructor to prevent instantiation.
-     */
-    private MongoClientProvider() {}
+public class MongoClientProvider {
 
     /**
      * Returns the MongoDatabase instance used by the application.
      *
-     * @return the "protocol_translation" MongoDatabase
+     * @return the "databaseName" MongoDatabase
      */
-    public static MongoDatabase getDatabase() {
-        return client.getDatabase("protocol_translation");
+    public static MongoDatabase getDatabase(String databaseName) {
+        MongoClient client = MongoClients.create(
+                "mongodb://root:example@mongodb:27017/?authSource=admin"
+        );
+        return client.getDatabase(databaseName);
     }
 }
