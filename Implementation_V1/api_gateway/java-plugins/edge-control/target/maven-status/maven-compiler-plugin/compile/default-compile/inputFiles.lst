@@ -6,6 +6,7 @@
 /home/ubuntu/api_gateway/java-plugins/edge-control/src/main/java/edge_control/exceptions/OperationNotSupported.java
 /home/ubuntu/api_gateway/java-plugins/edge-control/src/main/java/edge_control/database/DeviceConfigRepository.java
 /home/ubuntu/api_gateway/java-plugins/edge-control/src/main/java/edge_control/device/registry/DeviceRegistry.java
+/home/ubuntu/api_gateway/java-plugins/edge-control/src/main/java/edge_control/MyFilter.java
 /home/ubuntu/api_gateway/java-plugins/edge-control/src/main/java/edge_control/OtherFilter.java
 /home/ubuntu/api_gateway/java-plugins/edge-control/src/main/java/edge_control/device/DeviceManager.java
 /home/ubuntu/api_gateway/java-plugins/edge-control/src/main/java/edge_control/ProtocolTranslationFilter.java
@@ -14,3 +15,4 @@
 /home/ubuntu/api_gateway/java-plugins/edge-control/src/main/java/edge_control/exceptions/CorruptedConfiguration.java
 /home/ubuntu/api_gateway/java-plugins/edge-control/src/main/java/edge_control/device/adapter/DeviceAdapter.java
 /home/ubuntu/api_gateway/java-plugins/edge-control/src/main/java/edge_control/logger/EdgeControlLogger.java
+/home/ubuntu/api_gateway/java-plugins/edge-control/src/main/java/edge_control/RequestHandler.java

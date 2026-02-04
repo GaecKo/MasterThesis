@@ -34,12 +34,15 @@ public class ProtocolTranslationFilter implements PluginFilter {
     private final DeviceManager deviceManager =
             DeviceManager.getInstance();
 
+    private static final RequestHandler requestHandler =
+            RequestHandler.getInstance();
+
     /**
      * Initializes the plugin and logs startup messages.
      */
     ProtocolTranslationFilter() {
-        logger.info("Protocol Translation initialized");
-        API_LOGGER.warn("ProtocolTranslation plugin is running");
+        logger.info("ProtocolTranslation Filter initialized");
+        API_LOGGER.warn("ProtocolTranslation Filter is running");
     }
 
     /**
@@ -64,11 +67,21 @@ public class ProtocolTranslationFilter implements PluginFilter {
     public void filter(HttpRequest request,
                        HttpResponse response,
                        PluginFilterChain chain) {
+        logger.debug("Incoming request in " + name() + ", index: " + chain.getIndex());
+        // register request
+        requestHandler.register(request);
 
-        logger.debug("Incoming request in " + name());
-        logger.debug("Path: " + request.getPath());
-        logger.debug("Method: " + request.getMethod());
-        logger.debug("Source IP: " + request.getSourceIP());
+        // check if this filter should skip request
+        if (requestHandler.shouldSkipRequest(request, chain)) {
+            // logger.info(name() + " skips request...");
+            chain.filter(request, response);
+            return;
+        }
+
+
+//        logger.debug("Path: " + request.getPath());
+//        logger.debug("Method: " + request.getMethod());
+//        logger.debug("Source IP: " + request.getSourceIP());
 
         // Mark request as processed
         request.setHeader("X-Processed-By", "Java-plugins:ProtocolTranslation");

@@ -25,12 +25,15 @@ public class OtherFilter implements PluginFilter {
     private final EdgeControlLogger logger =
             EdgeControlLogger.getInstance();
 
+    private static final RequestHandler requestHandler =
+            RequestHandler.getInstance();
+
     /**
      * Initializes the plugin and logs startup messages.
      */
     OtherFilter() {
-        logger.info("Other Filter initialized");
-        API_LOGGER.warn("OtherFilter is running");
+        logger.info("OtherFilter Filter initialized");
+        API_LOGGER.warn("OtherFilter Filter is running");
     }
 
     /**
@@ -55,23 +58,38 @@ public class OtherFilter implements PluginFilter {
     public void filter(HttpRequest request,
                        HttpResponse response,
                        PluginFilterChain chain) {
+        logger.debug("Incoming request in " + name() + ", index: " + chain.getIndex());
+        // register request
+        requestHandler.register(request);
 
-        logger.debug("Incoming request in " + name());
-        logger.debug("Path: " + request.getPath());
-        logger.debug("Method: " + request.getMethod());
-        logger.debug("Source IP: " + request.getSourceIP());
+        // check if this filter should skip request
+        if (requestHandler.shouldSkipRequest(request, chain)) {
+            logger.info(name() + " skips request...");
+            chain.filter(request, response);
+            return;
+        }
+
+        // To indicate to others filter to skip request:
+        // requestHandler.skipChain(request);
+
+
+//        logger.debug("Path: " + request.getPath());
+//        logger.debug("Method: " + request.getMethod());
+//        logger.debug("Source IP: " + request.getSourceIP());
+
+
 
         // Mark request as processed
         request.setHeader("X-Processed-By", "Java-plugins:OtherFilter");
 
-        /*
-        logger.debug("Tried to stop response here, filters of chain are: ");
-        for (PluginFilter filters : chain.getFilters()) {
-            logger.debug(filters.name() + ": ");
-            logger.debug("\t" + filters.getClass().getPackageName());
-            logger.debug("\t" + filters.getClass().toString());
-        }
-        */
+
+//        logger.debug("Filters of chain are: ");
+//        for (PluginFilter filters : chain.getFilters()) {
+//            logger.debug(filters.name() + ": ");
+//            logger.debug("\t" + filters.getClass().getPackageName());
+//            logger.debug("\t" + filters.getClass().toString());
+//        }
+
         // Continue APISIX chain
         chain.filter(request, response);
     }

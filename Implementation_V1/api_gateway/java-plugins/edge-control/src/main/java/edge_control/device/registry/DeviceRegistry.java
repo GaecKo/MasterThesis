@@ -100,7 +100,7 @@ public class DeviceRegistry {
             seen.add(deviceId);
 
             if (!fingerprint.equals(fingerprints.get(deviceId))) {
-                logger.info("Rebuilding device: " + deviceId);
+                // logger.info("Rebuilding device: " + deviceId);
                 rebuild(deviceId, config, fingerprint);
             }
         }
