@@ -174,3 +174,6 @@
 [DEBUG] Incoming request in ProtocolTranslation, index: 2
 [INFO] Removing request at filter with index: 2
 [INFO] ProtocolTranslation skips request...
+[INFO] EdgeControlApplication is starting ...
+[INFO] OtherFilter Filter initialized
+[INFO] ProtocolTranslation Filter initialized

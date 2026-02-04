@@ -58,7 +58,9 @@ public class OtherFilter implements PluginFilter {
     public void filter(HttpRequest request,
                        HttpResponse response,
                        PluginFilterChain chain) {
+
         logger.debug("Incoming request in " + name() + ", index: " + chain.getIndex());
+
         // register request
         requestHandler.register(request);
 

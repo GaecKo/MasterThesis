@@ -158,13 +158,15 @@ public class DeviceRegistry {
      *
      * @param config the device configuration to upsert
      */
-    public synchronized void upsert(DeviceConfig config) {
-        repository.save(config);
+    public synchronized String upsert(DeviceConfig config) {
+        String deviceId = repository.save(config);
+        config.setDeviceId(deviceId);
 
-        String deviceId = config.getDeviceId();
         String fingerprint = config.fingerprint();
 
         rebuild(deviceId, config, fingerprint);
+
+        return deviceId;
     }
 
 }
