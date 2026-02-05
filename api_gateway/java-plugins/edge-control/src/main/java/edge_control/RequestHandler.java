@@ -27,11 +27,11 @@ public class RequestHandler {
         skipRequest = new ConcurrentHashMap<>();
     }
 
-    void register(HttpRequest httpRequest) {
+    public void register(HttpRequest httpRequest) {
         skipRequest.putIfAbsent(httpRequest, false);
     }
 
-    boolean shouldSkipRequest(HttpRequest httpRequest, PluginFilterChain chain) {
+    public boolean shouldSkipRequest(HttpRequest httpRequest, PluginFilterChain chain) {
         boolean cont = skipRequest.get(httpRequest);
 
 
@@ -47,7 +47,7 @@ public class RequestHandler {
         return cont;
     }
 
-    void skipChain(HttpRequest httpRequest) {
+    public void skipChain(HttpRequest httpRequest) {
         skipRequest.put(httpRequest, true);
     }
 
