@@ -1,5 +1,6 @@
-package edge_control;
+package edge_control.filters;
 
+import edge_control.RequestHandler;
 import edge_control.device.DeviceManager;
 import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.exceptions.EdgeControlException;
@@ -72,9 +73,6 @@ public class DeviceConfigFilter implements PluginFilter {
             chain.filter(request, response);
             return;
         }
-
-        // Mark request as processed
-        request.setHeader("X-Processed-By", "Java-plugins:DeviceConfig");
 
         try {
             if (request.getPath().startsWith("/devices")) {
