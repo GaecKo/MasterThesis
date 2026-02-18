@@ -12,8 +12,8 @@ public class MqttDeviceAdapter implements DeviceAdapter {
     }
 
     @Override
-    public HttpResponse handle(HttpRequest request) throws Exception {
-        return null;
+    public void handleRequest(HttpRequest request, HttpResponse response) throws Exception {
+
     }
 
     @Override
