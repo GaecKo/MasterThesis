@@ -11,7 +11,7 @@ public interface DeviceAdapter {
     void init(DeviceConfig config) throws Exception;
 
     /** Handle a request coming from APISIX/backend */
-    HttpResponse handle(HttpRequest request) throws Exception;
+    void handleRequest(HttpRequest request, HttpResponse response) throws Exception;
 
     /** Optional: called on config reload or shutdown */
     default void shutdown() {}

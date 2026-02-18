@@ -5,7 +5,8 @@ import org.apache.apisix.plugin.runner.HttpResponse;
 
 import java.net.http.HttpRequest;
 
-public class HttpDeviceAdapter implements DeviceAdapter {
+public class TestAdapter implements DeviceAdapter {
+
     @Override
     public void init(DeviceConfig config) throws Exception {
 
@@ -14,10 +15,5 @@ public class HttpDeviceAdapter implements DeviceAdapter {
     @Override
     public void handleRequest(HttpRequest request, HttpResponse response) throws Exception {
 
-    }
-
-    @Override
-    public void shutdown() {
-        DeviceAdapter.super.shutdown();
     }
 }
