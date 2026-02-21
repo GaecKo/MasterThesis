@@ -44,6 +44,26 @@ public class BackendManager {
     }
 
     /**
+     * Add authorizations for a backend.
+     *
+     * @param requestBody the body fo the request containing the backend ID and authorization details
+     * @return true if addition was successful, false otherwise
+     */
+    public Document addBackendAuthorizationConfig(String requestBody) {
+        boolean succes = backendConfig.addBackendAuthorization(Document.parse(requestBody));
+        Document responseDoc = new Document();
+
+        if (succes) {
+            responseDoc.put("status", "success");
+            logger.info("Added backend authorization");
+        } else {
+            responseDoc.put("status", "failure");
+            logger.error("Failed to add backend authorization");
+        }
+        return responseDoc;
+    }
+
+    /**
      * Validates an API key for a backend.
      *
      * @param gatewayBackendId the backend ID

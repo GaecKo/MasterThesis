@@ -92,6 +92,10 @@ public class OnboardingFilter implements PluginFilter {
                         logger.debug("addBackend reached");
                         this.handleBackendCreation(request,response);
 
+                    } else if (request.getPath().endsWith("/backendAuthZ")) {
+                        logger.debug("authorization backend reached");
+                        this.handleBackendAuthorizationConfig(request,response);
+
                     }
                 } catch (Exception e) {
                     this.handleException(response, e);
@@ -118,6 +122,20 @@ public class OnboardingFilter implements PluginFilter {
         Document gatewayBackendInfo = backendManager.createBackend(request.getBody());
         response.setStatusCode(200);
         response.setBody(gatewayBackendInfo.toJson());
+        requestHandler.skipChain(request);
+    }
+
+    /**
+     * Handles the configuration of backend authorization based on the request body.
+     *
+     * @param request the incoming HTTP request containing the authorization configuration
+     * @param response the HTTP response to populate
+     * @throws CorruptedConfiguration if the configuration is invalid
+     */
+    private void handleBackendAuthorizationConfig(HttpRequest request, HttpResponse response) throws Exception {
+        Document resp = backendManager.addBackendAuthorizationConfig(request.getBody());
+        response.setStatusCode(200);
+        response.setBody(resp.toJson());
         requestHandler.skipChain(request);
     }
 
