@@ -2,6 +2,7 @@ package edge_control.filters;
 
 import edge_control.RequestHandler;
 import edge_control.backend.BackendManager;
+import edge_control.device.DeviceManager;
 import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.exceptions.IllegalOperation;
 import edge_control.exceptions.OperationNotSupported;
@@ -35,6 +36,9 @@ public class OnboardingFilter implements PluginFilter {
 
     private final BackendManager backendManager =
             BackendManager.getInstance();
+
+    private final DeviceManager deviceManager =
+            DeviceManager.getInstance();
 
     private static final RequestHandler requestHandler =
             RequestHandler.getInstance();
@@ -96,6 +100,10 @@ public class OnboardingFilter implements PluginFilter {
                         logger.debug("authorization backend reached");
                         this.handleBackendAuthorizationConfig(request,response);
 
+                    }else if (request.getPath().endsWith("/device")) {
+                        logger.debug("addDevice reached");
+                        this.handleDeviceCreation(request,response);
+
                     }
                 } catch (Exception e) {
                     this.handleException(response, e);
@@ -136,6 +144,20 @@ public class OnboardingFilter implements PluginFilter {
         Document resp = backendManager.addBackendAuthorizationConfig(request.getBody());
         response.setStatusCode(200);
         response.setBody(resp.toJson());
+        requestHandler.skipChain(request);
+    }
+
+    /**
+     * Handles the creation of a new device based on the request body.
+     *
+     * @param request the incoming HTTP request containing the device configuration
+     * @param response the HTTP response to populate
+     * @throws CorruptedConfiguration if the configuration is invalid
+     */
+    private void handleDeviceCreation(HttpRequest request, HttpResponse response) throws Exception {
+        Document gatewayDeviceInfo = deviceManager.createDevice(request.getBody());
+        response.setStatusCode(200);
+        response.setBody(gatewayDeviceInfo.toJson());
         requestHandler.skipChain(request);
     }
 
