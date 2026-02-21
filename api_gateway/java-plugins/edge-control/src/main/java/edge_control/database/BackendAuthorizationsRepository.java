@@ -23,19 +23,6 @@ public class BackendAuthorizationsRepository {
     private final MongoCollection<Document> backendAuthorizationCollection;
 
     /**
-     * Inner class to hold backend creation response (ID and API key)
-     */
-    public static class BackendCreationResult {
-        public final String gatewayBackendId;
-        public final String apiKey;
-
-        public BackendCreationResult(String gatewayBackendId, String apiKey) {
-            this.gatewayBackendId = gatewayBackendId;
-            this.apiKey = apiKey;
-        }
-    }
-
-    /**
      * Initializes the repository by connecting to the "devices" collection
      * in the configured MongoDB database.
      */
