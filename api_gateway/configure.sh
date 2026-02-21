@@ -21,7 +21,7 @@ error()   { echo -e "${RED}[ERROR]${RESET} $*"; }
 
 # Setup the device route:
 info "Setting route /devices with DeviceConfig plugin enabled..."
-curl -i http://127.0.0.1:9180/apisix/admin/routes/devices -H 'X-API-KEY: admin' -X PUT -d '
+curl -i http://127.0.0.1:9180/apisix/admin/routes/1 -H 'X-API-KEY: admin' -X PUT -d '
 {
     "uri": "/devices",
     "plugins": {
@@ -39,7 +39,7 @@ info "Test it with: curl http://127.0.0.1:9080/devices"
 
 # Setup the health route:
 info "Setting route /health with ProtocolTranslation plugin enabled..."
-curl -i http://127.0.0.1:9180/apisix/admin/routes/health -H 'X-API-KEY: admin' -X PUT -d '
+curl -i http://127.0.0.1:9180/apisix/admin/routes/2 -H 'X-API-KEY: admin' -X PUT -d '
 {
     "uri": "/health",
     "plugins": {
@@ -56,3 +56,20 @@ success "Route setup"
 info "Test it with: curl http://127.0.0.1:9080/health"
 
 
+# Setup backend addition onboarding route:
+info "Setting route /onboarding/backend with Onboarding filter enabled..."
+curl -i http://127.0.0.1:9180/apisix/admin/routes/3 -H 'X-API-KEY: admin' -X PUT -d '
+{
+    "uri": "/onboarding/backend",
+    "plugins": {
+        "ext-plugin-pre-req": {
+            "conf" : [
+                {"name": "Onboarding", "value": "{\"enable\":\"feature\"}"}
+            ]
+        }
+    }
+}'
+
+success "Route setup"
+# Check
+info "Test it with: curl http://127.0.0.1:9080/onboarding/backend"
