@@ -8,20 +8,20 @@ import edge_control.exceptions.EdgeControlException;
 import edge_control.logger.EdgeControlLogger;
 import org.json.JSONObject;
 
-public class DeviceManager {
+public class DeviceMappingManager {
 
-    private static DeviceManager instance;
+    private static DeviceMappingManager instance;
     private final DeviceRegistry deviceRegistry;
 
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
-    private DeviceManager(DeviceRegistry deviceRegistry) {
+    private DeviceMappingManager(DeviceRegistry deviceRegistry) {
         this.deviceRegistry = deviceRegistry;
     }
 
-    public static DeviceManager getInstance() {
+    public static DeviceMappingManager getInstance() {
         if (instance == null) {
-            instance = new DeviceManager(DeviceRegistry.getInstance());
+            instance = new DeviceMappingManager(DeviceRegistry.getInstance());
         }
         return instance;
     }

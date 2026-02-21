@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import edge_control.device.DeviceManager;
+import edge_control.device.DeviceMappingManager;
 import edge_control.logger.EdgeControlLogger;
 import edge_control.device.adapter.DeviceAdapter;
 import edge_control.exceptions.*;
@@ -32,8 +32,8 @@ public class ProtocolTranslationFilter implements PluginFilter {
     private final EdgeControlLogger logger =
             EdgeControlLogger.getInstance();
 
-    private final DeviceManager deviceManager =
-            DeviceManager.getInstance();
+    private final DeviceMappingManager deviceMappingManager =
+            DeviceMappingManager.getInstance();
 
     private static final RequestHandler requestHandler =
             RequestHandler.getInstance();
@@ -126,7 +126,7 @@ public class ProtocolTranslationFilter implements PluginFilter {
             return;
         }
 
-        DeviceAdapter adapter = deviceManager.get(deviceId);
+        DeviceAdapter adapter = deviceMappingManager.get(deviceId);
 
         if (adapter == null) {
             response.setStatusCode(404);
