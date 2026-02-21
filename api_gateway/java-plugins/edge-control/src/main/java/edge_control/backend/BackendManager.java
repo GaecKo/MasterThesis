@@ -1,5 +1,6 @@
 package edge_control.backend;
 
+import edge_control.database.BackendAuthorizationsRepository;
 import edge_control.database.BackendConfigRepository;
 import edge_control.logger.EdgeControlLogger;
 import org.bson.Document;
@@ -11,6 +12,8 @@ public class BackendManager {
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
     private final BackendConfigRepository backendConfig = new BackendConfigRepository();
+
+    private final BackendAuthorizationsRepository backendAuthorizations = new BackendAuthorizationsRepository();
 
     private BackendManager() {
         // Initialize database configuration on first instantiation
@@ -50,7 +53,7 @@ public class BackendManager {
      * @return true if addition was successful, false otherwise
      */
     public Document addBackendAuthorizationConfig(String requestBody) {
-        boolean succes = backendConfig.addBackendAuthorization(Document.parse(requestBody));
+        boolean succes = backendAuthorizations.addBackendAuthorization(Document.parse(requestBody));
         Document responseDoc = new Document();
 
         if (succes) {
