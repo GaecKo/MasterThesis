@@ -1,6 +1,7 @@
 package edge_control.device;
 
 import edge_control.database.BackendConfigRepository;
+import edge_control.database.DeviceAuthorizationsRepository;
 import edge_control.database.DeviceConfigRepository;
 import edge_control.logger.EdgeControlLogger;
 import org.bson.Document;
@@ -14,6 +15,8 @@ public class DeviceManager {
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
     private final DeviceConfigRepository deviceConfig = new DeviceConfigRepository();
+
+    private final DeviceAuthorizationsRepository deviceAuthorizations = new DeviceAuthorizationsRepository();
 
     private DeviceManager() {
         // Initialize database configuration on first instantiation
@@ -50,6 +53,26 @@ public class DeviceManager {
             responseDoc.put(deviceName, deviceInfo);
         });
 
+        return responseDoc;
+    }
+
+    /**
+     * Add authorizations for a device.
+     *
+     * @param requestBody the body fo the request containing the device ID and authorization details
+     * @return true if addition was successful, false otherwise
+     */
+    public Document addDeviceAuthorizationConfig(String requestBody) {
+        boolean succes = deviceAuthorizations.addDeviceAuthorization(Document.parse(requestBody));
+        Document responseDoc = new Document();
+
+        if (succes) {
+            responseDoc.put("status", "success");
+            logger.info("Added device authorization");
+        } else {
+            responseDoc.put("status", "failure");
+            logger.error("Failed to add device authorization");
+        }
         return responseDoc;
     }
 
