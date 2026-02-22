@@ -111,3 +111,22 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/5 -H 'X-API-KEY: admin' -X PUT
 success "Route setup"
 # Check
 info "Test it with: curl http://127.0.0.1:9080/onboarding/device"
+
+
+# Setup backend addition onboarding route:
+info "Setting route /onboarding/deviceAuthZ with Onboarding filter enabled..."
+curl -i http://127.0.0.1:9180/apisix/admin/routes/6 -H 'X-API-KEY: admin' -X PUT -d '
+{
+    "uri": "/onboarding/deviceAuthZ",
+    "plugins": {
+        "ext-plugin-pre-req": {
+            "conf" : [
+                {"name": "Onboarding", "value": "{\"enable\":\"feature\"}"}
+            ]
+        }
+    }
+}'
+
+success "Route setup"
+# Check
+info "Test it with: curl http://127.0.0.1:9080/onboarding/deviceAuthZ"

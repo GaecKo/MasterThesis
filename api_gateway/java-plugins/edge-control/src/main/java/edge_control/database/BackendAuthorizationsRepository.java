@@ -15,8 +15,8 @@ import java.util.UUID;
  * Repository for creation and modification of a backend entry from MongoDB.
  *
  * Responsibilities:
- * - Provides access to the "backendConfig" collection in MongoDB.
- * - Creates an entry in the collection for a backend along with its communication info.
+ * - Provides access to the "backendAuthorizations" collection in MongoDB.
+ * - Creates an entry in the collection for a backend along with its authorization info.
  */
 public class BackendAuthorizationsRepository {
 

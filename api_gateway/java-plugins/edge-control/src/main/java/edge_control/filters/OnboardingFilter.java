@@ -100,9 +100,13 @@ public class OnboardingFilter implements PluginFilter {
                         logger.debug("authorization backend reached");
                         this.handleBackendAuthorizationConfig(request,response);
 
-                    }else if (request.getPath().endsWith("/device")) {
+                    } else if (request.getPath().endsWith("/device")) {
                         logger.debug("addDevice reached");
                         this.handleDeviceCreation(request,response);
+
+                    } else if (request.getPath().endsWith("/deviceAuthZ")) {
+                        logger.debug("authorization device reached");
+                        this.handleDeviceAuthorizationConfig(request,response);
 
                     }
                 } catch (Exception e) {
@@ -158,6 +162,20 @@ public class OnboardingFilter implements PluginFilter {
         Document gatewayDeviceInfo = deviceManager.createDevice(request.getBody());
         response.setStatusCode(200);
         response.setBody(gatewayDeviceInfo.toJson());
+        requestHandler.skipChain(request);
+    }
+
+    /**
+     * Handles the configuration of device authorization based on the request body.
+     *
+     * @param request the incoming HTTP request containing the authorization configuration
+     * @param response the HTTP response to populate
+     * @throws CorruptedConfiguration if the configuration is invalid
+     */
+    private void handleDeviceAuthorizationConfig(HttpRequest request, HttpResponse response) throws Exception {
+        Document resp = deviceManager.addDeviceAuthorizationConfig(request.getBody());
+        response.setStatusCode(200);
+        response.setBody(resp.toJson());
         requestHandler.skipChain(request);
     }
 
