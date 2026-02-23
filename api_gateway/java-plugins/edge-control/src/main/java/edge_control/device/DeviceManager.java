@@ -1,58 +1,79 @@
 package edge_control.device;
 
-import edge_control.device.adapter.DeviceAdapter;
-import edge_control.device.config.DeviceConfig;
-import edge_control.device.registry.DeviceRegistry;
-import edge_control.exceptions.CorruptedConfiguration;
-import edge_control.exceptions.EdgeControlException;
+import edge_control.database.BackendConfigRepository;
+import edge_control.database.DeviceAuthorizationsRepository;
+import edge_control.database.DeviceConfigRepository;
 import edge_control.logger.EdgeControlLogger;
-import org.json.JSONObject;
+import org.bson.Document;
+
+import java.util.HashMap;
 
 public class DeviceManager {
 
     private static DeviceManager instance;
-    private final DeviceRegistry deviceRegistry;
 
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
-    private DeviceManager(DeviceRegistry deviceRegistry) {
-        this.deviceRegistry = deviceRegistry;
+    private final DeviceConfigRepository deviceConfig = new DeviceConfigRepository();
+
+    private final DeviceAuthorizationsRepository deviceAuthorizations = new DeviceAuthorizationsRepository();
+
+    private DeviceManager() {
+        // Initialize database configuration on first instantiation
+        logger.info("Database initialized");
     }
 
     public static DeviceManager getInstance() {
         if (instance == null) {
-            instance = new DeviceManager(DeviceRegistry.getInstance());
+            instance = new DeviceManager();
         }
         return instance;
     }
 
-    public void createAdapter(String requestBody) throws CorruptedConfiguration, EdgeControlException {
+    /**
+     * Creates a new device configuration and returns both the device ID and API key.
+     *
+     * @param body the device configuration JSON string
+     * @return a Document containing "gatewaydeviceId" and "apiKey"
+     */
+    public Document createDevice(String body) {
+        HashMap<String, DeviceConfigRepository.DeviceCreationResult> result =
+                deviceConfig.createDeviceConfig(Document.parse(body));
 
-        JSONObject config = new JSONObject(requestBody);
+        result.forEach((deviceName, creationResult) -> {
+            logger.info("Created device " + deviceName + "gatewayDeviceId: " + creationResult.gatewayDeviceId + " with API key: " + creationResult.apiKey);
+        });
 
-        if (!config.has("adapter")) {
-            throw new CorruptedConfiguration("The JSON file you provided misses the following field: 'adapter'" );
-        } else if (!config.has("deviceID")) {
-            throw new CorruptedConfiguration("The JSON file you provided misses the following field: 'deviceID'" );
+        // Return both ID and API key for each device
+        Document responseDoc = new Document();
+        result.forEach((deviceName, creationResult) -> {
+            Document deviceInfo = new Document();
+            deviceInfo.put("gatewayDeviceId", creationResult.gatewayDeviceId);
+            deviceInfo.put("apiKey", creationResult.apiKey);
+            responseDoc.put(deviceName, deviceInfo);
+        });
+
+        return responseDoc;
+    }
+
+    /**
+     * Add authorizations for a device.
+     *
+     * @param requestBody the body fo the request containing the device ID and authorization details
+     * @return true if addition was successful, false otherwise
+     */
+    public Document addDeviceAuthorizationConfig(String requestBody) {
+        boolean succes = deviceAuthorizations.addDeviceAuthorization(Document.parse(requestBody));
+        Document responseDoc = new Document();
+
+        if (succes) {
+            responseDoc.put("status", "success");
+            logger.info("Added device authorization");
+        } else {
+            responseDoc.put("status", "failure");
+            logger.error("Failed to add device authorization");
         }
-
-        String adapter = config.getString("adapter");
-        String deviceId = config.getString("deviceID");
-
-        logger.info("Creating adapter for device: " + deviceId);
-
-        deviceRegistry.upsert(new DeviceConfig(
-                deviceId,
-                adapter,
-                config
-        ));
-
+        return responseDoc;
     }
-
-    public DeviceAdapter get(String deviceId) {
-        return deviceRegistry.get(deviceId);
-    }
-
-
 
 }

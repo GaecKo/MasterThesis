@@ -1,9 +1,7 @@
 package edge_control.filters;
 
 import edge_control.RequestHandler;
-import edge_control.device.DeviceManager;
 import edge_control.exceptions.CorruptedConfiguration;
-import edge_control.exceptions.EdgeControlException;
 import edge_control.exceptions.IllegalOperation;
 import edge_control.exceptions.OperationNotSupported;
 import edge_control.logger.EdgeControlLogger;
