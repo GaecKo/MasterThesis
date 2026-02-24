@@ -32,18 +32,17 @@ public class DeviceTranslationManager {
 
         if (!config.has("adapter")) {
             throw new CorruptedConfiguration("The JSON file you provided misses the following field: 'adapter'" );
-        } else if (!config.has("deviceID")) {
-            throw new CorruptedConfiguration("The JSON file you provided misses the following field: 'deviceID'" );
+        } else if (!config.has("gatewayDeviceId")) {
+            throw new CorruptedConfiguration("The JSON file you provided misses the following field: 'gatewayDeviceId'" );
+        } else if (!config.has("commands")) {
+            throw new CorruptedConfiguration("The JSON file you provided misses the following field: 'commands'");
         }
 
-        String adapter = config.getString("adapter");
-        String deviceId = config.getString("deviceID");
+        String deviceId = config.getString("gatewayDeviceId");
 
         logger.info("Creating adapter for device: " + deviceId);
 
         deviceRegistry.upsert(new DeviceConfig(
-                deviceId,
-                adapter,
                 config
         ));
 

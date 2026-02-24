@@ -39,7 +39,7 @@ public class RequestHandler {
         // Index:             0 ->        1 ->        2 ->        3         -> 4
         // Action:               |  1st reg  |  check    | check + delete
         if (chain.getIndex() >= chain.getFilters().size() - 1) {
-            logger.info("Removing request at filter with index: " + chain.getIndex());
+            // logger.info("Removing request at filter with index: " + chain.getIndex());
             // remove request from our hashmap if it won't be used anymore
             skipRequest.remove(httpRequest);
         }

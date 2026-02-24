@@ -14,6 +14,8 @@ import edge_control.logger.EdgeControlLogger;
 import edge_control.device_translation.adapter.DeviceAdapter;
 import edge_control.exceptions.*;
 
+import java.util.Arrays;
+
 /**
  * APISIX plugin filter that handles protocol translation for devices.
  *
@@ -79,11 +81,6 @@ public class DeviceTranslationFilter implements PluginFilter {
             return;
         }
 
-
-//        logger.debug("Path: " + request.getPath());
-//        logger.debug("Method: " + request.getMethod());
-//        logger.debug("Source IP: " + request.getSourceIP());
-
         try {
 
             if (request.getPath().startsWith("/health")) {
@@ -91,17 +88,37 @@ public class DeviceTranslationFilter implements PluginFilter {
                 response.setStatusCode(200);
                 response.setBody("Health Check reacted!\n");
 
-            } else {
+            } else if (request.getPath().startsWith("/devices")) {
+                handleDeviceManagementRequest(request, response);
+            } else if (request.getPath().startsWith("/command")) {
                 // Device traffic
                 handleDeviceRequest(request, response);
-
+            } else {
+                throw new IllegalOperation("ProtocolTranslation filter is available for /devices and /command route.");
             }
         } catch (Exception e) {
             handleException(response, e);
+            requestHandler.skipChain(request);
         }
 
         // Continue APISIX chain
         chain.filter(request, response);
+    }
+
+    private void handleDeviceManagementRequest(HttpRequest request, HttpResponse response) throws OperationNotSupported, CorruptedConfiguration, EdgeControlException {
+        switch (request.getMethod()) {
+            case PUT: {
+                // create new Adapter and save config in db
+                deviceTranslationManager.createAdapter(request.getBody());
+                response.setStatusCode(200);
+                response.setBody("Device Translation Created");
+                requestHandler.skipChain(request);
+                break;
+            }
+            default: {
+                throw new OperationNotSupported("Method: " + request.getMethod() + " not supported on route /devices");
+            }
+        }
     }
 
     /**
@@ -148,6 +165,7 @@ public class DeviceTranslationFilter implements PluginFilter {
      */
     private void handleException(HttpResponse response, Exception e) {
         logger.error("Request failed: " + e);
+        // logger.debug("Stack trace: " + Arrays.toString(e.getStackTrace()));
 
         switch (e) {
             case CorruptedConfiguration corruptedConfiguration -> {

@@ -31,8 +31,8 @@ public class DevicesTranslationConfigRepository {
      * in the configured MongoDB database.
      */
     public DevicesTranslationConfigRepository() {
-        MongoDatabase db = MongoClientProvider.getDatabase("devices_translation_config");
-        this.collection = db.getCollection("devices");
+        MongoDatabase db = MongoClientProvider.getDatabase("edge_control");
+        this.collection = db.getCollection("deviceTranslationConfig");
     }
 
     /**
@@ -43,46 +43,33 @@ public class DevicesTranslationConfigRepository {
     public List<DeviceConfig> findAll() {
         List<DeviceConfig> result = new ArrayList<>();
         for (Document doc : collection.find()) {
-            result.add(fromDocument(doc));
+            result.add(new DeviceConfig(new JSONObject(doc.toJson())));
         }
         return result;
     }
 
     /**
-     * Converts a MongoDB Document into a DeviceConfig object.
-     *
-     * @param doc the MongoDB document representing a device
-     * @return the corresponding DeviceConfig object
-     */
-    private DeviceConfig fromDocument(Document doc) {
-        return new DeviceConfig(
-                doc.getString("deviceID"),
-                doc.getString("adapter"),
-                new JSONObject(doc.toJson())
-        );
-    }
-
-    /**
-     * Saves or updates a DeviceConfig in MongoDB.
+     * Saves or updates a object in MongoDB.
      * If a document with the same deviceId exists, it is replaced.
      * Otherwise, a new document is inserted with that deviceId.
      *
-     * @param config the DeviceConfig to persist
+     * @param config the DeviceConfig object to persist
      * @return the deviceId
      */
     public void save(DeviceConfig config) throws EdgeControlException {
 
-        if (config.getDeviceId() == null) {
-            throw new EdgeControlException("Internal error: deviceId must be provided in 'save(DeviceConfig)', but deviceConfig.getDeviceId() is null");
+        JSONObject configJson = config.getConfig();
+
+        if (configJson.getString("gatewayDeviceId") == null) {
+            throw new EdgeControlException("Internal error: gatewayDeviceId must be provided in 'save(RequestObject)', but is null");
         }
 
-        ObjectId id = new ObjectId(config.getDeviceId());
+        String gatewayDeviceId = configJson.getString("gatewayDeviceId");
 
-        Document doc = new Document(config.getConfig().toMap());
-        doc.put("_id", id);
+        Document doc = new Document(configJson.toMap());
 
         collection.replaceOne(
-                Filters.eq("_id", id),
+                Filters.eq("gatewayDeviceId", gatewayDeviceId),
                 doc,
                 new ReplaceOptions().upsert(true)
         );
