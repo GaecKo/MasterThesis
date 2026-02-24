@@ -50,7 +50,7 @@ public class DeviceRegistry {
         scheduler.scheduleAtFixedRate(
                 this::refresh,
                 5,          // initial delay
-                5,          // period
+                30,          // period
                 TimeUnit.SECONDS
         );
     }
@@ -97,8 +97,7 @@ public class DeviceRegistry {
             seen.add(deviceId);
 
             if (!fingerprint.equals(fingerprints.get(deviceId))) {
-                // logger.info("Rebuilding device: " + deviceId);
-                rebuild(deviceId, config, fingerprint);
+                rebuild(deviceId, config);
             }
         }
 
@@ -118,22 +117,23 @@ public class DeviceRegistry {
      *
      * @param deviceId the ID of the device
      * @param config the configuration to use
-     * @param fingerprint the configuration fingerprint
      */
     public void rebuild(String deviceId,
-                        DeviceConfig config,
-                        String fingerprint) {
+                        DeviceConfig config) {
+
         remove(deviceId);
 
-        DeviceAdapter adapter = adapterFactory.create(config.getAdapter());
+        DeviceAdapter adapter = adapterFactory.create(config);
         try {
             adapter.init(config);
         } catch (Exception e) {
             throw new RuntimeException("Failed to init device " + deviceId, e);
         }
 
+        // logger.debug("Rebuilding device: " + deviceId + "\n" + config);
+
         adapters.put(deviceId, adapter);
-        fingerprints.put(deviceId, fingerprint);
+        fingerprints.put(deviceId, config.fingerprint());
     }
 
     /**
@@ -158,10 +158,7 @@ public class DeviceRegistry {
     public synchronized void upsert(DeviceConfig config) throws EdgeControlException {
         repository.save(config);
 
-        String fingerprint = config.fingerprint();
-
-        rebuild(config.getDeviceId(), config, fingerprint);
-
+        rebuild(config.getDeviceId(), config);
     }
 
 }

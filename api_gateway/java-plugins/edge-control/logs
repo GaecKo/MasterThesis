@@ -1,0 +1,11 @@
+
+[INFO] EdgeControlApplication is starting ...
+[INFO] Database initialized
+[INFO] DeviceManager initialized
+[INFO] Onboarding Filter initialized
+[INFO] Initializing device adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172 with fingreprint: 7a547c603d706dbabdd9e8b323fbef5c
+[INFO] DeviceTranslation Filter initialized
+[INFO] Auth Filter initialized
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[INFO] Creating adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] Initializing device adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172 with fingreprint: 7a547c603d706dbabdd9e8b323fbef5c
