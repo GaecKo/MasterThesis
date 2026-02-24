@@ -1,4 +1,4 @@
-package edge_control.device.config;
+package edge_control.device_translation.config;
 
 import org.json.*;
 import org.springframework.util.DigestUtils;

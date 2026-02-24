@@ -1,9 +1,9 @@
-package edge_control.device.registry;
+package edge_control.device_translation.registry;
 
 import edge_control.database.DevicesTranslationConfigRepository;
-import edge_control.device.adapter.AdapterFactory;
-import edge_control.device.adapter.DeviceAdapter;
-import edge_control.device.config.DeviceConfig;
+import edge_control.device_translation.adapter.AdapterFactory;
+import edge_control.device_translation.adapter.DeviceAdapter;
+import edge_control.device_translation.config.DeviceConfig;
 import edge_control.exceptions.EdgeControlException;
 import edge_control.logger.EdgeControlLogger;
 

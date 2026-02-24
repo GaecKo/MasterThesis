@@ -1,12 +1,11 @@
-package edge_control.device.adapter;
+package edge_control.device_translation.adapter;
 
-import edge_control.device.config.DeviceConfig;
+import edge_control.device_translation.config.DeviceConfig;
 import org.apache.apisix.plugin.runner.HttpResponse;
 
 import java.net.http.HttpRequest;
 
-public class TestAdapter implements DeviceAdapter {
-
+public class HttpDeviceAdapter implements DeviceAdapter {
     @Override
     public void init(DeviceConfig config) throws Exception {
 
@@ -15,5 +14,10 @@ public class TestAdapter implements DeviceAdapter {
     @Override
     public void handleRequest(HttpRequest request, HttpResponse response) throws Exception {
 
+    }
+
+    @Override
+    public void shutdown() {
+        DeviceAdapter.super.shutdown();
     }
 }

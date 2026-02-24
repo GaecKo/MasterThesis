@@ -1,8 +1,8 @@
-package edge_control.device.adapter;
+package edge_control.device_translation.adapter;
 
 import java.net.http.HttpRequest;
 
-import edge_control.device.config.DeviceConfig;
+import edge_control.device_translation.config.DeviceConfig;
 import org.apache.apisix.plugin.runner.HttpResponse;
 
 public interface DeviceAdapter {

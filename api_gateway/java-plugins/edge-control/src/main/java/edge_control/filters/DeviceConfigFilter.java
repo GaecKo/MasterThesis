@@ -1,7 +1,7 @@
 package edge_control.filters;
 
 import edge_control.RequestHandler;
-import edge_control.device.DeviceMappingManager;
+import edge_control.device_translation.DeviceTranslationManager;
 import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.exceptions.EdgeControlException;
 import edge_control.exceptions.IllegalOperation;
@@ -24,8 +24,8 @@ public class DeviceConfigFilter implements PluginFilter {
     private final EdgeControlLogger logger =
             EdgeControlLogger.getInstance();
 
-    private final DeviceMappingManager deviceMappingManager =
-            DeviceMappingManager.getInstance();
+    private final DeviceTranslationManager deviceTranslationManager =
+            DeviceTranslationManager.getInstance();
 
     private static final RequestHandler requestHandler =
             RequestHandler.getInstance();
@@ -113,7 +113,7 @@ public class DeviceConfigFilter implements PluginFilter {
             // create new device
             case POST: {
 
-                deviceMappingManager.createAdapter(request.getBody());
+                deviceTranslationManager.createAdapter(request.getBody());
                 response.setStatusCode(200);
                 response.setBody("Device Adapter created!");
                 return;

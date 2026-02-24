@@ -1,27 +1,27 @@
-package edge_control.device;
+package edge_control.device_translation;
 
-import edge_control.device.adapter.DeviceAdapter;
-import edge_control.device.config.DeviceConfig;
-import edge_control.device.registry.DeviceRegistry;
+import edge_control.device_translation.adapter.DeviceAdapter;
+import edge_control.device_translation.config.DeviceConfig;
+import edge_control.device_translation.registry.DeviceRegistry;
 import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.exceptions.EdgeControlException;
 import edge_control.logger.EdgeControlLogger;
 import org.json.JSONObject;
 
-public class DeviceMappingManager {
+public class DeviceTranslationManager {
 
-    private static DeviceMappingManager instance;
+    private static DeviceTranslationManager instance;
     private final DeviceRegistry deviceRegistry;
 
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
-    private DeviceMappingManager(DeviceRegistry deviceRegistry) {
+    private DeviceTranslationManager(DeviceRegistry deviceRegistry) {
         this.deviceRegistry = deviceRegistry;
     }
 
-    public static DeviceMappingManager getInstance() {
+    public static DeviceTranslationManager getInstance() {
         if (instance == null) {
-            instance = new DeviceMappingManager(DeviceRegistry.getInstance());
+            instance = new DeviceTranslationManager(DeviceRegistry.getInstance());
         }
         return instance;
     }
