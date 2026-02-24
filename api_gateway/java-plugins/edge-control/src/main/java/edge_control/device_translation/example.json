@@ -1,0 +1,37 @@
+{
+  "gatewayDeviceId": "device_8bc8b045-14f1-4df6-9636-85d48dbcde7a",
+  "adapter": "http",
+  "commands": {
+    "setBatteryOperation": {
+      "name": "setBatteryOperation",
+      "endpoint": "https://api.teleport.withthegrid.com/v2/schedule/",
+      "method": "PUT",
+
+      "payloadTemplate": {
+        "type": "setBatteryOperation",
+        "operation": {
+          "dispatchPower": {},
+          "deliverFCR": {},
+          "chargeToState": {}
+        },
+        "startAt": null,
+        "endAt": null
+      },
+
+      "mappings": {
+        "activePower": "operation.dispatchPower.activePower",
+        "reactivePower": "operation.dispatchPower.reactivePower",
+        "maxRate": "operation.deliverFCR.maxRate",
+        "Percentage": "operation.chargeToState.percentage",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+
+      "cleanup": {
+        "putToNullEmptyObjects": true,
+        "removeEmptyObjects": false,
+        "removeNullFields": false
+      }
+    }
+  }
+}

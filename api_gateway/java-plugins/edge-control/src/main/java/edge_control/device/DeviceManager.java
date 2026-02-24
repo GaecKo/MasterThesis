@@ -19,8 +19,7 @@ public class DeviceManager {
     private final DeviceAuthorizationsRepository deviceAuthorizations = new DeviceAuthorizationsRepository();
 
     private DeviceManager() {
-        // Initialize database configuration on first instantiation
-        logger.info("Database initialized");
+        logger.info("DeviceManager initialized");
     }
 
     public static DeviceManager getInstance() {

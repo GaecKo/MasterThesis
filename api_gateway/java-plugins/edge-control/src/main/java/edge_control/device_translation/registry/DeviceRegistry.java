@@ -6,6 +6,7 @@ import edge_control.device_translation.adapter.DeviceAdapter;
 import edge_control.device_translation.config.DeviceConfig;
 import edge_control.exceptions.EdgeControlException;
 import edge_control.logger.EdgeControlLogger;
+import org.json.JSONObject;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
