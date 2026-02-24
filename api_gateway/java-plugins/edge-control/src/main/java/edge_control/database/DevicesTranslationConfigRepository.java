@@ -4,8 +4,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.ReplaceOptions;
-import edge_control.device.config.DeviceConfig;
-import edge_control.exceptions.CorruptedConfiguration;
+import edge_control.device_translation.config.DeviceConfig;
 import edge_control.exceptions.EdgeControlException;
 import org.bson.Document;
 

@@ -9,9 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import edge_control.device.DeviceMappingManager;
+import edge_control.device_translation.DeviceTranslationManager;
 import edge_control.logger.EdgeControlLogger;
-import edge_control.device.adapter.DeviceAdapter;
+import edge_control.device_translation.adapter.DeviceAdapter;
 import edge_control.exceptions.*;
 
 /**
@@ -24,16 +24,16 @@ import edge_control.exceptions.*;
  * - Marks requests as processed and continues the APISIX filter chain.
  */
 @Component
-public class ProtocolTranslationFilter implements PluginFilter {
+public class DeviceTranslationFilter implements PluginFilter {
 
     private static final Logger API_LOGGER =
-            LoggerFactory.getLogger(ProtocolTranslationFilter.class);
+            LoggerFactory.getLogger(DeviceTranslationFilter.class);
 
     private final EdgeControlLogger logger =
             EdgeControlLogger.getInstance();
 
-    private final DeviceMappingManager deviceMappingManager =
-            DeviceMappingManager.getInstance();
+    private final DeviceTranslationManager deviceTranslationManager =
+            DeviceTranslationManager.getInstance();
 
     private static final RequestHandler requestHandler =
             RequestHandler.getInstance();
@@ -41,9 +41,9 @@ public class ProtocolTranslationFilter implements PluginFilter {
     /**
      * Initializes the plugin and logs startup messages.
      */
-    ProtocolTranslationFilter() {
-        logger.info("ProtocolTranslation Filter initialized");
-        API_LOGGER.warn("ProtocolTranslation Filter is running");
+    DeviceTranslationFilter() {
+        logger.info("DeviceTranslation Filter initialized");
+        API_LOGGER.warn("DeviceTranslation Filter is running");
     }
 
     /**
@@ -53,7 +53,7 @@ public class ProtocolTranslationFilter implements PluginFilter {
      */
     @Override
     public String name() {
-        return "ProtocolTranslation";
+        return "DeviceTranslation";
     }
 
     /**
@@ -126,7 +126,7 @@ public class ProtocolTranslationFilter implements PluginFilter {
             return;
         }
 
-        DeviceAdapter adapter = deviceMappingManager.get(deviceId);
+        DeviceAdapter adapter = deviceTranslationManager.get(deviceId);
 
         if (adapter == null) {
             response.setStatusCode(404);

@@ -1,4 +1,4 @@
-package edge_control.device.adapter;
+package edge_control.device_translation.adapter;
 
 import java.util.Map;
 import java.util.function.Supplier;
