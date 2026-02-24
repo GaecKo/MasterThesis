@@ -1,9 +1,9 @@
 package edge_control.device_translation.adapter;
 
 import edge_control.device_translation.config.DeviceConfig;
+import org.apache.apisix.plugin.runner.HttpRequest;
 import org.apache.apisix.plugin.runner.HttpResponse;
 
-import java.net.http.HttpRequest;
 
 public class TestAdapter implements DeviceAdapter {
 

@@ -5,6 +5,7 @@ import org.apache.apisix.plugin.runner.HttpRequest;
 import org.apache.apisix.plugin.runner.HttpResponse;
 import org.apache.apisix.plugin.runner.filter.PluginFilter;
 import org.apache.apisix.plugin.runner.filter.PluginFilterChain;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -132,28 +133,29 @@ public class DeviceTranslationFilter implements PluginFilter {
     private void handleDeviceRequest(HttpRequest request,
                                      HttpResponse response) throws Exception {
 
-        // TODO: move this to deviceManager
-        String deviceId = request.getHeader("X-Device-Id");
+        // TODO: move this to other class
+        JSONObject config = new JSONObject(request.getBody());
 
-        if (deviceId == null || deviceId.isBlank()) {
+        if (!config.has("gatewayDeviceId")) {
             logger.debug("No device ID...");
             response.setStatusCode(400);
-            response.setHeader("X-Error", "Missing X-Device-Id header");
-            response.setBody("X-Error: Missing X-Device-Id header");
+            response.setHeader("X-Error", "Missing gatewayDeviceId in request body");
+            response.setBody("X-Error: Missing gatewayDeviceId in body");
             return;
         }
+        String gatewayDeviceId = config.getString("gatewayDeviceId");
 
-        DeviceAdapter adapter = deviceTranslationManager.get(deviceId);
+        DeviceAdapter adapter = deviceTranslationManager.get(gatewayDeviceId);
 
         if (adapter == null) {
             response.setStatusCode(404);
-            response.setHeader("X-Error", "Unknown device: " + deviceId);
-            response.setBody("X-Error: Unknown device: ");
+            response.setHeader("X-Error", "Unknown device - no adapter linked: " + gatewayDeviceId);
+            response.setBody("X-Error: Unknown device - no adapter linked: " + gatewayDeviceId);
             return;
         }
 
         // TODO: future request handling via adapter
-        logger.debug("Request routed to device" + deviceId);
+        adapter.handleRequest(request, response);
     }
 
     /**
