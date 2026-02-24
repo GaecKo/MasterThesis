@@ -27,7 +27,7 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/1 -H 'X-API-KEY: admin' -X PUT
     "plugins": {
         "ext-plugin-pre-req": {
             "conf" : [
-                {"name": "DeviceConfig", "value": "{\"enable\":\"feature\"}"}
+                {"name": "DeviceTranslation", "value": "{\"enable\":\"feature\"}"}
             ]
         }
     }
@@ -45,7 +45,7 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/2 -H 'X-API-KEY: admin' -X PUT
     "plugins": {
         "ext-plugin-pre-req": {
             "conf" : [
-                {"name": "ProtocolTranslation", "value": "{\"enable\":\"feature\"}"}
+                {"name": "DeviceTranslation", "value": "{\"enable\":\"feature\"}"}
             ]
         }
     }
