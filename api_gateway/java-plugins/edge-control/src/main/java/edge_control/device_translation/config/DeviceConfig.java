@@ -16,7 +16,10 @@ public class DeviceConfig {
     }
 
     public String fingerprint() {
-        return DigestUtils.md5DigestAsHex(config.toString().getBytes());
+        Object o = config.remove("_id");
+        String fingerprint = DigestUtils.md5DigestAsHex(config.toString().getBytes());
+        config.put("_id", o);
+        return fingerprint;
     }
 
     public JSONObject getConfig() {
@@ -29,5 +32,10 @@ public class DeviceConfig {
 
     public String getAdapter() {
         return adapter;
+    }
+
+    @Override
+    public String toString() {
+        return config.toString();
     }
 }
