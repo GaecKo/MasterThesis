@@ -123,6 +123,14 @@ public class OnboardingFilter implements PluginFilter {
                     this.handleException(response, e);
                 }
             } case DELETE -> {
+                try {
+                    if (request.getPath().endsWith("/backendAuthZ")) {
+                        logger.debug("authorization backend reached");
+                        this.handleBackendAuthorizationConfig(request,response, "DELETE");
+                    }
+                } catch (Exception e) {
+                    this.handleException(response, e);
+                }
 
             } case GET -> {
 
@@ -164,6 +172,8 @@ public class OnboardingFilter implements PluginFilter {
             resp = backendManager.addBackendAuthorizationConfig(request.getBody());
         } else if (method.equals("PATCH")){
             resp = backendManager.updateBackendAuthorizationConfig(request.getBody());
+        } else if (method.equals("DELETE")){
+            resp = backendManager.deleteBackendAuthorizationConfig(request.getBody());
         }
 
         if (resp.get("status").equals("success")){

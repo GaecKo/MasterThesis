@@ -136,4 +136,26 @@ public class BackendAuthorizationsRepository {
         return true;
     }
 
+    /**
+     * Deletes a backend authorization entry from the database (DELETE operation).
+     * This function removes the entire entry for a backend, including all its authorization details.
+     * @param requestBody the ID of the backend to delete
+     * @return true if the operation was successful, false otherwise
+     */
+    public boolean deleteBackendAuthorization(Document requestBody) {
+        String backendId = requestBody.getString("gatewayBackendId");
+        if (backendId == null) {
+            return false;
+        }
+
+        Document filter = new Document("gatewayBackendId", backendId);
+        try {
+            backendAuthorizationCollection.deleteOne(filter);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+
+    }
+
 }
