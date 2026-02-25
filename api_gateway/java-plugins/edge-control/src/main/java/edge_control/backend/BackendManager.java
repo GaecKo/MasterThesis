@@ -93,6 +93,29 @@ public class BackendManager {
     }
 
     /**
+     * Deletes a backend entry and all related authorization entries from the database.
+     * Removes the backend entry and all related authorization entries from the database.
+     *
+     * @param requestBody the ID of the backend to delete
+     * @return a Document with status and message
+     */
+    public Document deleteBackendAuthorizationConfig(String requestBody) {
+        boolean success = backendAuthorizations.deleteBackendAuthorization(Document.parse(requestBody));
+        Document responseDoc = new Document();
+
+        if (success) {
+            responseDoc.put("status", "success");
+            responseDoc.put("message", "Backend and related authorizations deleted successfully.");
+            logger.info("Deleted backend and related authorizations");
+        } else {
+            responseDoc.put("status", "failure");
+            responseDoc.put("message", "Failed to delete backend. Backend may not exist or invalid request format.");
+            logger.error("Failed to delete backend. Backend may not exist.");
+        }
+        return responseDoc;
+    }
+
+    /**
      * Validates an API key for a backend.
      *
      * @param gatewayBackendId the backend ID
