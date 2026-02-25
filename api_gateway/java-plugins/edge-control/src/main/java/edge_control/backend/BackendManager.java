@@ -47,21 +47,47 @@ public class BackendManager {
     }
 
     /**
-     * Add authorizations for a backend.
+     * Add a new backend authorization entry (POST operation).
+     * Creates a new entry for a backend with initial authorization details.
      *
-     * @param requestBody the body fo the request containing the backend ID and authorization details
-     * @return true if addition was successful, false otherwise
+     * @param requestBody the body of the request containing the backend ID and authorization details
+     * @return a Document with status and message
      */
     public Document addBackendAuthorizationConfig(String requestBody) {
-        boolean succes = backendAuthorizations.addBackendAuthorization(Document.parse(requestBody));
+        boolean success = backendAuthorizations.addBackendAuthorization(Document.parse(requestBody));
         Document responseDoc = new Document();
 
-        if (succes) {
+        if (success) {
             responseDoc.put("status", "success");
-            logger.info("Added backend authorization");
+            responseDoc.put("message", "Backend authorization entry added successfully.");
+            logger.info("Added new backend authorization entry");
         } else {
             responseDoc.put("status", "failure");
-            logger.error("Failed to add backend authorization");
+            responseDoc.put("message", "Failed to add backend authorization entry. Backend may already exist or invalid request format.");
+            logger.error("Failed to add new backend authorization entry. Backend may already exist.");
+        }
+        return responseDoc;
+    }
+
+    /**
+     * Update an existing backend authorization entry (PATCH operation).
+     * Modifies authorization details for an existing backend.
+     *
+     * @param requestBody the body of the request containing the backend ID and authorization details
+     * @return a Document with status and message
+     */
+    public Document updateBackendAuthorizationConfig(String requestBody) {
+        boolean success = backendAuthorizations.updateBackendAuthorization(Document.parse(requestBody));
+        Document responseDoc = new Document();
+
+        if (success) {
+            responseDoc.put("status", "success");
+            responseDoc.put("message", "Backend authorization updated successfully.");
+            logger.info("Updated backend authorization");
+        } else {
+            responseDoc.put("status", "failure");
+            responseDoc.put("message", "Failed to update backend authorization. Backend may not exist or invalid request format.");
+            logger.error("Failed to update backend authorization");
         }
         return responseDoc;
     }
@@ -77,3 +103,4 @@ public class BackendManager {
         return backendConfig.validateApiKey(gatewayBackendId, apiKey);
     }
 }
+
