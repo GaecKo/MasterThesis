@@ -4,12 +4,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.util.Base64;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Repository for creation and modification of a backend entry from MongoDB.
@@ -32,13 +27,13 @@ public class BackendAuthorizationsRepository {
     }
 
     /**
-    * Adds backend authorization details to the database.
-    *
-    * @param requestBody the request body containing backend ID and authorization details
-    * @return true if the operation was successful, false otherwise
-    */
+     * Creates a new backend authorization entry in the database (POST operation).
+     * This function inserts a fresh entry with initial authorization details.
+     *
+     * @param requestBody the request body containing backend ID and authorization details
+     * @return true if the operation was successful, false otherwise
+     */
     public boolean addBackendAuthorization(Document requestBody) {
-
         String backendId = requestBody.getString("gatewayBackendId");
         Document newAuths = (Document) requestBody.get("listOfAuthorizations");
 
@@ -46,30 +41,97 @@ public class BackendAuthorizationsRepository {
             return false;
         }
 
-        // Build dynamic update for each device
-        Document addToSetDoc = new Document();
+        // Check if backend authorization entry already exists
+        Document existingEntry = backendAuthorizationCollection.find(
+                new Document("gatewayBackendId", backendId)
+        ).first();
 
-        for (String deviceId : newAuths.keySet()) {
-            Object commandsObj = newAuths.get(deviceId);
+        if (existingEntry != null) {
+            // Entry already exists, use update instead
+            return false;
+        }
 
-            if (commandsObj instanceof List<?>) {
-                List<?> commands = (List<?>) commandsObj;
+        // Create new document with initial authorizations
+        Document newDocument = new Document();
+        newDocument.put("gatewayBackendId", backendId);
+        newDocument.put("listOfAuthorizations", newAuths);
 
-                addToSetDoc.put(
-                        "listOfAuthorizations." + deviceId,
-                        new Document("$each", commands)
-                );
+        try {
+            backendAuthorizationCollection.insertOne(newDocument);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Updates an existing backend authorization entry in the database (PATCH operation).
+     * This function adds or removes authorization details for an existing backend.
+     *
+     * Note: If the same field is being both added to and removed from, we split this into
+     * two separate operations to avoid MongoDB conflicts.
+     *
+     * @param requestBody the request body containing backend ID and authorization details to add/remove
+     * @return true if the operation was successful, false otherwise
+     */
+    public boolean updateBackendAuthorization(Document requestBody) {
+        String backendId = requestBody.getString("gatewayBackendId");
+        Document authsToAdd = (Document) requestBody.get("listOfAuthorizationsToAdd");
+        Document authsToRemove = (Document) requestBody.get("listOfAuthorizationsToRemove");
+
+        // At least one of the lists must be present
+        if (backendId == null || (authsToAdd == null && authsToRemove == null)) {
+            return false;
+        }
+
+        Document filter = new Document("gatewayBackendId", backendId);
+
+        // Step 1: Remove authorizations first (if any)
+        if (authsToRemove != null && !authsToRemove.isEmpty()) {
+            Document pullDoc = new Document();
+
+            for (String deviceId : authsToRemove.keySet()) {
+                Object commandsObj = authsToRemove.get(deviceId);
+
+                if (commandsObj instanceof List<?>) {
+                    List<?> commands = (List<?>) commandsObj;
+
+                    pullDoc.put(
+                            "listOfAuthorizations." + deviceId,
+                            new Document("$in", commands)
+                    );
+                }
+            }
+
+            if (!pullDoc.isEmpty()) {
+                Document updateDocRemove = new Document("$pull", pullDoc);
+                backendAuthorizationCollection.updateOne(filter, updateDocRemove);
             }
         }
 
-        Document update = new Document("$addToSet", addToSetDoc);
+        // Step 2: Add authorizations after (if any)
+        // Separated to avoid conflict when adding/removing from same field
+        if (authsToAdd != null && !authsToAdd.isEmpty()) {
+            Document addToSetDoc = new Document();
 
-        // Upsert = insert if not exists
-        backendAuthorizationCollection.updateOne(
-                new Document("gatewayBackendId", backendId),
-                update,
-                new com.mongodb.client.model.UpdateOptions().upsert(true)
-        );
+            for (String deviceId : authsToAdd.keySet()) {
+                Object commandsObj = authsToAdd.get(deviceId);
+
+                if (commandsObj instanceof List<?>) {
+                    List<?> commands = (List<?>) commandsObj;
+
+                    addToSetDoc.put(
+                            "listOfAuthorizations." + deviceId,
+                            new Document("$each", commands)
+                    );
+                }
+            }
+
+            if (!addToSetDoc.isEmpty()) {
+                Document updateDocAdd = new Document("$addToSet", addToSetDoc);
+                backendAuthorizationCollection.updateOne(filter, updateDocAdd);
+            }
+        }
 
         return true;
     }

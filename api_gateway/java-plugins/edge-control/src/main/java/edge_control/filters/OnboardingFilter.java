@@ -98,7 +98,7 @@ public class OnboardingFilter implements PluginFilter {
 
                     } else if (request.getPath().endsWith("/backendAuthZ")) {
                         logger.debug("authorization backend reached");
-                        this.handleBackendAuthorizationConfig(request,response);
+                        this.handleBackendAuthorizationConfig(request,response, "POST");
 
                     } else if (request.getPath().endsWith("/device")) {
                         logger.debug("addDevice reached");
@@ -112,6 +112,20 @@ public class OnboardingFilter implements PluginFilter {
                 } catch (Exception e) {
                     this.handleException(response, e);
                 }
+            } case PATCH -> {
+                try {
+                    if (request.getPath().endsWith("/backendAuthZ")) {
+                        logger.debug("authorization backend reached");
+                        this.handleBackendAuthorizationConfig(request,response, "PATCH");
+
+                    }
+                } catch (Exception e) {
+                    this.handleException(response, e);
+                }
+            } case DELETE -> {
+
+            } case GET -> {
+
             }
             default -> {
                 logger.debug("Received unsupported HTTP method: " + request.getMethod());
@@ -144,9 +158,19 @@ public class OnboardingFilter implements PluginFilter {
      * @param response the HTTP response to populate
      * @throws CorruptedConfiguration if the configuration is invalid
      */
-    private void handleBackendAuthorizationConfig(HttpRequest request, HttpResponse response) throws Exception {
-        Document resp = backendManager.addBackendAuthorizationConfig(request.getBody());
-        response.setStatusCode(200);
+    private void handleBackendAuthorizationConfig(HttpRequest request, HttpResponse response, String method) throws Exception {
+        Document resp = new Document();
+        if (method.equals("POST")){
+            resp = backendManager.addBackendAuthorizationConfig(request.getBody());
+        } else if (method.equals("PATCH")){
+            resp = backendManager.updateBackendAuthorizationConfig(request.getBody());
+        }
+
+        if (resp.get("status").equals("success")){
+            response.setStatusCode(200);
+        } else {
+            response.setStatusCode(400);
+        }
         response.setBody(resp.toJson());
         requestHandler.skipChain(request);
     }
