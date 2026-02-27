@@ -75,4 +75,25 @@ public class DeviceManager {
         return responseDoc;
     }
 
+    /**
+     * Remove gatewayBackendId from device authorization entry.
+     *
+     * @param requestBody the body of the request containing the device ID and backend ID to remove
+     * @return true if removal was successful, false otherwise
+     */
+    public Document removeAllBackendsFromAuthorization(String requestBody) {
+        boolean succes = deviceAuthorizations.removeBackendFromDeviceAuthorizations(Document.parse(requestBody));
+        Document responseDoc = new Document();
+
+        if (succes) {
+            responseDoc.put("status", "success");
+            logger.info("Removed device authorization");
+        } else {
+            responseDoc.put("status", "failure");
+            logger.error("Failed to remove device authorization");
+        }
+
+        return responseDoc;
+    }
+
 }
