@@ -69,7 +69,7 @@ public class DeviceConfigRepository {
 
             // Create a MongoDB document with the gatewaydeviceId, hashed API key, and the provided config
             Document finalDoc = new Document();
-            finalDoc.put("gatewaydeviceId", gatewayDeviceId);
+            finalDoc.put("gatewayDeviceId", gatewayDeviceId);
             finalDoc.put("apiKeyHash", hashedApiKey);
             finalDoc.putAll(deviceInfo);
 
@@ -81,6 +81,26 @@ public class DeviceConfigRepository {
 
         return responseMap;
 
+    }
+
+    /**
+     * Delete a device configuration from the database based on the provided gatewayBackendId.
+     * Removes the corresponding document from the "deviceConfig" collection.
+     * @param requestBody the request body containing the gatewayDeviceId to delete
+     * @return true if the deletion was successful, false otherwise
+     */
+    public boolean deleteDeviceConfig(Document requestBody) {
+        String gatewayDeviceId = requestBody.getString("gatewayDeviceId");
+        if (gatewayDeviceId == null) {
+            return false;
+        }
+
+        try {
+            deviceConfigCollection.deleteOne(new Document("gatewayDeviceId", gatewayDeviceId));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /**

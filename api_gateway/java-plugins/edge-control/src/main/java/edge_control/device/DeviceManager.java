@@ -56,6 +56,33 @@ public class DeviceManager {
     }
 
     /**
+     * Deletes a backend configuration and all related authorizations.
+     * @param requestBody the ID of the backend to delete
+     * @return a Document with status and message
+     */
+    public Document deleteDevice(String requestBody) {
+        boolean authzSuccess = deviceAuthorizations.deleteDeviceAuthorization(Document.parse(requestBody));
+        boolean configSuccess = deviceConfig.deleteDeviceConfig(Document.parse(requestBody));
+        Document responseDoc = new Document();
+
+        if (authzSuccess && configSuccess){
+            responseDoc.put("status", "success");
+            responseDoc.put("message", "Deleted the backend configuration and all related authorizations.");
+        } else if (!authzSuccess && !configSuccess) {
+            responseDoc.put("status", "failure");
+            responseDoc.put("message", "Failed to delete backend configuration and related authorizations. Backend may not exist or invalid request format.");
+        } else if (!authzSuccess) {
+            responseDoc.put("status", "partial_failure");
+            responseDoc.put("message", "Failed to delete related authorizations. Backend configuration deleted successfully.");
+        } else {
+            responseDoc.put("status", "partial_failure");
+            responseDoc.put("message", "Failed to delete backend configuration. Related authorizations deleted successfully.");
+        }
+
+        return responseDoc;
+    }
+
+    /**
      * Add authorizations for a device.
      *
      * @param requestBody the body fo the request containing the device ID and authorization details
@@ -101,7 +128,7 @@ public class DeviceManager {
     /**
      * Remove gatewayBackendId from device authorization entry.
      *
-     * @param requestBody the body of the request containing the device ID and backend ID to remove
+     * @param requestBody the body of the request containing the backend ID to remove
      * @return true if removal was successful, false otherwise
      */
     public Document removeAllBackendsFromAuthorization(String requestBody) {

@@ -158,4 +158,34 @@ public class BackendAuthorizationsRepository {
 
     }
 
+    /**
+     * Removes all gatewayDeviceId from the list of authorizations for all the backends.
+     * This is used when a device is deleted to ensure that no device retains an authorization for a non-existent device.
+     * The entire field (deviceId key) is removed from listOfAuthorizations, not just emptied.
+     *
+     * @param requestBody the ID of the device to remove from backend authorizations
+     * @return true if the operation was successful, false otherwise
+     */
+    public boolean removeDeviceFromBackendAuthorizations(Document requestBody) {
+        String deviceId = requestBody.getString("gatewayDeviceId");
+
+        if (deviceId == null) {
+            return false;
+        }
+
+        // Filter: find all documents that have this deviceId in listOfAuthorizations
+        Document filter = new Document("listOfAuthorizations." + deviceId, new Document("$exists", true));
+
+        // Update: use $unset to completely remove the field
+        Document unsetDoc = new Document("listOfAuthorizations." + deviceId, "");
+        Document updateDoc = new Document("$unset", unsetDoc);
+
+        try {
+            backendAuthorizationCollection.updateMany(filter, updateDoc);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 }

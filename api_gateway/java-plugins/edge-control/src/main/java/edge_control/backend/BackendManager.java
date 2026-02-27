@@ -143,6 +143,29 @@ public class BackendManager {
     }
 
     /**
+     * Remove gatewayDeviceId and info from backend authorization entry.
+     *
+     * @param requestBody the body of the request containing the device ID to remove
+     * @return true if removal was successful, false otherwise
+     */
+    public Document removeAllDevicesFromAuthorization(String requestBody) {
+        boolean success = backendAuthorizations.removeDeviceFromBackendAuthorizations(Document.parse(requestBody));
+        Document responseDoc = new Document();
+
+        if (success) {
+            responseDoc.put("status", "success");
+            responseDoc.put("message", "Removed device from backend authorizations successfully.");
+            logger.info("Removed device from backend authorizations");
+        } else {
+            responseDoc.put("status", "failure");
+            responseDoc.put("message", "Failed to remove device from backend authorizations. Device may not exist or invalid request format.");
+            logger.error("Failed to remove device from backend authorizations");
+        }
+        return responseDoc;
+    }
+
+
+    /**
      * Validates an API key for a backend.
      *
      * @param gatewayBackendId the backend ID
