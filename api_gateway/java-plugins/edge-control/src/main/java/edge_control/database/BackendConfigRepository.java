@@ -73,6 +73,41 @@ public class BackendConfigRepository {
     }
 
     /**
+     * Update an existing backend configuration in the database based on the provided gatewayBackendId.
+     * Modifies communication details for an existing backend.
+     *
+     * @param requestBody the body of the request containing the backend ID and updated configuration details
+     * @return true if the update was successful, false otherwise
+     */
+    public boolean updateBackendConfig(Document requestBody) {
+        String gatewayBackendId = requestBody.getString("gatewayBackendId");
+        if (gatewayBackendId == null) {
+            return false;
+        }
+
+        Document updateDoc = new Document();
+        for (String key : requestBody.keySet()) {
+            if (!key.equals("gatewayBackendId")) {
+                updateDoc.put(key, requestBody.get(key));
+            }
+        }
+
+        if (updateDoc.isEmpty()) {
+            return false; // No fields to update
+        }
+
+        try {
+            backendConfigCollection.updateOne(
+                new Document("gatewayBackendId", gatewayBackendId),
+                new Document("$set", updateDoc)
+            );
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
      * Delete a backend configuration from the database based on the provided gatewayBackendId.
      * Removes the corresponding document from the "backendConfig" collection.
      * @param requestBody the request body containing the gatewayBackendId to delete

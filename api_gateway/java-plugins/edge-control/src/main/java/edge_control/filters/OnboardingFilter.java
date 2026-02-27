@@ -114,7 +114,10 @@ public class OnboardingFilter implements PluginFilter {
                 }
             } case PATCH -> {
                 try {
-                    if (request.getPath().endsWith("/backendAuthZ")) {
+                    if (request.getPath().endsWith("/backend")) {
+                        logger.debug("patchBackend reached");
+                        this.handleBackendCommunicationConfig(request, response, "PATCH");
+                    } else if (request.getPath().endsWith("/backendAuthZ")) {
                         logger.debug("patch authorization backend reached");
                         this.handleBackendAuthorizationConfig(request,response, "PATCH");
 
@@ -172,6 +175,8 @@ public class OnboardingFilter implements PluginFilter {
 
         if (method.equals("POST")) {
             gatewayBackendInfo = backendManager.createBackend(request.getBody());
+        } else if (method.equals("PATCH")) {
+            gatewayBackendInfo = backendManager.updateBackend(request.getBody());
         } else if (method.equals("DELETE")) {
             gatewayBackendInfo = backendManager.deleteBackend(request.getBody());
             gatewayDeviceAuthzInfo = deviceManager.removeAllBackendsFromAuthorization(request.getBody());
