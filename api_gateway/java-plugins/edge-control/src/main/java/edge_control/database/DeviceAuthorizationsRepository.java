@@ -35,7 +35,7 @@ public class DeviceAuthorizationsRepository {
     public boolean addDeviceAuthorization(Document requestBody) {
 
         String deviceId = requestBody.getString("gatewayDeviceId");
-        List<String> backendIds = (List<String>) requestBody.get("listOfAuthorizations");
+        List<String> backendIds = requestBody.getList("listOfAuthorizations", String.class);
 
         if (deviceId == null || backendIds == null || backendIds.isEmpty()) {
             return false;
@@ -48,6 +48,50 @@ public class DeviceAuthorizationsRepository {
 
         // Insert the document into MongoDB
         this.deviceAuthorizationCollection.insertOne(finalDoc);
+
+        return true;
+    }
+
+    /**
+     * Updates an existing backend authorization entry in the database (PATCH operation).
+     * This function adds or removes authorization details for an existing backend.
+     *
+     * Note: If the same field is being both added to and removed from, we split this into
+     * two separate operations to avoid MongoDB conflicts.
+     *
+     * @param requestBody the request body containing backend ID and authorization details to add/remove
+     * @return true if the operation was successful, false otherwise
+     */
+    public boolean updateDeviceAuthorization(Document requestBody) {
+        String deviceId = requestBody.getString("gatewayDeviceId");
+        List<String> authsToAdd = requestBody.getList("listOfAuthorizationsToAdd", String.class);
+        List<String> authsToRemove = requestBody.getList("listOfAuthorizationsToRemove", String.class);
+
+        // At least one of the lists must be present
+        if (deviceId == null || (authsToAdd == null && authsToRemove == null)) {
+            return false;
+        }
+
+        Document filter = new Document("gatewayDeviceId", deviceId);
+
+        // Step 1: Remove authorizations first (if any)
+        if (authsToRemove != null && !authsToRemove.isEmpty()) {
+            Document updateDocRemove = new Document(
+                "$pull",
+                new Document("listOfAuthorizations", new Document("$in", authsToRemove))
+            );
+            deviceAuthorizationCollection.updateOne(filter, updateDocRemove);
+        }
+
+        // Step 2: Add authorizations after (if any)
+        // Separated to avoid conflict when adding/removing from same field
+        if (authsToAdd != null && !authsToAdd.isEmpty()) {
+            Document updateDocAdd = new Document(
+                "$addToSet",
+                new Document("listOfAuthorizations", new Document("$each", authsToAdd))
+            );
+            deviceAuthorizationCollection.updateOne(filter, updateDocAdd);
+        }
 
         return true;
     }
