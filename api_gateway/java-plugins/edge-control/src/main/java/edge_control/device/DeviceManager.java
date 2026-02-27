@@ -103,6 +103,26 @@ public class DeviceManager {
     }
 
     /**
+     * Update device authorization details for a specific device.
+     *
+     * @param requestBody the body of the request containing the device ID and updated authorization details
+     * @return true if update was successful, false otherwise
+     */
+    public Document updateDeviceAuthorizationConfig(String requestBody) {
+        boolean succes = deviceAuthorizations.updateDeviceAuthorization(Document.parse(requestBody));
+        Document responseDoc = new Document();
+
+        if (succes) {
+            responseDoc.put("status", "success");
+            logger.info("Updated device authorization");
+        } else {
+            responseDoc.put("status", "failure");
+            logger.error("Failed to update device authorization");
+        }
+        return responseDoc;
+    }
+
+    /**
      * Delete a device entry in deviceAUthorizations collection.
      * This is used when a device is deleted to ensure that no authorization entry remains for a non-existent device.
      *

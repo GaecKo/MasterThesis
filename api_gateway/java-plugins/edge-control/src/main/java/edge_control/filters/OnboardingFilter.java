@@ -118,6 +118,10 @@ public class OnboardingFilter implements PluginFilter {
                         logger.debug("patch authorization backend reached");
                         this.handleBackendAuthorizationConfig(request,response, "PATCH");
 
+                    } else if (request.getPath().endsWith("/deviceAuthZ")) {
+                        logger.debug("patch authorization device reached");
+                        this.handleDeviceAuthorizationConfig(request,response, "PATCH");
+
                     }
                 } catch (Exception e) {
                     this.handleException(response, e);
@@ -268,6 +272,8 @@ public class OnboardingFilter implements PluginFilter {
         Document resp = new Document();
         if (method.equals("POST")){
             resp = deviceManager.addDeviceAuthorizationConfig(request.getBody());
+        } else if (method.equals("PATCH")) {
+            resp = deviceManager.updateDeviceAuthorizationConfig(request.getBody());
         } else if (method.equals("DELETE")){
             resp = deviceManager.deleteDeviceAuthorizationConfig(request.getBody());
         }
