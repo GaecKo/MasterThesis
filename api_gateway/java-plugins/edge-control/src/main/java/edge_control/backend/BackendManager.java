@@ -47,6 +47,33 @@ public class BackendManager {
     }
 
     /**
+     * Deletes a backend configuration and all related authorizations.
+     * @param requestBody the ID of the backend to delete
+     * @return a Document with status and message
+     */
+    public Document deleteBackend(String requestBody) {
+        boolean authzSuccess = backendAuthorizations.deleteBackendAuthorization(Document.parse(requestBody));
+        boolean configSuccess = backendConfig.deleteBackendConfig(Document.parse(requestBody));
+        Document responseDoc = new Document();
+        
+        if (authzSuccess && configSuccess){
+            responseDoc.put("status", "success");
+            responseDoc.put("message", "Deleted the backend configuration and all related authorizations.");
+        } else if (!authzSuccess && !configSuccess) {
+            responseDoc.put("status", "failure");
+            responseDoc.put("message", "Failed to delete backend configuration and related authorizations. Backend may not exist or invalid request format.");
+        } else if (!authzSuccess) {
+            responseDoc.put("status", "partial_failure");
+            responseDoc.put("message", "Failed to delete related authorizations. Backend configuration deleted successfully.");
+        } else {
+            responseDoc.put("status", "partial_failure");
+            responseDoc.put("message", "Failed to delete backend configuration. Related authorizations deleted successfully.");
+        }
+
+        return responseDoc;
+    }
+
+    /**
      * Add a new backend authorization entry (POST operation).
      * Creates a new entry for a backend with initial authorization details.
      *

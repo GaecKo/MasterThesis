@@ -49,8 +49,34 @@ public class DeviceAuthorizationsRepository {
         // Insert the document into MongoDB
         this.deviceAuthorizationCollection.insertOne(finalDoc);
 
-
         return true;
+    }
+
+    /**
+     * Removes all gatewayBackendId from the list of authorizations for all the devices.
+     * This is used when a backend is deleted to ensure that no device retains an authorization for a non-existent backend.
+     *
+     * @param requestBody the ID of the backend to remove from device authorizations
+     * @return true if the operation was successful, false otherwise
+     */
+    public boolean removeBackendFromDeviceAuthorizations(Document requestBody) {
+        String backendId = requestBody.getString("gatewayBackendId");
+
+        if (backendId == null) {
+            return false;
+        }
+
+        try {
+            // Update all device authorization entries to remove the specified backend ID from their list of authorizations
+            deviceAuthorizationCollection.updateMany(
+                    new Document(), // Match all documents
+                    new Document("$pull", new Document("listOfAuthorizations", backendId)) // Pull the backendId from the list
+            );
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+
     }
 
 }

@@ -94,7 +94,7 @@ public class OnboardingFilter implements PluginFilter {
                 try {
                     if (request.getPath().endsWith("/backend")) {
                         logger.debug("addBackend reached");
-                        this.handleBackendCreation(request,response);
+                        this.handleBackendCommunicationConfig(request,response, "POST");
 
                     } else if (request.getPath().endsWith("/backendAuthZ")) {
                         logger.debug("authorization backend reached");
@@ -124,7 +124,11 @@ public class OnboardingFilter implements PluginFilter {
                 }
             } case DELETE -> {
                 try {
-                    if (request.getPath().endsWith("/backendAuthZ")) {
+                    if (request.getPath().endsWith("/backend")) {
+                        logger.debug("addBackend reached");
+                        this.handleBackendCommunicationConfig(request,response, "DELETE");
+
+                    } else if (request.getPath().endsWith("/backendAuthZ")) {
                         logger.debug("authorization backend reached");
                         this.handleBackendAuthorizationConfig(request,response, "DELETE");
                     }
@@ -152,11 +156,33 @@ public class OnboardingFilter implements PluginFilter {
      * @param response the HTTP response to populate
      * @throws CorruptedConfiguration if the configuration is invalid
      */
-    private void handleBackendCreation(HttpRequest request, HttpResponse response) throws Exception {
-        Document gatewayBackendInfo = backendManager.createBackend(request.getBody());
-        response.setStatusCode(200);
-        response.setBody(gatewayBackendInfo.toJson());
-        requestHandler.skipChain(request);
+    private void handleBackendCommunicationConfig(HttpRequest request, HttpResponse response, String method) throws Exception {
+        Document gatewayBackendInfo = new Document();
+        Document gatewayDeviceAuthzInfo = new Document();
+
+        if (method.equals("POST")) {
+            gatewayBackendInfo = backendManager.createBackend(request.getBody());
+        } else if (method.equals("DELETE")) {
+            gatewayBackendInfo = backendManager.deleteBackend(request.getBody());
+            gatewayDeviceAuthzInfo = deviceManager.removeAllBackendsFromAuthorization(request.getBody());
+        }
+
+        Document resp = new Document();
+        if (gatewayDeviceAuthzInfo.isEmpty() && !gatewayBackendInfo.isEmpty()){
+            response.setBody(gatewayBackendInfo.toJson());
+            response.setStatusCode(200);
+        } else if (!gatewayBackendInfo.isEmpty() && (gatewayBackendInfo.getString("status").equals("failure") || gatewayBackendInfo.getString("status").equals("partial_failure")  || gatewayDeviceAuthzInfo.getString("status").equals("failure"))) {
+            resp.put("status", "failure");
+            resp.put("message", gatewayBackendInfo.getString("message"));
+            response.setStatusCode(400);
+            response.setBody(resp.toJson());
+        } else {
+            resp.put("status", "success");
+            resp.put("gatewayBackendInfo", gatewayBackendInfo);
+            resp.put("gatewayDeviceAuthzInfo", gatewayDeviceAuthzInfo);
+            response.setStatusCode(200);
+            response.setBody(resp.toJson());
+        }
     }
 
     /**

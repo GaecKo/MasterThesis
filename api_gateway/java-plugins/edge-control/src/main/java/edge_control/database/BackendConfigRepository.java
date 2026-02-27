@@ -73,6 +73,26 @@ public class BackendConfigRepository {
     }
 
     /**
+     * Delete a backend configuration from the database based on the provided gatewayBackendId.
+     * Removes the corresponding document from the "backendConfig" collection.
+     * @param requestBody the request body containing the gatewayBackendId to delete
+     * @return true if the deletion was successful, false otherwise
+     */
+    public boolean deleteBackendConfig(Document requestBody) {
+        String gatewayBackendId = requestBody.getString("gatewayBackendId");
+        if (gatewayBackendId == null) {
+            return false;
+        }
+
+        try {
+            backendConfigCollection.deleteOne(new Document("gatewayBackendId", gatewayBackendId));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
      * Generates a secure API key using SecureRandom and Base64 encoding.
      * The key is 32 bytes (256 bits) encoded as a Base64 URL-safe string.
      *
