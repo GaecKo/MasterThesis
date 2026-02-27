@@ -102,7 +102,7 @@ public class OnboardingFilter implements PluginFilter {
 
                     } else if (request.getPath().endsWith("/device")) {
                         logger.debug("addDevice reached");
-                        this.handleDeviceCreation(request,response);
+                        this.handleDeviceCommunicationConfig(request,response, "POST");
 
                     } else if (request.getPath().endsWith("/deviceAuthZ")) {
                         logger.debug("authorization device reached");
@@ -127,13 +127,16 @@ public class OnboardingFilter implements PluginFilter {
                     if (request.getPath().endsWith("/backend")) {
                         logger.debug("deleteBackend reached");
                         this.handleBackendCommunicationConfig(request,response, "DELETE");
-
                     } else if (request.getPath().endsWith("/backendAuthZ")) {
                         logger.debug("delete authorization backend reached");
                         this.handleBackendAuthorizationConfig(request,response, "DELETE");
                     } else if (request.getPath().endsWith("/deviceAuthZ")) {
                         logger.debug("delete authorization device reached");
                         this.handleDeviceAuthorizationConfig(request,response, "DELETE");
+                    } else if (request.getPath().endsWith("/device")) {
+                        logger.debug("deleteDevice reached");
+                        this.handleDeviceCommunicationConfig(request,response, "DELETE");
+
                     }
                 } catch (Exception e) {
                     this.handleException(response, e);
@@ -223,10 +226,34 @@ public class OnboardingFilter implements PluginFilter {
      * @param response the HTTP response to populate
      * @throws CorruptedConfiguration if the configuration is invalid
      */
-    private void handleDeviceCreation(HttpRequest request, HttpResponse response) throws Exception {
-        Document gatewayDeviceInfo = deviceManager.createDevice(request.getBody());
-        response.setStatusCode(200);
-        response.setBody(gatewayDeviceInfo.toJson());
+    private void handleDeviceCommunicationConfig(HttpRequest request, HttpResponse response, String method) throws Exception {
+        Document gatewayDeviceInfo = new Document();
+        Document gatewayBackendAuthzInfo = new Document();
+
+        if (method.equals("POST")){
+            gatewayDeviceInfo = deviceManager.createDevice(request.getBody());
+        } else if (method.equals("DELETE")){
+            gatewayDeviceInfo = deviceManager.deleteDevice(request.getBody());
+            gatewayBackendAuthzInfo = backendManager.removeAllDevicesFromAuthorization(request.getBody());
+        }
+
+        Document resp = new Document();
+        if (gatewayBackendAuthzInfo.isEmpty() && !gatewayDeviceInfo.isEmpty()){
+            response.setBody(gatewayDeviceInfo.toJson());
+            response.setStatusCode(200);
+        } else if (!gatewayDeviceInfo.isEmpty() && (gatewayDeviceInfo.getString("status").equals("failure") || gatewayDeviceInfo.getString("status").equals("partial_failure")  || gatewayBackendAuthzInfo.getString("status").equals("failure"))) {
+            resp.put("status", "failure");
+            resp.put("message", gatewayDeviceInfo.getString("message"));
+            response.setStatusCode(400);
+            response.setBody(resp.toJson());
+        } else {
+            resp.put("status", "success");
+            resp.put("gatewayBackendInfo", gatewayDeviceInfo);
+            resp.put("gatewayDeviceAuthzInfo", gatewayBackendAuthzInfo);
+            response.setStatusCode(200);
+            response.setBody(resp.toJson());
+        }
+
         requestHandler.skipChain(request);
     }
 
