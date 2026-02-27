@@ -47,6 +47,29 @@ public class BackendManager {
     }
 
     /**
+     * Updates an existing backend configuration (PATCH operation).
+     * Modifies communication details for an existing backend.
+     *
+     * @param requestBody the body of the request containing the backend ID and updated configuration details
+     * @return a Document with status and message
+     */
+    public Document updateBackend(String requestBody) {
+        boolean success = backendConfig.updateBackendConfig(Document.parse(requestBody));
+        Document responseDoc = new Document();
+
+        if (success) {
+            responseDoc.put("status", "success");
+            responseDoc.put("message", "Backend configuration updated successfully.");
+            logger.info("Updated backend configuration");
+        } else {
+            responseDoc.put("status", "failure");
+            responseDoc.put("message", "Failed to update backend configuration. Backend may not exist or invalid request format.");
+            logger.error("Failed to update backend configuration");
+        }
+        return responseDoc;
+    }
+
+    /**
      * Deletes a backend configuration and all related authorizations.
      * @param requestBody the ID of the backend to delete
      * @return a Document with status and message
