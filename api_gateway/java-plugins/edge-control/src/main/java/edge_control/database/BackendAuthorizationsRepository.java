@@ -139,7 +139,7 @@ public class BackendAuthorizationsRepository {
     /**
      * Deletes a backend authorization entry from the database (DELETE operation).
      * This function removes the entire entry for a backend, including all its authorization details.
-     * @param requestBody the ID of the backend to delete
+     * @param requestBody containing the ID of the backend to delete
      * @return true if the operation was successful, false otherwise
      */
     public boolean deleteBackendAuthorization(Document requestBody) {
