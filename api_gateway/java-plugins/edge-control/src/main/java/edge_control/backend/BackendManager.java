@@ -120,8 +120,8 @@ public class BackendManager {
     }
 
     /**
-     * Deletes a backend entry and all related authorization entries from the database.
-     * Removes the backend entry and all related authorization entries from the database.
+     * Deletes a backend entry and all related authorization entries from the backendAuthorization collection.
+     * Removes the backend entry and all related authorization entries backendAuthorization collection.
      *
      * @param requestBody the ID of the backend to delete
      * @return a Document with status and message

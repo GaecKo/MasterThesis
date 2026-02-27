@@ -53,6 +53,28 @@ public class DeviceAuthorizationsRepository {
     }
 
     /**
+     * Deletes a device authorization entry from the database (DELETE operation).
+     * This function removes the entire entry for a device, including all its authorization details.
+     * @param requestBody containing the ID of the backend to delete
+     * @return true if the operation was successful, false otherwise
+     */
+    public boolean deleteDeviceAuthorization(Document requestBody) {
+        String deviceId = requestBody.getString("gatewayDeviceId");
+        if (deviceId == null) {
+            return false;
+        }
+
+        Document filter = new Document("gatewayDeviceId", deviceId);
+        try {
+            deviceAuthorizationCollection.deleteOne(filter);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+
+    }
+
+    /**
      * Removes all gatewayBackendId from the list of authorizations for all the devices.
      * This is used when a backend is deleted to ensure that no device retains an authorization for a non-existent backend.
      *

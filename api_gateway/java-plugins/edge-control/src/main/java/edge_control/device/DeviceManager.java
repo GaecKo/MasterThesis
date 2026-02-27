@@ -76,6 +76,29 @@ public class DeviceManager {
     }
 
     /**
+     * Delete a device entry in deviceAUthorizations collection.
+     * This is used when a device is deleted to ensure that no authorization entry remains for a non-existent device.
+     *
+     * @param requestBody the body of the request containing the device ID to delete
+     * @return true if deletion was successful, false otherwise
+     */
+    public Document deleteDeviceAuthorizationConfig(String requestBody) {
+        boolean success = deviceAuthorizations.deleteDeviceAuthorization(Document.parse(requestBody));
+        Document responseDoc = new Document();
+
+        if (success) {
+            responseDoc.put("status", "success");
+            responseDoc.put("message", "Device and related authorizations deleted successfully.");
+            logger.info("Deleted device and related authorizations");
+        } else {
+            responseDoc.put("status", "failure");
+            responseDoc.put("message", "Failed to delete device. Device may not exist or invalid request format.");
+            logger.error("Failed to delete device. device may not exist.");
+        }
+        return responseDoc;
+    }
+
+    /**
      * Remove gatewayBackendId from device authorization entry.
      *
      * @param requestBody the body of the request containing the device ID and backend ID to remove

@@ -106,7 +106,7 @@ public class OnboardingFilter implements PluginFilter {
 
                     } else if (request.getPath().endsWith("/deviceAuthZ")) {
                         logger.debug("authorization device reached");
-                        this.handleDeviceAuthorizationConfig(request,response);
+                        this.handleDeviceAuthorizationConfig(request,response, "POST");
 
                     }
                 } catch (Exception e) {
@@ -115,7 +115,7 @@ public class OnboardingFilter implements PluginFilter {
             } case PATCH -> {
                 try {
                     if (request.getPath().endsWith("/backendAuthZ")) {
-                        logger.debug("authorization backend reached");
+                        logger.debug("patch authorization backend reached");
                         this.handleBackendAuthorizationConfig(request,response, "PATCH");
 
                     }
@@ -125,12 +125,15 @@ public class OnboardingFilter implements PluginFilter {
             } case DELETE -> {
                 try {
                     if (request.getPath().endsWith("/backend")) {
-                        logger.debug("addBackend reached");
+                        logger.debug("deleteBackend reached");
                         this.handleBackendCommunicationConfig(request,response, "DELETE");
 
                     } else if (request.getPath().endsWith("/backendAuthZ")) {
-                        logger.debug("authorization backend reached");
+                        logger.debug("delete authorization backend reached");
                         this.handleBackendAuthorizationConfig(request,response, "DELETE");
+                    } else if (request.getPath().endsWith("/deviceAuthZ")) {
+                        logger.debug("delete authorization device reached");
+                        this.handleDeviceAuthorizationConfig(request,response, "DELETE");
                     }
                 } catch (Exception e) {
                     this.handleException(response, e);
@@ -183,6 +186,8 @@ public class OnboardingFilter implements PluginFilter {
             response.setStatusCode(200);
             response.setBody(resp.toJson());
         }
+
+        requestHandler.skipChain(request);
     }
 
     /**
@@ -232,9 +237,19 @@ public class OnboardingFilter implements PluginFilter {
      * @param response the HTTP response to populate
      * @throws CorruptedConfiguration if the configuration is invalid
      */
-    private void handleDeviceAuthorizationConfig(HttpRequest request, HttpResponse response) throws Exception {
-        Document resp = deviceManager.addDeviceAuthorizationConfig(request.getBody());
-        response.setStatusCode(200);
+    private void handleDeviceAuthorizationConfig(HttpRequest request, HttpResponse response, String method) throws Exception {
+        Document resp = new Document();
+        if (method.equals("POST")){
+            resp = deviceManager.addDeviceAuthorizationConfig(request.getBody());
+        } else if (method.equals("DELETE")){
+            resp = deviceManager.deleteDeviceAuthorizationConfig(request.getBody());
+        }
+
+        if (resp.get("status").equals("success")){
+            response.setStatusCode(200);
+        } else {
+            response.setStatusCode(400);
+        }
         response.setBody(resp.toJson());
         requestHandler.skipChain(request);
     }
