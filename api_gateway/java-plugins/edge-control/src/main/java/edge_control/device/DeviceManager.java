@@ -56,6 +56,27 @@ public class DeviceManager {
     }
 
     /**
+     * Updates an existing device configuration (PATCH operation).
+     * Modifies communication details for an existing device.
+     *
+     * @param requestBody the body of the request containing the device ID and updated configuration details
+     * @return a Document with status and message
+     */
+    public Document updateDevice(String requestBody) {
+        boolean success = deviceConfig.updateDeviceConfig(Document.parse(requestBody));
+        Document responseDoc = new Document();
+
+        if (success) {
+            responseDoc.put("status", "success");
+            logger.info("Updated device configuration");
+        } else {
+            responseDoc.put("status", "failure");
+            logger.error("Failed to update device configuration");
+        }
+        return responseDoc;
+    }
+
+    /**
      * Deletes a backend configuration and all related authorizations.
      * @param requestBody the ID of the backend to delete
      * @return a Document with status and message

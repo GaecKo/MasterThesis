@@ -84,6 +84,105 @@ public class DeviceConfigRepository {
     }
 
     /**
+     * Update an existing device configuration in the database based on the provided gatewayDeviceId.
+     * Supports three operations:
+     * 1. Add/Update: Include fields directly in the request body (uses deep merge with dot notation)
+     * 2. Remove: Include field paths in "fieldsToRemove" array (removes entire fields)
+     * 3. Replace nested object: Send complete object to replace it entirely
+     *
+     * Usage:
+     * - Update nested field: {"gatewayDeviceId": "xxx", "commands": {"setBatteryOperation": {"params": {"activePower": {...}}}}}
+     * - Remove field: {"gatewayDeviceId": "xxx", "fieldsToRemove": ["commands.setBatteryOperation.params.maxRate"]}
+     * - Replace object: {"gatewayDeviceId": "xxx", "commands": {"newCommand": {...}}} (replaces entire commands object)
+     *
+     * @param requestBody the request body containing gatewayDeviceId, update fields, and optional fieldsToRemove
+     * @return true if the update was successful, false otherwise
+     */
+    public boolean updateDeviceConfig(Document requestBody) {
+        String gatewayDeviceId = requestBody.getString("gatewayDeviceId");
+
+        if (gatewayDeviceId == null) {
+            return false;
+        }
+
+        Document setDoc = new Document();
+        Document unsetDoc = new Document();
+
+        // Process fieldsToRemove first (if present)
+        Object fieldsToRemove = requestBody.get("fieldsToRemove");
+        if (fieldsToRemove instanceof java.util.List) {
+            java.util.List<String> removeList = (java.util.List<String>) fieldsToRemove;
+            for (String field : removeList) {
+                unsetDoc.put(field, "");
+            }
+        }
+
+        // Process regular fields for update/add
+        for (String key : requestBody.keySet()) {
+            if (!key.equals("gatewayDeviceId") && !key.equals("fieldsToRemove")) {
+                Object value = requestBody.get(key);
+
+                // Handle nested objects using dot notation for deep merge
+                if (value instanceof Document) {
+                    flattenDocument(key, (Document) value, setDoc);
+                } else {
+                    setDoc.put(key, value);
+                }
+            }
+        }
+
+        if (setDoc.isEmpty() && unsetDoc.isEmpty()) {
+            return false; // No fields to update or remove
+        }
+
+        try {
+            Document updateOperation = new Document();
+
+            // Add $set operation if there are fields to update
+            if (!setDoc.isEmpty()) {
+                updateOperation.put("$set", setDoc);
+            }
+
+            // Add $unset operation if there are fields to remove
+            if (!unsetDoc.isEmpty()) {
+                updateOperation.put("$unset", unsetDoc);
+            }
+
+            deviceConfigCollection.updateOne(
+                new Document("gatewayDeviceId", gatewayDeviceId),
+                updateOperation
+            );
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Recursively flattens a nested Document into dot notation.
+     * This enables MongoDB to perform deep merging when using $set.
+     *
+     * Example: {commands: {setBatteryOperation: {name: "test"}}}
+     * Becomes: {"commands.setBatteryOperation.name": "test"}
+     *
+     * @param prefix the current path prefix
+     * @param document the document to flatten
+     * @param result the result document with flattened keys
+     */
+    private void flattenDocument(String prefix, Document document, Document result) {
+        for (String key : document.keySet()) {
+            Object value = document.get(key);
+            String newKey = prefix + "." + key;
+
+            if (value instanceof Document) {
+                flattenDocument(newKey, (Document) value, result);
+            } else {
+                result.put(newKey, value);
+            }
+        }
+    }
+
+    /**
      * Delete a device configuration from the database based on the provided gatewayBackendId.
      * Removes the corresponding document from the "deviceConfig" collection.
      * @param requestBody the request body containing the gatewayDeviceId to delete
