@@ -79,15 +79,9 @@ public class OnboardingFilter implements PluginFilter {
 
         // check if this filter should skip request
         if (requestHandler.shouldSkipRequest(request, chain)) {
-            // logger.info(name() + " skips request...");
             chain.filter(request, response);
             return;
         }
-
-
-//        logger.debug("Path: " + request.getPath());
-//        logger.debug("Method: " + request.getMethod());
-//        logger.debug("Source IP: " + request.getSourceIP());
 
         switch (request.getMethod()){
             case POST -> {
@@ -117,9 +111,14 @@ public class OnboardingFilter implements PluginFilter {
                     if (request.getPath().endsWith("/backend")) {
                         logger.debug("patchBackend reached");
                         this.handleBackendCommunicationConfig(request, response, "PATCH");
+
                     } else if (request.getPath().endsWith("/backendAuthZ")) {
                         logger.debug("patch authorization backend reached");
                         this.handleBackendAuthorizationConfig(request,response, "PATCH");
+
+                    } else if (request.getPath().endsWith("/device")){
+                        logger.debug("patchDevice reached");
+                        this.handleDeviceCommunicationConfig(request,response, "PATCH");
 
                     } else if (request.getPath().endsWith("/deviceAuthZ")) {
                         logger.debug("patch authorization device reached");
@@ -134,12 +133,15 @@ public class OnboardingFilter implements PluginFilter {
                     if (request.getPath().endsWith("/backend")) {
                         logger.debug("deleteBackend reached");
                         this.handleBackendCommunicationConfig(request,response, "DELETE");
+
                     } else if (request.getPath().endsWith("/backendAuthZ")) {
                         logger.debug("delete authorization backend reached");
                         this.handleBackendAuthorizationConfig(request,response, "DELETE");
+
                     } else if (request.getPath().endsWith("/deviceAuthZ")) {
                         logger.debug("delete authorization device reached");
                         this.handleDeviceAuthorizationConfig(request,response, "DELETE");
+
                     } else if (request.getPath().endsWith("/device")) {
                         logger.debug("deleteDevice reached");
                         this.handleDeviceCommunicationConfig(request,response, "DELETE");
@@ -241,6 +243,8 @@ public class OnboardingFilter implements PluginFilter {
 
         if (method.equals("POST")){
             gatewayDeviceInfo = deviceManager.createDevice(request.getBody());
+        } else if (method.equals("PATCH")){
+            gatewayDeviceInfo = deviceManager.updateDevice(request.getBody());
         } else if (method.equals("DELETE")){
             gatewayDeviceInfo = deviceManager.deleteDevice(request.getBody());
             gatewayBackendAuthzInfo = backendManager.removeAllDevicesFromAuthorization(request.getBody());
