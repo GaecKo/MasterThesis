@@ -1,8 +1,8 @@
-package edge_control.device_translation;
+package edge_control.translation;
 
-import edge_control.device_translation.adapter.DeviceAdapter;
-import edge_control.device_translation.config.DeviceConfig;
-import edge_control.device_translation.registry.DeviceRegistry;
+import edge_control.translation.adapter.DeviceAdapter;
+import edge_control.translation.config.DeviceConfig;
+import edge_control.translation.registry.DeviceRegistry;
 import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.exceptions.EdgeControlException;
 import edge_control.logger.EdgeControlLogger;

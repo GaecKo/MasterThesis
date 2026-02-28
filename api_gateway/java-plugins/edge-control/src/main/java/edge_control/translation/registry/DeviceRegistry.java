@@ -1,12 +1,11 @@
-package edge_control.device_translation.registry;
+package edge_control.translation.registry;
 
 import edge_control.database.DevicesTranslationConfigRepository;
-import edge_control.device_translation.adapter.AdapterFactory;
-import edge_control.device_translation.adapter.DeviceAdapter;
-import edge_control.device_translation.config.DeviceConfig;
+import edge_control.translation.adapter.AdapterFactory;
+import edge_control.translation.adapter.DeviceAdapter;
+import edge_control.translation.config.DeviceConfig;
 import edge_control.exceptions.EdgeControlException;
 import edge_control.logger.EdgeControlLogger;
-import org.json.JSONObject;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
