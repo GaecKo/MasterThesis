@@ -10,12 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import edge_control.device_translation.DeviceTranslationManager;
+import edge_control.translation.DeviceTranslationManager;
 import edge_control.logger.EdgeControlLogger;
-import edge_control.device_translation.adapter.DeviceAdapter;
+import edge_control.translation.adapter.DeviceAdapter;
 import edge_control.exceptions.*;
-
-import java.util.Arrays;
 
 /**
  * APISIX plugin filter that handles protocol translation for devices.
