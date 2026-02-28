@@ -15,6 +15,8 @@ import edge_control.logger.EdgeControlLogger;
 import edge_control.translation.adapter.DeviceAdapter;
 import edge_control.exceptions.*;
 
+import java.util.Arrays;
+
 /**
  * APISIX plugin filter that handles protocol translation for devices.
  *
@@ -38,6 +40,7 @@ public class DeviceTranslationFilter implements PluginFilter {
 
     private static final RequestHandler requestHandler =
             RequestHandler.getInstance();
+    int counter = 0;
 
     /**
      * Initializes the plugin and logs startup messages.
@@ -69,6 +72,7 @@ public class DeviceTranslationFilter implements PluginFilter {
     public void filter(HttpRequest request,
                        HttpResponse response,
                        PluginFilterChain chain) {
+        counter++;
         logger.debug("Incoming request in " + name() + ", index: " + chain.getIndex());
         // register request
         requestHandler.register(request);
@@ -165,7 +169,7 @@ public class DeviceTranslationFilter implements PluginFilter {
      */
     private void handleException(HttpResponse response, Exception e) {
         logger.error("Request failed: " + e);
-        // logger.debug("Stack trace: " + Arrays.toString(e.getStackTrace()));
+        logger.debug("Stack trace: " + Arrays.toString(e.getStackTrace()));
 
         switch (e) {
             case CorruptedConfiguration corruptedConfiguration -> {

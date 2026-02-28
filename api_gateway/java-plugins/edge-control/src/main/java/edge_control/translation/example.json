@@ -8,23 +8,29 @@
       "method": "PUT",
 
       "payloadTemplate": {
-        "type": "setBatteryOperation",
-        "operation": {
-          "dispatchPower": {},
-          "deliverFCR": {},
-          "chargeToState": {}
-        },
-        "startAt": null,
-        "endAt": null
+        "schedule": [
+          {
+            "type": "setBatteryOperation",
+            "operation": {
+              "dispatchPower": {},
+              "deliverFCR": {},
+              "chargeToState": {}
+            },
+            "startAt": null,
+            "endAt": null
+          }
+        ],
+        "assetIdentifiers": []
       },
 
       "mappings": {
-        "activePower": "operation.dispatchPower.activePower",
-        "reactivePower": "operation.dispatchPower.reactivePower",
-        "maxRate": "operation.deliverFCR.maxRate",
-        "Percentage": "operation.chargeToState.percentage",
-        "startAt": "startAt",
-        "endAt": "endAt"
+        "activePower": "schedule[0].operation.dispatchPower.activePower",
+        "reactivePower": "schedule[0].operation.dispatchPower.reactivePower",
+        "maxRate": "schedule[0].operation.deliverFCR.maxRate",
+        "Percentage": "schedule[0].operation.chargeToState.percentage",
+        "startAt": "schedule[0].startAt",
+        "endAt": "schedule[0].endAt",
+        "assetIdentifiers": "assetIdentifiers"
       },
 
       "cleanup": {
