@@ -21,6 +21,29 @@ app.get('/health', (req, res) => {
     });
 });
 
+// Handle all HTTP methods and all paths
+app.all('*', (req, res) => {
+    console.log({
+        path: req.path,
+        method: req.method,
+        body: req.body,
+        query: req.query,
+        params: req.params,
+        headers: req.headers
+    });
+    
+    res.json({
+        path: req.path,
+        method: req.method,
+        body: req.body,
+        query: req.query,
+        params: req.params,
+        url: req.url,
+        originalUrl: req.originalUrl,
+        timestamp: new Date().toISOString()
+    });
+});
+
 /*
 POST https://{PVMS_DOMAIN}/thirdData/controlDeviceActivePower
 Body:

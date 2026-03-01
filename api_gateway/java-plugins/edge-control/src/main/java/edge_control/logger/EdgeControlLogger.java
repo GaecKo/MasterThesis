@@ -4,6 +4,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public final class EdgeControlLogger {
 
@@ -16,6 +18,8 @@ public final class EdgeControlLogger {
             LOG_DIR + "/logs";
 
     private final BufferedWriter writer;
+
+    ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private EdgeControlLogger() {
         try {
@@ -43,14 +47,16 @@ public final class EdgeControlLogger {
     // --------------------
 
     public synchronized void log(String message) {
-        try {
-            writer.write(message);
-            writer.newLine();
-            writer.flush();
-        } catch (IOException e) {
-            // Last-resort fallback
-            e.printStackTrace();
-        }
+        executor.submit(() -> {
+            try {
+                writer.write(message);
+                writer.newLine();
+                writer.flush();
+            } catch (IOException e) {
+                // Last-resort fallback
+                e.printStackTrace();
+            }
+        });
     }
 
     public void info(String message) {
