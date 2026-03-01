@@ -13,13 +13,10 @@ public class CommandTranslationEngine {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    public JsonNode translate(JsonNode backendRequest,
-                              CommandDefinitionRegistry registry)
+    public JsonNode translate(CommandDefinition definition, JsonNode backendRequest)
             throws Exception {
 
-        // Retrieve command name and its corresponding definition
-        String commandName = backendRequest.get("command").stringValue();
-        CommandDefinition definition = registry.get(commandName);
+        String commandName = definition.getName();
 
         if (definition == null) {
             throw new IllegalArgumentException("Unknown command: " + commandName);

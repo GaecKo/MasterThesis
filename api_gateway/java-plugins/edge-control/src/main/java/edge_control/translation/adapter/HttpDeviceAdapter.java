@@ -1,5 +1,7 @@
 package edge_control.translation.adapter;
 
+import edge_control.exceptions.IllegalOperation;
+import edge_control.translation.adapter.command.definition.CommandDefinition;
 import edge_control.translation.adapter.command.definition.CommandDefinitionRegistry;
 import edge_control.translation.adapter.command.definition.HTTPCommandDefinition;
 import edge_control.translation.adapter.command.engine.CommandTranslationEngine;
@@ -14,6 +16,8 @@ import org.json.JSONObject;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.net.URI;
+import java.net.http.HttpClient;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -65,6 +69,8 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
     @Override
     public void handleRequest(HttpRequest request, HttpResponse response) throws Exception {
 
+        // TODO: what about configurable headers?
+
         if (request.getBody() == null || request.getBody().isEmpty()) {
             response.setStatusCode(400);
             response.setBody("{\"error\":\"Empty request body\"}");
@@ -73,16 +79,37 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
 
         JsonNode backendRequest = MAPPER.readTree(request.getBody());
 
+        if (backendRequest.get("command") == null || backendRequest.get("command").isNull()) {
+            throw new CorruptedConfiguration("Missing 'command' field in request body...");
+        }
+
+        HTTPCommandDefinition commandDefinition = commandDefinitions.get(backendRequest.get("command").stringValue());
+
+        if (commandDefinition == null) {
+            throw new IllegalOperation("Unknown command: " + backendRequest.get("command"));
+        }
+
         JsonNode finalPayload =
-                translationEngine.translate(backendRequest, this);
+                translationEngine.translate(commandDefinition, backendRequest);
 
         logger.debug("Translated payload for device "
                 + gatewayDeviceId
                 + ":\n"
                 + finalPayload.toPrettyString());
 
+
+
+        String resBody = HttpForgery.doRequest(
+                commandDefinition.getMethod(),
+                commandDefinition.getEndpoint(),
+                finalPayload.toString(),
+                request.getHeaders());
+
         response.setStatusCode(200);
-        response.setBody(MAPPER.writeValueAsString(finalPayload));
+        response.setBody(resBody);
+        response.setHeader("Content-Type", "application/json");
+        response.setHeader("MODIFIED-BY", "EdgeControl/Protocol-Translation");
+
     }
 
     @Override
