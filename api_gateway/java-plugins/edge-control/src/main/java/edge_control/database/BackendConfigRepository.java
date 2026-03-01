@@ -7,6 +7,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -81,25 +82,49 @@ public class BackendConfigRepository {
      */
     public boolean updateBackendConfig(Document requestBody) {
         String gatewayBackendId = requestBody.getString("gatewayBackendId");
+
         if (gatewayBackendId == null) {
             return false;
         }
 
-        Document updateDoc = new Document();
+        Document setDoc = new Document();
+        Document unsetDoc = new Document();
+
+        // Process fieldsToRemove first (if present)
+        List<String>  fieldsToRemove = requestBody.getList("fieldsToRemove", String.class);
+            for (String field : fieldsToRemove) {
+                unsetDoc.put(field, "");
+            }
+
+
+        // Process regular fields for update/add
         for (String key : requestBody.keySet()) {
-            if (!key.equals("gatewayBackendId")) {
-                updateDoc.put(key, requestBody.get(key));
+            if (!key.equals("gatewayBackendId") && !key.equals("fieldsToRemove")) {
+                Object value = requestBody.get(key);
+                setDoc.put(key, value);
             }
         }
 
-        if (updateDoc.isEmpty()) {
-            return false; // No fields to update
+        if (setDoc.isEmpty() && unsetDoc.isEmpty()) {
+            return false; // No fields to update or remove
         }
 
         try {
+            Document updateOperation = new Document();
+
+            // Add $set operation if there are fields to update
+            if (!setDoc.isEmpty()) {
+                updateOperation.put("$set", setDoc);
+            }
+
+            // Add $unset operation if there are fields to remove
+            if (!unsetDoc.isEmpty()) {
+                updateOperation.put("$unset", unsetDoc);
+            }
+
             backendConfigCollection.updateOne(
-                new Document("gatewayBackendId", gatewayBackendId),
-                new Document("$set", updateDoc)
+                    new Document("gatewayBackendId", gatewayBackendId),
+                    updateOperation
             );
             return true;
         } catch (Exception e) {
