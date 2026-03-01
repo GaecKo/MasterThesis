@@ -47,8 +47,8 @@ public class DeviceManager {
         Document responseDoc = new Document();
         result.forEach((deviceName, creationResult) -> {
             Document deviceInfo = new Document();
-            deviceInfo.put("gatewayDeviceId", creationResult.gatewayDeviceId);
             deviceInfo.put("apiKey", creationResult.apiKey);
+            deviceInfo.put("gatewayDeviceId", creationResult.gatewayDeviceId);
             responseDoc.put(deviceName, deviceInfo);
         });
 

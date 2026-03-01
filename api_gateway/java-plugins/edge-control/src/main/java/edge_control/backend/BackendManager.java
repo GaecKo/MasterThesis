@@ -41,6 +41,7 @@ public class BackendManager {
 
         // Return both ID and API key
         Document responseDoc = new Document();
+        responseDoc.put("message", "Backend created successfully.");
         responseDoc.put("apiKey", result.apiKey);
         responseDoc.put("gatewayBackendId", result.gatewayBackendId);
         return responseDoc;
