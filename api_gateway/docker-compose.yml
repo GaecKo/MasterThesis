@@ -25,7 +25,7 @@ services:
       - etcd
       - mongodb
     volumes:
-      - ./conf/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+      - ./conf/config.yaml:/usr/local/apisix/conf/config.yaml
       - ./java-plugins/edge-control/target/edge-control-0.0.1-SNAPSHOT.jar:/usr/local/apisix/java-plugins/edge-control/target/edge-control-0.0.1-SNAPSHOT.jar
       - ./java-plugins/edge-control/logs:/usr/local/apisix/java-plugins/edge-control/logs
     ulimits:
