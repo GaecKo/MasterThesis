@@ -14,7 +14,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
     }
 
     @Override
-    public void handleRequest(HttpRequest request, HttpResponse response, CompletableFuture<Void> completionFuture) throws Exception {
+    public void handleRequest(HttpRequest request, HttpResponse response, Runnable callback) throws Exception {
 
     }
 

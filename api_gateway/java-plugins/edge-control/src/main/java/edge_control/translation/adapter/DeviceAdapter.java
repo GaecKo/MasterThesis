@@ -15,7 +15,7 @@ public interface DeviceAdapter {
 
     /** Handle a request coming from APISIX/backend */
     void handleRequest(HttpRequest request, HttpResponse response,
-                       CompletableFuture<Void> completionFuture) throws Exception;
+                      Runnable callback) throws Exception;
 
     /** Optional: called on config reload or shutdown */
     default void shutdown() {}

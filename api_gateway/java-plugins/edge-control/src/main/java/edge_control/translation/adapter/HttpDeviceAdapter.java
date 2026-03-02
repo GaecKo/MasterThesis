@@ -1,7 +1,6 @@
 package edge_control.translation.adapter;
 
 import edge_control.exceptions.IllegalOperation;
-import edge_control.translation.adapter.command.definition.CommandDefinition;
 import edge_control.translation.adapter.command.definition.CommandDefinitionRegistry;
 import edge_control.translation.adapter.command.definition.HTTPCommandDefinition;
 import edge_control.translation.adapter.command.engine.CommandTranslationEngine;
@@ -19,7 +18,6 @@ import tools.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegistry {
 
@@ -63,12 +61,12 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
 
     @Override
     public void handleRequest(HttpRequest request, HttpResponse response,
-                              CompletableFuture<Void> completionFuture) throws Exception {
+                              Runnable callback) throws Exception {
 
         if (request.getBody() == null || request.getBody().isEmpty()) {
             response.setStatusCode(400);
             response.setBody("{\"error\":\"Empty request body\"}");
-            completionFuture.complete(null);
+            callback.run(); // Continue chain even on error
             return;
         }
 
@@ -86,7 +84,7 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
 
         JsonNode finalPayload = translationEngine.translate(commandDefinition, backendRequest);
 
-        // Make async HTTP call and chain the completion
+        // Make async HTTP call - NON-BLOCKING
         HttpForgery.doRequestAsync(
                         commandDefinition.getMethod(),
                         commandDefinition.getEndpoint(),
@@ -94,29 +92,36 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
                         request.getHeaders())
                 .thenAccept(result -> {
                     try {
+                        // This runs on the HttpClient's thread pool
                         response.setBody(result);
                         response.setStatusCode(200);
                         response.setHeader("MODIFIED-BY", "EdgeControl/Protocol-Translation");
                         logger.debug("Successfully processed request for device: " + gatewayDeviceId);
                     } catch (Exception e) {
                         logger.error("Error setting response: " + e.getMessage());
+                        response.setStatusCode(500);
+                        response.setBody("Error processing response");
                     } finally {
-                        completionFuture.complete(null); // Signal completion
+                        // ALWAYS call the callback to continue the filter chain
+                        callback.run();
                     }
                 })
                 .exceptionally(throwable -> {
                     try {
+                        logger.error("Async request failed: " + throwable.getMessage());
                         response.setStatusCode(500);
                         response.setBody("Error: " + throwable.getMessage());
                         response.setHeader("MODIFIED-BY", "EdgeControl/Protocol-Translation");
-                        logger.error("Async request failed: " + throwable.getMessage());
                     } catch (Exception e) {
                         logger.error("Error setting error response: " + e.getMessage());
                     } finally {
-                        completionFuture.complete(null); // Signal completion even on error
+                        // ALWAYS call the callback even on error
+                        callback.run();
                     }
                     return null;
                 });
+
+        // Method returns immediately - NO WAITING
     }
 
     @Override
