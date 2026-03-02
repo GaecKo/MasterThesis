@@ -21,6 +21,8 @@ public final class EdgeControlLogger {
 
     private final BufferedWriter writer;
 
+    private static boolean enabled = true;
+
     ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private EdgeControlLogger() {
@@ -37,6 +39,14 @@ public final class EdgeControlLogger {
         }
     }
 
+    public static void disable() {
+        enabled =  false;
+    }
+
+    public static void enable() {
+        enabled =  true;
+    }
+
     public static synchronized EdgeControlLogger getInstance() {
         if (instance == null) {
             instance = new EdgeControlLogger();
@@ -49,6 +59,7 @@ public final class EdgeControlLogger {
     // --------------------
 
     public synchronized void log(String message) {
+        if (!enabled) return;
         executor.submit(() -> {
             try {
                 // Random ran = new Random();
