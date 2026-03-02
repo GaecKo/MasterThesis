@@ -23,14 +23,8 @@ app.get('/health', (req, res) => {
 
 // Handle all HTTP methods and all paths
 app.all('*', (req, res) => {
-    console.log({
-        path: req.path,
-        method: req.method,
-        body: req.body,
-        query: req.query,
-        params: req.params,
-        headers: req.headers
-    });
+
+    console.log(".".repeat(Math.random() * (50 - 1) + 1));
     
     res.json({
         path: req.path,
