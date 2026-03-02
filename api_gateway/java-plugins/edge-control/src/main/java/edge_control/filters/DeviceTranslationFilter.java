@@ -184,7 +184,7 @@ public class DeviceTranslationFilter implements PluginFilter {
 
     private void handleDeviceManagementRequest(HttpRequest request, HttpResponse response) throws OperationNotSupported, CorruptedConfiguration, EdgeControlException {
         switch (request.getMethod()) {
-            case PUT: {
+            case POST: {
                 deviceTranslationManager.createAdapter(request.getBody());
                 response.setStatusCode(200);
                 response.setBody("Device Translation Created");
