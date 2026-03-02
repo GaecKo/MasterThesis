@@ -4,8 +4,10 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.random.RandomGenerator;
 
 public final class EdgeControlLogger {
 
@@ -49,6 +51,9 @@ public final class EdgeControlLogger {
     public synchronized void log(String message) {
         executor.submit(() -> {
             try {
+                // Random ran = new Random();
+                // int r = ran.nextInt(50) + 1;
+                // writer.write(".".repeat(r));
                 writer.write(message);
                 writer.newLine();
                 writer.flush();

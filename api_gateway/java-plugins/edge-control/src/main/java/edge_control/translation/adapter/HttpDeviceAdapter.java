@@ -16,11 +16,10 @@ import org.json.JSONObject;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
-import java.net.URI;
-import java.net.http.HttpClient;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegistry {
 
@@ -34,9 +33,7 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
 
     @Override
     public void init(DeviceConfig config) throws Exception {
-
         this.gatewayDeviceId = config.getDeviceId();
-
         JSONObject root = config.getConfig();
 
         if (!root.has("commands")) {
@@ -53,9 +50,7 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
         while (commandNames.hasNext()) {
             String commandName = commandNames.next();
             JSONObject commandJson = commands.getJSONObject(commandName);
-
-            HTTPCommandDefinition definition =
-                    new HTTPCommandDefinition(commandJson);
+            HTTPCommandDefinition definition = new HTTPCommandDefinition(commandJson);
             logger.debug("Added command: " + commandName);
             commandDefinitions.put(commandName, definition);
         }
@@ -67,13 +62,13 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
     }
 
     @Override
-    public void handleRequest(HttpRequest request, HttpResponse response) throws Exception {
-
-        // TODO: what about configurable headers?
+    public void handleRequest(HttpRequest request, HttpResponse response,
+                              CompletableFuture<Void> completionFuture) throws Exception {
 
         if (request.getBody() == null || request.getBody().isEmpty()) {
             response.setStatusCode(400);
             response.setBody("{\"error\":\"Empty request body\"}");
+            completionFuture.complete(null);
             return;
         }
 
@@ -89,27 +84,39 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
             throw new IllegalOperation("Unknown command: " + backendRequest.get("command"));
         }
 
-        JsonNode finalPayload =
-                translationEngine.translate(commandDefinition, backendRequest);
+        JsonNode finalPayload = translationEngine.translate(commandDefinition, backendRequest);
 
-        logger.debug("Translated payload for device "
-                + gatewayDeviceId
-                + ":\n"
-                + finalPayload.toPrettyString());
-
-
-
-        String resBody = HttpForgery.doRequest(
-                commandDefinition.getMethod(),
-                commandDefinition.getEndpoint(),
-                finalPayload.toString(),
-                request.getHeaders());
-
-        response.setStatusCode(200);
-        response.setBody(resBody);
-        response.setHeader("Content-Type", "application/json");
-        response.setHeader("MODIFIED-BY", "EdgeControl/Protocol-Translation");
-
+        // Make async HTTP call and chain the completion
+        HttpForgery.doRequestAsync(
+                        commandDefinition.getMethod(),
+                        commandDefinition.getEndpoint(),
+                        finalPayload.toString(),
+                        request.getHeaders())
+                .thenAccept(result -> {
+                    try {
+                        response.setBody(result);
+                        response.setStatusCode(200);
+                        response.setHeader("MODIFIED-BY", "EdgeControl/Protocol-Translation");
+                        logger.debug("Successfully processed request for device: " + gatewayDeviceId);
+                    } catch (Exception e) {
+                        logger.error("Error setting response: " + e.getMessage());
+                    } finally {
+                        completionFuture.complete(null); // Signal completion
+                    }
+                })
+                .exceptionally(throwable -> {
+                    try {
+                        response.setStatusCode(500);
+                        response.setBody("Error: " + throwable.getMessage());
+                        response.setHeader("MODIFIED-BY", "EdgeControl/Protocol-Translation");
+                        logger.error("Async request failed: " + throwable.getMessage());
+                    } catch (Exception e) {
+                        logger.error("Error setting error response: " + e.getMessage());
+                    } finally {
+                        completionFuture.complete(null); // Signal completion even on error
+                    }
+                    return null;
+                });
     }
 
     @Override

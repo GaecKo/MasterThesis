@@ -16,6 +16,11 @@ import edge_control.translation.adapter.DeviceAdapter;
 import edge_control.exceptions.*;
 
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * APISIX plugin filter that handles protocol translation for devices.
@@ -40,7 +45,10 @@ public class DeviceTranslationFilter implements PluginFilter {
 
     private static final RequestHandler requestHandler =
             RequestHandler.getInstance();
-    int counter = 0;
+
+    // Thread pool for handling slow operations
+    private static final ExecutorService executorService =
+            Executors.newFixedThreadPool(20); // Increased from 2 to handle more concurrent requests
 
     /**
      * Initializes the plugin and logs startup messages.
@@ -48,6 +56,7 @@ public class DeviceTranslationFilter implements PluginFilter {
     DeviceTranslationFilter() {
         logger.info("DeviceTranslation Filter initialized");
         API_LOGGER.warn("DeviceTranslation Filter is running");
+        logger.info("Available threads: " + Runtime.getRuntime().availableProcessors());
     }
 
     /**
@@ -72,46 +81,110 @@ public class DeviceTranslationFilter implements PluginFilter {
     public void filter(HttpRequest request,
                        HttpResponse response,
                        PluginFilterChain chain) {
-        counter++;
         logger.debug("Incoming request in " + name() + ", index: " + chain.getIndex());
-        // register request
+
+        // Register request
         requestHandler.register(request);
 
-        // check if this filter should skip request
+        // Check if this filter should skip request
         if (requestHandler.shouldSkipRequest(request, chain)) {
-            // logger.info(name() + " skips request...");
             chain.filter(request, response);
             return;
         }
 
         try {
-
             if (request.getPath().startsWith("/health")) {
+                // Fast path - handle synchronously
                 logger.debug("Health endpoint reached");
                 response.setStatusCode(200);
                 response.setBody("Health Check reacted!\n");
+                chain.filter(request, response);
 
             } else if (request.getPath().startsWith("/devices")) {
+                // Fast path - handle synchronously
                 handleDeviceManagementRequest(request, response);
+                chain.filter(request, response);
+
             } else if (request.getPath().startsWith("/command")) {
-                // Device traffic
-                handleDeviceRequest(request, response);
+                // SLOW PATH - handle asynchronously but wait for completion
+                handleDeviceRequestAsync(request, response, chain);
+                // Note: chain.filter() will be called inside handleDeviceRequestAsync after completion
+
             } else {
                 throw new IllegalOperation("ProtocolTranslation filter is available for /devices and /command route.");
             }
         } catch (Exception e) {
             handleException(response, e);
             requestHandler.skipChain(request);
+            chain.filter(request, response);
         }
+    }
 
-        // Continue APISIX chain
-        chain.filter(request, response);
+    /**
+     * Handles device requests asynchronously but waits for completion.
+     * This allows other requests to be processed concurrently while waiting.
+     */
+    private void handleDeviceRequestAsync(HttpRequest request,
+                                          HttpResponse response,
+                                          PluginFilterChain chain) {
+
+        // Create a CompletableFuture to track completion
+        CompletableFuture<Void> completionFuture = new CompletableFuture<>();
+
+        // Submit the device request handling to the thread pool
+        executorService.submit(() -> {
+            try {
+                // Parse request body
+                JSONObject config = new JSONObject(request.getBody());
+
+                if (!config.has("gatewayDeviceId")) {
+                    logger.debug("No device ID...");
+                    response.setStatusCode(400);
+                    response.setHeader("X-Error", "Missing gatewayDeviceId in request body");
+                    response.setBody("X-Error: Missing gatewayDeviceId in body");
+                    completionFuture.complete(null);
+                    return;
+                }
+
+                String gatewayDeviceId = config.getString("gatewayDeviceId");
+                DeviceAdapter adapter = deviceTranslationManager.get(gatewayDeviceId);
+
+                if (adapter == null) {
+                    response.setStatusCode(404);
+                    response.setHeader("X-Error", "Unknown device - no adapter linked: " + gatewayDeviceId);
+                    response.setBody("X-Error: Unknown device - no adapter linked: " + gatewayDeviceId);
+                    completionFuture.complete(null);
+                    return;
+                }
+
+                // Delegate to adapter which will make async HTTP call
+                // The adapter will complete the completionFuture when done
+                adapter.handleRequest(request, response, completionFuture);
+
+            } catch (Exception e) {
+                handleException(response, e);
+                completionFuture.complete(null);
+            }
+        });
+
+        // Wait for the async operation to complete (with timeout)
+        try {
+            // Wait for the async operation to complete
+            completionFuture.get();
+        } catch (Exception e) {
+            logger.error("Error waiting for async completion: " + e.getMessage());
+            response.setStatusCode(500);
+            response.setBody("Internal Server Error");
+            response.setHeader("X-Error", e.getMessage());
+        } finally {
+            // Always continue the chain after response is ready
+            chain.filter(request, response);
+        }
     }
 
     private void handleDeviceManagementRequest(HttpRequest request, HttpResponse response) throws OperationNotSupported, CorruptedConfiguration, EdgeControlException {
         switch (request.getMethod()) {
             case PUT: {
-                // create new Adapter and save config in db
                 deviceTranslationManager.createAdapter(request.getBody());
                 response.setStatusCode(200);
                 response.setBody("Device Translation Created");
@@ -125,47 +198,7 @@ public class DeviceTranslationFilter implements PluginFilter {
     }
 
     /**
-     * Routes incoming requests to the corresponding device adapter.
-     * Responds with errors if device ID is missing or unknown.
-     *
-     * @param request the incoming HTTP request
-     * @param response the HTTP response to populate
-     * @throws Exception if adapter processing fails
-     */
-    private void handleDeviceRequest(HttpRequest request,
-                                     HttpResponse response) throws Exception {
-
-        // TODO: move this to other class
-        JSONObject config = new JSONObject(request.getBody());
-
-        if (!config.has("gatewayDeviceId")) {
-            logger.debug("No device ID...");
-            response.setStatusCode(400);
-            response.setHeader("X-Error", "Missing gatewayDeviceId in request body");
-            response.setBody("X-Error: Missing gatewayDeviceId in body");
-            return;
-        }
-        String gatewayDeviceId = config.getString("gatewayDeviceId");
-
-        DeviceAdapter adapter = deviceTranslationManager.get(gatewayDeviceId);
-
-        if (adapter == null) {
-            response.setStatusCode(404);
-            response.setHeader("X-Error", "Unknown device - no adapter linked: " + gatewayDeviceId);
-            response.setBody("X-Error: Unknown device - no adapter linked: " + gatewayDeviceId);
-            return;
-        }
-
-        // TODO: future request handling via adapter
-        adapter.handleRequest(request, response);
-    }
-
-    /**
      * Handles exceptions thrown during request processing.
-     * Maps known exceptions to specific HTTP response codes and headers.
-     *
-     * @param response the HTTP response to populate
-     * @param e the exception to handle
      */
     private void handleException(HttpResponse response, Exception e) {
         logger.error("Request failed: " + e);
@@ -195,21 +228,11 @@ public class DeviceTranslationFilter implements PluginFilter {
         }
     }
 
-    /**
-     * Indicates that the plugin requires the request body to function.
-     *
-     * @return true
-     */
     @Override
     public Boolean requiredBody() {
         return true;
     }
 
-    /**
-     * Indicates that the plugin requires the response body to function.
-     *
-     * @return true
-     */
     @Override
     public Boolean requiredRespBody() {
         return true;
