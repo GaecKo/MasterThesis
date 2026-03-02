@@ -22,6 +22,11 @@ import java.util.Arrays;
  *
  * IMPORTANT: This filter NEVER blocks the event loop thread.
  * All slow operations are handled asynchronously with callbacks.
+ * Responsibilities:
+ * - Routes requests to the appropriate device adapters or management endpoints.
+ * - Handles health checks and device management operations.
+ * - Provides structured logging and error handling.
+ * - Marks requests as processed and continues the APISIX filter chain.
  */
 @Component
 public class DeviceTranslationFilter implements PluginFilter {
@@ -62,6 +67,12 @@ public class DeviceTranslationFilter implements PluginFilter {
     /**
      * Main filter method invoked by APISIX on the event loop thread.
      * NEVER BLOCK THIS THREAD - return immediately for slow paths.
+     * Main filter method invoked by APISIX.
+     * Routes requests to health check, device management, or device adapters.
+     *
+     * @param request the incoming HTTP request
+     * @param response the HTTP response to populate
+     * @param chain the APISIX plugin filter chain
      */
     @Override
     public void filter(HttpRequest request,
@@ -144,6 +155,12 @@ public class DeviceTranslationFilter implements PluginFilter {
     /**
      * SLOW PATH - Fully asynchronous, non-blocking device request handling.
      * This method returns immediately and the callback continues the chain.
+     * Routes incoming requests to the corresponding device adapter.
+     * Responds with errors if device ID is missing or unknown.
+     *
+     * @param request the incoming HTTP request
+     * @param response the HTTP response to populate
+     * @throws Exception if adapter processing fails
      */
     private void handleDeviceRequestAsync(HttpRequest request,
                                           HttpResponse response,
@@ -198,35 +215,54 @@ public class DeviceTranslationFilter implements PluginFilter {
 
     /**
      * Handles exceptions thrown during request processing.
+     * Maps known exceptions to specific HTTP response codes and headers.
+     *
+     * @param response the HTTP response to populate
+     * @param e the exception to handle
      */
     private void handleException(HttpResponse response, Exception e) {
         logger.error("Request failed: " + e);
         logger.debug("Stack trace: " + Arrays.toString(e.getStackTrace()));
 
-        if (e instanceof CorruptedConfiguration) {
-            response.setStatusCode(400);
-            response.setHeader("X-Error", e.getMessage());
-            response.setBody(e.getMessage());
-        } else if (e instanceof IllegalOperation) {
-            response.setStatusCode(403);
-            response.setHeader("X-Error", e.getMessage());
-            response.setBody(e.getMessage());
-        } else if (e instanceof OperationNotSupported) {
-            response.setStatusCode(501);
-            response.setHeader("X-Error", e.getMessage());
-            response.setBody(e.getMessage());
-        } else {
-            response.setStatusCode(500);
-            response.setHeader("X-Error", e.getMessage());
-            response.setBody(e.getMessage());
-        }
+
+        switch (e) {
+            case CorruptedConfiguration corruptedConfiguration -> {
+                response.setStatusCode(400);
+                response.setHeader("X-Error", e.getMessage());
+                response.setBody(e.getMessage());
+            }
+            case IllegalOperation illegalOperation -> {
+                response.setStatusCode(403);
+                response.setHeader("X-Error", e.getMessage());
+                response.setBody(e.getMessage());
+            }
+            case OperationNotSupported operationNotSupported -> {
+                response.setStatusCode(501);
+                response.setHeader("X-Error", e.getMessage());
+                response.setBody(e.getMessage());
+            }
+            default -> {
+                response.setStatusCode(500);
+                response.setHeader("X-Error", e.getMessage());
+                response.setBody(e.getMessage());
+            }
     }
 
+    /**
+     * Indicates that the plugin requires the request body to function.
+     *
+     * @return true
+     */
     @Override
     public Boolean requiredBody() {
         return true;
     }
 
+    /**
+     * Indicates that the plugin requires the response body to function.
+     *
+     * @return true
+     */
     @Override
     public Boolean requiredRespBody() {
         return true;

@@ -1,0 +1,249 @@
+
+[INFO] EdgeControlApplication is starting ...
+[INFO] Database initialized
+[INFO] DeviceManager initialized
+[INFO] Onboarding Filter initialized
+[INFO] Initializing device adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172 with fingreprint: 7a547c603d706dbabdd9e8b323fbef5c
+[INFO] DeviceTranslation Filter initialized
+[INFO] Auth Filter initialized
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[INFO] Creating adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] Initializing device adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172 with fingreprint: 7a547c603d706dbabdd9e8b323fbef5c
+[INFO] EdgeControlApplication is starting ...
+[INFO] Database initialized
+[INFO] DeviceManager initialized
+[INFO] Onboarding Filter initialized
+[INFO] Initializing HTTP adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172 fingerprint: 7a547c603d706dbabdd9e8b323fbef5c
+[INFO] Loaded 1 command definitions for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] DeviceTranslation Filter initialized
+[INFO] Auth Filter initialized
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[DEBUG] No device ID...
+[INFO] EdgeControlApplication is starting ...
+[INFO] Database initialized
+[INFO] DeviceManager initialized
+[INFO] Onboarding Filter initialized
+[INFO] Initializing HTTP adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172 fingerprint: 7a547c603d706dbabdd9e8b323fbef5c
+[INFO] Loaded 1 command definitions for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] DeviceTranslation Filter initialized
+[INFO] Auth Filter initialized
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[INFO] Final structured JSON:
+[INFO] {
+  "type" : "setBatteryOperation",
+  "endAt" : "16h30",
+  "operation" : {
+    "dispatchPower" : { },
+    "deliverFCR" : {
+      "maxRate" : 15
+    },
+    "chargeToState" : { }
+  },
+  "startAt" : "12:30"
+}
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[INFO] Creating adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] Shutting down HTTP adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] Initializing HTTP adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172 fingerprint: 77336a27448f3fae75e7e694b8ca6de3
+[INFO] Loaded 1 command definitions for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[INFO] Creating adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] Shutting down HTTP adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] Initializing HTTP adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172 fingerprint: 669e519fbc2645f04cea9109a46a83bd
+[INFO] Loaded 1 command definitions for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] EdgeControlApplication is starting ...
+[INFO] Database initialized
+[INFO] DeviceManager initialized
+[INFO] Onboarding Filter initialized
+[INFO] Initializing HTTP adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172 fingerprint: 669e519fbc2645f04cea9109a46a83bd
+[INFO] Loaded 1 command definitions for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] DeviceTranslation Filter initialized
+[INFO] Auth Filter initialized
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[INFO] Final structured JSON:
+[INFO] {
+  "schedule" : [ {
+    "type" : "setBatteryOperation",
+    "endAt" : "16h30",
+    "operation" : {
+      "dispatchPower" : { },
+      "deliverFCR" : {
+        "maxRate" : 15
+      },
+      "chargeToState" : { }
+    },
+    "startAt" : "12:30"
+  } ],
+  "assetIdentifiers" : [ ]
+}
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[INFO] Creating adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] Shutting down HTTP adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] Initializing HTTP adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172 fingerprint: 669e519fbc2645f04cea9109a46a83bd
+[INFO] Loaded 1 command definitions for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[INFO] Final structured JSON:
+[INFO] {
+  "schedule" : [ {
+    "type" : "setBatteryOperation",
+    "endAt" : "16h30",
+    "operation" : {
+      "dispatchPower" : { },
+      "deliverFCR" : {
+        "maxRate" : 15
+      },
+      "chargeToState" : { }
+    },
+    "startAt" : "12:30"
+  } ],
+  "assetIdentifiers" : [ ]
+}
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[INFO] Final structured JSON:
+[INFO] {
+  "schedule" : [ {
+    "type" : "setBatteryOperation",
+    "endAt" : "16h30",
+    "operation" : {
+      "dispatchPower" : { },
+      "deliverFCR" : {
+        "maxRate" : 15
+      },
+      "chargeToState" : { }
+    },
+    "startAt" : "12:30"
+  } ],
+  "assetIdentifiers" : [ "huawei-123456789" ]
+}
+[INFO] EdgeControlApplication is starting ...
+[INFO] Database initialized
+[INFO] DeviceManager initialized
+[INFO] Onboarding Filter initialized
+[INFO] Initializing HTTP adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172 fingerprint: 669e519fbc2645f04cea9109a46a83bd
+[INFO] Loaded 1 command definitions for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] DeviceTranslation Filter initialized
+[INFO] Auth Filter initialized
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[INFO] Final structured JSON:
+[INFO] {
+  "schedule" : [ {
+    "type" : "setBatteryOperation",
+    "endAt" : "16h30",
+    "operation" : {
+      "dispatchPower" : { },
+      "deliverFCR" : {
+        "maxRate" : 15
+      },
+      "chargeToState" : { }
+    },
+    "startAt" : "12:30"
+  } ],
+  "assetIdentifiers" : [ "huawei-123456789" ]
+}
+[INFO] EdgeControlApplication is starting ...
+[INFO] Database initialized
+[INFO] DeviceManager initialized
+[INFO] Onboarding Filter initialized
+[INFO] DeviceTranslation Filter initialized
+[INFO] Auth Filter initialized
+[INFO] EdgeControlApplication is starting ...
+[INFO] Database initialized
+[INFO] DeviceManager initialized
+[INFO] Onboarding Filter initialized
+[INFO] DeviceTranslation Filter initialized
+[INFO] Auth Filter initialized
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[INFO] Creating adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] Initializing HTTP adapter for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172 fingerprint: 669e519fbc2645f04cea9109a46a83bd
+[INFO] Loaded 1 command definitions for device: device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[INFO] Final structured JSON:
+[INFO] {
+  "schedule" : [ {
+    "type" : "setBatteryOperation",
+    "endAt" : "16h30",
+    "operation" : {
+      "dispatchPower" : { },
+      "deliverFCR" : {
+        "maxRate" : 15
+      },
+      "chargeToState" : { }
+    },
+    "startAt" : "12:30"
+  } ],
+  "assetIdentifiers" : [ "huawei-123456789" ]
+}
+[INFO] EdgeControlApplication is starting ...
+[INFO] Database initialized
+[INFO] DeviceManager initialized
+[INFO] Onboarding Filter initialized
+[INFO] Loaded 1 command definitions for device device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] DeviceTranslation Filter initialized
+[INFO] Auth Filter initialized
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[ERROR] Request failed: java.lang.IllegalArgumentException: Unknown command: "setBatteryOperation"
+[INFO] EdgeControlApplication is starting ...
+[INFO] Database initialized
+[INFO] DeviceManager initialized
+[INFO] Onboarding Filter initialized
+[INFO] Loaded 1 command definitions for device device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] DeviceTranslation Filter initialized
+[INFO] Auth Filter initialized
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[ERROR] Request failed: java.lang.NullPointerException: Cannot invoke "edge_control.translation.adapter.command.definition.HTTPCommandDefinition.getName()" because the return value of "java.util.Map.get(Object)" is null
+[INFO] EdgeControlApplication is starting ...
+[INFO] Database initialized
+[INFO] DeviceManager initialized
+[INFO] Onboarding Filter initialized
+[DEBUG] Added command: setBatteryOperation
+[INFO] Loaded 1 command definitions for device device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] DeviceTranslation Filter initialized
+[INFO] Auth Filter initialized
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[ERROR] Request failed: java.lang.IllegalArgumentException: Unknown command: "setBatteryOperation"
+[INFO] EdgeControlApplication is starting ...
+[INFO] Database initialized
+[INFO] DeviceManager initialized
+[INFO] Onboarding Filter initialized
+[DEBUG] Added command: setBatteryOperation
+[INFO] Loaded 1 command definitions for device device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] DeviceTranslation Filter initialized
+[INFO] Auth Filter initialized
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[DEBUG] Get command: "setBatteryOperation"
+[DEBUG] commands: [setBatteryOperation]
+[ERROR] Request failed: java.lang.IllegalArgumentException: Unknown command: "setBatteryOperation"
+[INFO] EdgeControlApplication is starting ...
+[INFO] Database initialized
+[INFO] DeviceManager initialized
+[INFO] Onboarding Filter initialized
+[DEBUG] Added command: setBatteryOperation
+[INFO] Loaded 1 command definitions for device device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] DeviceTranslation Filter initialized
+[INFO] Auth Filter initialized
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[DEBUG] Get command: "setBatteryOperation"
+[DEBUG] commands: [setBatteryOperation]
+[DEBUG] Command eq: false
+[ERROR] Request failed: java.lang.IllegalArgumentException: Unknown command: "setBatteryOperation"
+[INFO] EdgeControlApplication is starting ...
+[INFO] Database initialized
+[INFO] DeviceManager initialized
+[INFO] Onboarding Filter initialized
+[DEBUG] Added command: setBatteryOperation
+[INFO] Loaded 1 command definitions for device device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] DeviceTranslation Filter initialized
+[INFO] Auth Filter initialized
+[DEBUG] Incoming request in DeviceTranslation, index: 1
+[DEBUG] Get command: setBatteryOperation
+[DEBUG] commands: [setBatteryOperation]
+[DEBUG] Command eq: true
+[ERROR] Request failed: java.lang.IllegalStateException: Expected array node during path execution
+[INFO] EdgeControlApplication is starting ...
+[INFO] Database initialized
+[INFO] DeviceManager initialized
+[INFO] Onboarding Filter initialized
+[DEBUG] Added command: setBatteryOperation
+[INFO] Loaded 1 command definitions for device device_ccd359ff-ea3f-4a4e-b4c9-8de9e760c172
+[INFO] DeviceTranslation Filter initialized
+[INFO] Auth Filter initialized
