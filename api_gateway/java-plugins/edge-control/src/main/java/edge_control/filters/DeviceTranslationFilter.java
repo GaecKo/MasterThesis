@@ -246,6 +246,7 @@ public class DeviceTranslationFilter implements PluginFilter {
                 response.setHeader("X-Error", e.getMessage());
                 response.setBody(e.getMessage());
             }
+        }
     }
 
     /**
