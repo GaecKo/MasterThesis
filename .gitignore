@@ -1,5 +1,5 @@
 api_gateway/java-plugins/edge-control/target/*
 api_gateway/java-plugins/edge-control/.idea/*
-api_gateway/java-plugins/edge-control/log
+api_gateway/java-plugins/edge-control/logs
 **/**.env
-s
+
