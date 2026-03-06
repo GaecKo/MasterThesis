@@ -1,6 +1,8 @@
 package edge_control.filters;
 
 import edge_control.RequestHandler;
+import edge_control.auth.AuthenticationManager;
+import edge_control.auth.AuthorizationManager;
 import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.exceptions.IllegalOperation;
 import edge_control.exceptions.OperationNotSupported;
@@ -9,6 +11,7 @@ import org.apache.apisix.plugin.runner.HttpRequest;
 import org.apache.apisix.plugin.runner.HttpResponse;
 import org.apache.apisix.plugin.runner.filter.PluginFilter;
 import org.apache.apisix.plugin.runner.filter.PluginFilterChain;
+import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -20,6 +23,12 @@ public class AuthFilter implements PluginFilter {
 
     private final EdgeControlLogger logger =
             EdgeControlLogger.getInstance();
+
+    private final AuthenticationManager authenticationManager =
+            AuthenticationManager.getInstance();
+
+    private final AuthorizationManager authorizationManager =
+            AuthorizationManager.getInstance();
 
     private static final RequestHandler requestHandler =
             RequestHandler.getInstance();
@@ -65,6 +74,27 @@ public class AuthFilter implements PluginFilter {
         if (requestHandler.shouldSkipRequest(request, chain)) {
             // logger.info(name() + " skips request...");
             chain.filter(request, response);
+            return;
+        }
+
+        String authenticationcheckerResult = authenticationManager.checkAuthentication(request.getHeader("apikey"));
+        if (authenticationcheckerResult.startsWith("Invalid API key")) {
+            handleException(response, new IllegalOperation(authenticationcheckerResult));
+            return;
+        }
+
+        logger.info("Authentication successful for API key: " + request.getHeader("apikey") + " | Result: " + authenticationcheckerResult);
+
+        if(authorizationManager.checkAuthorization(authenticationcheckerResult, Document.parse(request.getBody()))){
+            if (authenticationcheckerResult.startsWith("backend_")){
+                request.setHeader("gatewayBackendId", authenticationcheckerResult);
+                logger.info(authenticationcheckerResult+ " is authorized to perform the operation.");
+            } else if (authenticationcheckerResult.startsWith("device_")){
+                request.setHeader("gatewayDeviceId", authenticationcheckerResult);
+                logger.info(authenticationcheckerResult+ " is authorized to perform the operation.");
+            }
+        } else {
+            handleException(response, new IllegalOperation("Unauthorized access"));
             return;
         }
 

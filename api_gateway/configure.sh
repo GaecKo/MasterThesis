@@ -260,3 +260,39 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/7 -H 'X-API-KEY: admin' -X PUT
 }'
 success "Route setup"
 info "Test it with: curl http://127.0.0.1:9080/onboarding/deviceAuthZ"
+
+
+# Setup /device/command
+info "Setting route /device/command with AuthFilter enabled..."
+curl -i http://127.0.0.1:9180/apisix/admin/routes/8 -H 'X-API-KEY: admin' -X PUT -d '
+{
+    "uri": "/device/command",
+    "methods": ["POST", "PATCH", "DELETE"],
+    "plugins": {
+        "ext-plugin-pre-req": {
+            "conf" : [
+                {"name": "AuthFilter", "value": "{\"enable\":\"feature\"}"}
+            ]
+        }
+    }
+}'
+success "Route setup"
+info "Test it with: curl http://127.0.0.1:9080/device/command"
+
+
+# Setup /backend/info
+info "Setting route /backend/info with AuthFilter enabled..."
+curl -i http://127.0.0.1:9180/apisix/admin/routes/9 -H 'X-API-KEY: admin' -X PUT -d '
+{
+    "uri": "/backend/info",
+    "methods": ["POST", "PATCH", "DELETE"],
+    "plugins": {
+        "ext-plugin-pre-req": {
+            "conf" : [
+                {"name": "AuthFilter", "value": "{\"enable\":\"feature\"}"}
+            ]
+        }
+    }
+}'
+success "Route setup"
+info "Test it with: curl http://127.0.0.1:9080/backend/info"

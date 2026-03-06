@@ -236,34 +236,22 @@ public class DeviceConfigRepository {
      * Validates an API key for a given device ID.
      * Compares the hash of the provided API key with the stored hash.
      *
-     * @param gatewayDeviceId the device ID
-     * @param apiKey           the plain text API key to validate
-     * @return true if the API key hash matches, false otherwise
+     * @param apiKey the plain text API key to validate
+     * @return gatewayDeviceId if the API key hash matches
      */
-    public boolean validateApiKey(String gatewayDeviceId, String apiKey) {
-        if (gatewayDeviceId == null || apiKey == null) {
-            return false;
+    public String validateApiKey(String apiKey) {
+        if (apiKey == null) {
+            return "API key cannot be null";
         }
 
-        Document deviceDoc = deviceConfigCollection.find(
-                new Document("gatewayDeviceId", gatewayDeviceId)
-        ).first();
+        String hashedApiKey = hashApiKey(apiKey);
+        Document backendDoc = deviceConfigCollection.find(new Document("apiKeyHash", hashedApiKey)).first();
 
-        if (deviceDoc == null) {
-            return false;
+        if (backendDoc != null) {
+            return backendDoc.getString("gatewayDeviceId");
+        } else {
+            return "Invalid API key";
         }
-
-        String storedApiKeyHash = deviceDoc.getString("apiKeyHash");
-        if (storedApiKeyHash == null) {
-            return false;
-        }
-
-        String providedApiKeyHash = hashApiKey(apiKey);
-
-        byte[] storedHashBytes = Base64.getDecoder().decode(storedApiKeyHash);
-        byte[] providedHashBytes = Base64.getDecoder().decode(providedApiKeyHash);
-
-        return MessageDigest.isEqual(storedHashBytes, providedHashBytes);
     }
 
 }

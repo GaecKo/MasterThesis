@@ -188,16 +188,5 @@ public class BackendManager {
         return responseDoc;
     }
 
-
-    /**
-     * Validates an API key for a backend.
-     *
-     * @param gatewayBackendId the backend ID
-     * @param apiKey the API key to validate
-     * @return true if the API key is valid, false otherwise
-     */
-    public boolean validateBackendApiKey(String gatewayBackendId, String apiKey) {
-        return backendConfig.validateApiKey(gatewayBackendId, apiKey);
-    }
 }
 

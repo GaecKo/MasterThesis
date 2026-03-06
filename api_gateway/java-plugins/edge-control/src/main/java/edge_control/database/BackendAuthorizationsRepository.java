@@ -2,6 +2,7 @@ package edge_control.database;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import edge_control.logger.EdgeControlLogger;
 import org.bson.Document;
 
 import java.util.List;
@@ -16,6 +17,8 @@ import java.util.List;
 public class BackendAuthorizationsRepository {
 
     private final MongoCollection<Document> backendAuthorizationCollection;
+
+    private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
     /**
      * Initializes the repository by connecting to the "devices" collection
@@ -186,6 +189,39 @@ public class BackendAuthorizationsRepository {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * Checks if the given gatewayBackendId is authorized to perform the specified operation.
+     *
+     * @param gatewayBackendId the ID of the backend to check authorization for
+     * @param body the request body containing details of the command to perform
+     * @return true if authorized, false otherwise
+     */
+    public boolean isAuthorized(String gatewayBackendId, Document body) {
+        Document backendAuth = backendAuthorizationCollection.find(
+                new Document("gatewayBackendId", gatewayBackendId)).first();
+
+        String gatewayDeviceId = body.getString("gatewayDeviceId");
+        Document params = (Document) body.get("params");
+        String commandName = params.getString("type");
+
+        if (backendAuth == null || gatewayDeviceId == null || commandName == null) {
+            return false;
+        }
+
+        Document listOfAuthorizations = (Document) backendAuth.get("listOfAuthorizations");
+        if (listOfAuthorizations == null) {
+            return false;
+        }
+
+        List<String> authorizedCommandsObj = listOfAuthorizations.getList(gatewayDeviceId, String.class);
+        if (authorizedCommandsObj == null) {
+            return false;
+        }
+
+        return authorizedCommandsObj.contains(commandName);
+
     }
 
 }

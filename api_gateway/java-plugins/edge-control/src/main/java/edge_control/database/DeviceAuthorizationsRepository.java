@@ -145,4 +145,30 @@ public class DeviceAuthorizationsRepository {
 
     }
 
+    /**
+     * Checks if the given gatewayDeviceId is authorized to perform the specified operation.
+     *
+     * @param gatewayDeviceId the ID of the backend to check authorization for
+     * @param body the request body containing details of the info to send
+     * @return true if authorized, false otherwise
+     */
+    public boolean isAuthorized(String gatewayDeviceId, Document body) {
+        Document deviceAuth = deviceAuthorizationCollection.find(
+                new Document("gatewayDeviceId", gatewayDeviceId)).first();
+
+        String gatewayBackendId = body.getString("gatewayBackendId");
+
+        if (deviceAuth == null || gatewayBackendId == null) {
+            return false;
+        }
+
+        List<String> listOfAuthorizations = deviceAuth.getList("listOfAuthorizations", String.class);
+        if (listOfAuthorizations == null) {
+            return false;
+        }
+
+        return listOfAuthorizations.contains(gatewayBackendId);
+
+    }
+
 }

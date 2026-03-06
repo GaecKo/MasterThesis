@@ -2,6 +2,7 @@ package edge_control.database;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import edge_control.logger.EdgeControlLogger;
 import org.bson.Document;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -20,6 +21,8 @@ import java.util.UUID;
 public class BackendConfigRepository {
 
     private final MongoCollection<Document> backendConfigCollection;
+
+    private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
     /**
      * Inner class to hold backend creation response (ID and API key)
@@ -186,34 +189,22 @@ public class BackendConfigRepository {
      * Validates an API key for a given backend ID.
      * Compares the hash of the provided API key with the stored hash.
      *
-     * @param gatewayBackendId the backend ID
-     * @param apiKey           the plain text API key to validate
-     * @return true if the API key hash matches, false otherwise
+     * @param apiKey the plain text API key to validate
+     * @return gatewayBackendId if the API key hash matches
      */
-    public boolean validateApiKey(String gatewayBackendId, String apiKey) {
-        if (gatewayBackendId == null || apiKey == null) {
-            return false;
+    public String validateApiKey(String apiKey) {
+        if (apiKey == null) {
+            return "API key cannot be null";
         }
 
-        Document backendDoc = backendConfigCollection.find(
-                new Document("gatewayBackendId", gatewayBackendId)
-        ).first();
+        String hashedApiKey = hashApiKey(apiKey);
+        Document backendDoc = backendConfigCollection.find(new Document("apiKeyHash", hashedApiKey)).first();
 
-        if (backendDoc == null) {
-            return false;
+        if (backendDoc != null) {
+            return backendDoc.getString("gatewayBackendId");
+        } else {
+            return "Invalid API key";
         }
-
-        String storedApiKeyHash = backendDoc.getString("apiKeyHash");
-        if (storedApiKeyHash == null) {
-            return false;
-        }
-
-        String providedApiKeyHash = hashApiKey(apiKey);
-
-        byte[] storedHashBytes = Base64.getDecoder().decode(storedApiKeyHash);
-        byte[] providedHashBytes = Base64.getDecoder().decode(providedApiKeyHash);
-
-        return MessageDigest.isEqual(storedHashBytes, providedHashBytes);
     }
 
 }
