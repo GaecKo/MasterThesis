@@ -12,6 +12,7 @@ import org.apache.apisix.plugin.runner.HttpResponse;
 import org.apache.apisix.plugin.runner.filter.PluginFilter;
 import org.apache.apisix.plugin.runner.filter.PluginFilterChain;
 import org.bson.Document;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -86,11 +87,14 @@ public class AuthFilter implements PluginFilter {
         logger.info("Authentication successful for API key: " + request.getHeader("apikey") + " | Result: " + authenticationcheckerResult);
 
         if(authorizationManager.checkAuthorization(authenticationcheckerResult, Document.parse(request.getBody()))){
+            JSONObject body = new JSONObject(request.getBody());
             if (authenticationcheckerResult.startsWith("backend_")){
-                request.setHeader("gatewayBackendId", authenticationcheckerResult);
+                body.put("gatewayBackendId", authenticationcheckerResult);
+                request.setBody(body.toString());
                 logger.info(authenticationcheckerResult+ " is authorized to perform the operation.");
             } else if (authenticationcheckerResult.startsWith("device_")){
-                request.setHeader("gatewayDeviceId", authenticationcheckerResult);
+                body.put("gatewayDeviceId", authenticationcheckerResult);
+                request.setBody(body.toString());
                 logger.info(authenticationcheckerResult+ " is authorized to perform the operation.");
             }
         } else {
