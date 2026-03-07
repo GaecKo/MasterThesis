@@ -45,6 +45,21 @@ public class DeviceConfigRepository {
     }
 
     /**
+     * Checks if a device with the given ID exists in the database.
+     * @param requestBody the request body containing the gatewayDeviceId to check
+     * @return true if the device exists, false otherwise
+     */
+    public boolean deviceExists(Document requestBody) {
+        String gatewayDeviceId = requestBody.getString("gatewayDeviceId");
+        if (gatewayDeviceId == null) {
+            return false;
+        }
+
+        Document deviceDoc = deviceConfigCollection.find(new Document("gatewayDeviceId", gatewayDeviceId)).first();
+        return deviceDoc != null;
+    }
+
+    /**
      * Create the device configuration in the database.
      * Generates a unique gatewayDeviceId and a secure API key.
      * The API key is hashed before storing in the database for security.

@@ -151,6 +151,8 @@ Deletes a backend and removes it from all device authorization entries.
 ### `POST /onboarding/backendAuthZ`
 Creates a new authorization entry for a backend, specifying which devices it can communicate with and which commands are allowed per device.
 
+> **Prerequisite:** The backend must already exist in the configuration collection (created via `POST /onboarding/backend`). If it does not, the request will be rejected with a `400`.
+
 **Allowed consumers:** `gateway-admin`, `backend-admin`, `device-admin`
 
 **Request body:**
@@ -177,7 +179,15 @@ Creates a new authorization entry for a backend, specifying which devices it can
 }
 ```
 
-**Response `400`** — entry already exists or invalid format:
+**Response `400`** — backend does not exist in config collection:
+```json
+{
+    "status": "failure",
+    "message": "Failed to add backend authorization entry. Backend does not exist in configuration collection."
+}
+```
+
+**Response `400`** — authorization entry already exists or invalid format:
 ```json
 {
     "status": "failure",
@@ -329,7 +339,7 @@ Updates an existing device configuration. Supports deep merge for nested fields 
             }
         }
     },
-    "fieldsToRemove": ["commands.setBatteryOperation.params"]
+    "fieldsToRemove": ["commands.setEnergyOperation.params"]
 }
 ```
 
@@ -396,6 +406,8 @@ Deletes a device and removes it from all backend authorization entries.
 ### `POST /onboarding/deviceAuthZ`
 Creates a new authorization entry for a device, specifying which backends it is allowed to communicate with.
 
+> **Prerequisite:** The device must already exist in the configuration collection (created via `POST /onboarding/device`). If it does not, the request will be rejected with a `400`.
+
 **Allowed consumers:** `gateway-admin`, `device-admin`, `backend-admin`
 
 **Request body:**
@@ -417,14 +429,24 @@ Creates a new authorization entry for a device, specifying which backends it is 
 **Response `200`:**
 ```json
 {
-    "status": "success"
+    "status": "success",
+    "message": "Device authorization added successfully."
 }
 ```
 
-**Response `400`:**
+**Response `400`** — device does not exist in config collection:
 ```json
 {
-    "status": "failure"
+    "status": "failure",
+    "message": "Failed to add device authorization entry. Device does not exist in configuration collection."
+}
+```
+
+**Response `400`** — authorization entry already exists or invalid format:
+```json
+{
+    "status": "failure",
+    "message": "Failed to add device authorization. Authorization entry may already exist or invalid request format."
 }
 ```
 

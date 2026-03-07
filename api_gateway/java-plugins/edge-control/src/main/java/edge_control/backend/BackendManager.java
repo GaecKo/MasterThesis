@@ -105,6 +105,15 @@ public class BackendManager {
      * @return a Document with status and message
      */
     public Document addBackendAuthorizationConfig(String requestBody) {
+        // Check if backend was added in the config collection before adding authorization entry
+        if (!backendConfig.backendExists(Document.parse(requestBody))) {
+            Document responseDoc = new Document();
+            responseDoc.put("status", "failure");
+            responseDoc.put("message", "Failed to add backend authorization entry. Backend does not exist in configuration collection.");
+            logger.error("Failed to add backend authorization entry. Backend does not exist in configuration collection.");
+            return responseDoc;
+        }
+
         boolean success = backendAuthorizations.addBackendAuthorization(Document.parse(requestBody));
         Document responseDoc = new Document();
 

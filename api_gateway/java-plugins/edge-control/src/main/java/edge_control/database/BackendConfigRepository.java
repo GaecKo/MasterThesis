@@ -47,6 +47,21 @@ public class BackendConfigRepository {
     }
 
     /**
+     * Checks if a backend with the given ID exists in the database.
+     * @param requestBody the request body containing the gatewayBackendId to check
+     * @return true if the backend exists, false otherwise
+     */
+    public boolean backendExists(Document requestBody) {
+        String gatewayBackendId = requestBody.getString("gatewayBackendId");
+        if (gatewayBackendId == null) {
+            return false;
+        }
+
+        Document backendDoc = backendConfigCollection.find(new Document("gatewayBackendId", gatewayBackendId)).first();
+        return backendDoc != null;
+    }
+
+    /**
      * Create the backend configuration in the database.
      * Generates a unique gatewayBackendId and a secure API key.
      * The API key is hashed before storing in the database for security.

@@ -110,14 +110,25 @@ public class DeviceManager {
      * @return true if addition was successful, false otherwise
      */
     public Document addDeviceAuthorizationConfig(String requestBody) {
+        // Check if device exists before adding authorization
+        if (!deviceConfig.deviceExists(Document.parse(requestBody))) {
+            Document responseDoc = new Document();
+            responseDoc.put("status", "failure");
+            responseDoc.put("message", "Failed to add device authorization entry. Device does not exist in configuration collection.");
+            logger.error("Failed to add device authorization entry. Device does not exist in configuration collection.");
+            return responseDoc;
+        }
+
         boolean succes = deviceAuthorizations.addDeviceAuthorization(Document.parse(requestBody));
         Document responseDoc = new Document();
 
         if (succes) {
             responseDoc.put("status", "success");
+            responseDoc.put("message", "Device authorization added successfully.");
             logger.info("Added device authorization");
         } else {
             responseDoc.put("status", "failure");
+            responseDoc.put("message", "Failed to add device authorization. Authorization entry may already exist or invalid request format.");
             logger.error("Failed to add device authorization");
         }
         return responseDoc;
