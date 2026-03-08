@@ -38,12 +38,12 @@
 * [X] Routes 
 * [ ] HTTPs (TLS)
 * [ ] `GET` methods 
-* [ ] apply JWT / RBAC for all onboarding route
+* [X] apply JWT / RBAC for all onboarding route
 
 ## Auth Filter
 > **deadline**: 09/03 (Elie)
 * [X] AuthN AuthZ check mechanism 
-* [ ] Optimization 
+* [X] Optimization 
 
 ## Protocol Security 
 > **deadline**: 16/03 (Elie)
