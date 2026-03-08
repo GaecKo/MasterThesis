@@ -1,21 +1,20 @@
 package edge_control.filters;
 
 import edge_control.RequestHandler;
+import edge_control.exceptions.CorruptedConfiguration;
+import edge_control.exceptions.EdgeControlException;
+import edge_control.exceptions.IllegalOperation;
+import edge_control.exceptions.OperationNotSupported;
+import edge_control.logger.EdgeControlLogger;
+import edge_control.translation.DeviceTranslationManager;
 import edge_control.translation.config.DeviceConfig;
-import io.netty.handler.codec.http.HttpMethod;
 import org.apache.apisix.plugin.runner.HttpRequest;
 import org.apache.apisix.plugin.runner.HttpResponse;
 import org.apache.apisix.plugin.runner.filter.PluginFilter;
 import org.apache.apisix.plugin.runner.filter.PluginFilterChain;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-
-import edge_control.translation.DeviceTranslationManager;
-import edge_control.logger.EdgeControlLogger;
-import edge_control.translation.adapter.DeviceAdapter;
-import edge_control.exceptions.*;
 
 import java.util.Arrays;
 
@@ -31,10 +30,10 @@ import java.util.Arrays;
  * - Marks requests as processed and continues the APISIX filter chain.
  */
 @Component
-public class DeviceTranslationFilter implements PluginFilter {
+public class TranslationOnboardingFilter implements PluginFilter {
 
     private static final Logger API_LOGGER =
-            LoggerFactory.getLogger(DeviceTranslationFilter.class);
+            LoggerFactory.getLogger(TranslationOnboardingFilter.class);
 
     private final EdgeControlLogger logger =
             EdgeControlLogger.getInstance();
@@ -49,9 +48,9 @@ public class DeviceTranslationFilter implements PluginFilter {
     /**
      * Initializes the plugin and logs startup messages.
      */
-    DeviceTranslationFilter() {
-        logger.info("DeviceTranslation Filter initialized");
-        API_LOGGER.warn("DeviceTranslation Filter is running");
+    TranslationOnboardingFilter() {
+        logger.info("TranslationOnboarding Filter initialized");
+        API_LOGGER.warn("TranslationOnboarding Filter is running");
     }
 
     /**
@@ -61,14 +60,10 @@ public class DeviceTranslationFilter implements PluginFilter {
      */
     @Override
     public String name() {
-        return "DeviceTranslation";
+        return "TranslationOnboarding";
     }
 
     /**
-     * Main filter method invoked by APISIX on the event loop thread.
-     * NEVER BLOCK THIS THREAD - return immediately for slow paths.
-     * Main filter method invoked by APISIX.
-     * Routes requests to health check, device management, or device adapters.
      *
      * @param request the incoming HTTP request
      * @param response the HTTP response to populate
@@ -91,15 +86,12 @@ public class DeviceTranslationFilter implements PluginFilter {
         }
 
         try {
-            if (request.getPath().startsWith("/command") && request.getMethod() == HttpRequest.Method.POST) {
-                // SLOW PATH - handle asynchronously with NO BLOCKING
-                // We pass the chain to the async handler which will call chain.filter() when done
-                handleDeviceRequestAsync(request, response, chain);
-                // IMPORTANT: Return immediately WITHOUT calling chain.filter()
-                // The async handler will call it later
+            if (request.getPath().startsWith("/onboarding/translation")) {
+                // Fast path - handle synchronously
+                handleDeviceManagementRequest(request, response, chain);
 
             } else {
-                throw new IllegalOperation("ProtocolTranslation filter is available for POST on /command route.");
+                throw new IllegalOperation("CommandsOnboarding filter is available for /onboarding/translation route.");
             }
         } catch (Exception e) {
             // Synchronous error handling
@@ -110,65 +102,52 @@ public class DeviceTranslationFilter implements PluginFilter {
     }
 
     /**
-     * SLOW PATH - Fully asynchronous, non-blocking device request handling.
-     * This method returns immediately and the callback continues the chain.
-     * Routes incoming requests to the corresponding device adapter.
-     * Responds with errors if device ID is missing or unknown.
-     *
-     * @param request the incoming HTTP request
-     * @param response the HTTP response to populate
-     * @throws Exception if adapter processing fails
+     * Fast path - device management.
      */
-    private void handleDeviceRequestAsync(HttpRequest request,
-                                          HttpResponse response,
-                                          PluginFilterChain chain) {
+    private void handleDeviceManagementRequest(HttpRequest request,
+                                               HttpResponse response,
+                                               PluginFilterChain chain)
+            throws OperationNotSupported, CorruptedConfiguration, EdgeControlException {
 
-        try {
-            // Parse request body (fast operation)
-            JSONObject config = new JSONObject(request.getBody());
-
-            if (!config.has("gatewayDeviceId")) {
-                // Fast error path - handle synchronously
-                logger.debug("No device ID...");
-                response.setStatusCode(400);
-                response.setHeader("X-Error", "Missing gatewayDeviceId in request body");
-                response.setBody("X-Error: Missing gatewayDeviceId in body");
+        switch (request.getMethod()) {
+            case POST: {
+                deviceTranslationManager.createAdapter(request.getBody());
+                response.setStatusCode(200);
+                response.setBody("Device Translation Created");
                 chain.filter(request, response);
-                return;
+                break;
             }
-
-            String gatewayDeviceId = config.getString("gatewayDeviceId");
-            DeviceAdapter adapter = deviceTranslationManager.get(gatewayDeviceId);
-
-            if (adapter == null) {
-                // Fast error path - handle synchronously
-                response.setStatusCode(404);
-                response.setHeader("X-Error", "Unknown device - no adapter linked: " + gatewayDeviceId);
-                response.setBody("X-Error: Unknown device - no adapter linked: " + gatewayDeviceId);
-                requestHandler.skipChain(request);
-                chain.filter(request, response);
-                return;
-            }
-
-            // Delegate to adapter - it will make async HTTP call and call the callback when done
-            // We pass a callback that continues the filter chain
-            adapter.handleRequest(request, response, () -> {
-                // This callback is executed after the async HTTP call completes
-                try {
-                    // Continue the filter chain now that response is modified
+            case DELETE: {
+                if (deviceTranslationManager.deleteDeviceConfig(request.getBody())) {
+                    response.setStatusCode(200);
+                    response.setBody("Device Translation Config Deleted - success");
                     chain.filter(request, response);
-                } catch (Exception e) {
-                    logger.error("Error in chain.filter callback: " + e.getMessage());
+                } else {
+                    response.setStatusCode(404);
+                    response.setHeader("X-Error", "Unknown device - no config to delete");
+                    response.setBody("X-Error: Unknown device - no config to delete");
+                    chain.filter(request, response);
                 }
-            });
-
-        } catch (Exception e) {
-            // Handle any synchronous errors in the setup phase
-            logger.error("Error in handleDeviceRequestAsync setup: " + e.getMessage());
-            handleException(response, e);
-            chain.filter(request, response);
+                break;
+            }
+            case GET: {
+                DeviceConfig deviceConfig = deviceTranslationManager.getConfig(request.getBody());
+                if (deviceConfig == null) {
+                    response.setStatusCode(404);
+                    response.setHeader("X-Error", "Unknown device - no config to retrieve");
+                    response.setBody("X-Error: Unknown device - no config to retrieve");
+                    chain.filter(request, response);
+                } else {
+                    response.setStatusCode(200);
+                    response.setBody(deviceConfig.toString()); // to string removes _id automatically
+                    chain.filter(request, response);
+                }
+                break;
+            }
+            default: {
+                throw new OperationNotSupported("Method: " + request.getMethod() + " not supported on route /devices");
+            }
         }
-        // Method returns immediately - NO WAITING, NO BLOCKING
     }
 
     /**

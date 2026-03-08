@@ -20,26 +20,8 @@ error()   { echo -e "${RED}[ERROR]${RESET} $*"; }
 ### ============================================================
 
 # Setup the device route:
-info "Setting route /devices with DeviceConfig plugin enabled..."
+info "Setting route /command with DeviceTranslation plugin enabled..."
 curl -i http://127.0.0.1:9180/apisix/admin/routes/1 -H 'X-API-KEY: admin' -X PUT -d '
-{
-    "uri": "/devices",
-    "plugins": {
-        "ext-plugin-pre-req": {
-            "conf" : [
-                {"name": "DeviceTranslation", "value": "{\"enable\":\"feature\"}"}
-            ]
-        }
-    }
-}'
-
-success "Route setup"
-# Check
-info "Test it with: curl http://127.0.0.1:9080/devices"
-
-# Setup the device route:
-info "Setting route /devices with DeviceConfig plugin enabled..."
-curl -i http://127.0.0.1:9180/apisix/admin/routes/2 -H 'X-API-KEY: admin' -X PUT -d '
 {
     "uri": "/command",
     "plugins": {
@@ -53,17 +35,17 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/2 -H 'X-API-KEY: admin' -X PUT
 
 success "Route setup"
 # Check
-info "Test it with: curl http://127.0.0.1:9080/devices"
+info "Test it with: curl http://127.0.0.1:9080/command"
 
-# Setup the health route:
-info "Setting route /health with ProtocolTranslation plugin enabled..."
-curl -i http://127.0.0.1:9180/apisix/admin/routes/3 -H 'X-API-KEY: admin' -X PUT -d '
+# Setup the device route:
+info "Setting route /onboarding/translation with DeviceConfig plugin enabled..."
+curl -i http://127.0.0.1:9180/apisix/admin/routes/2 -H 'X-API-KEY: admin' -X PUT -d '
 {
-    "uri": "/health",
+    "uri": "/onboarding/translation",
     "plugins": {
         "ext-plugin-pre-req": {
             "conf" : [
-                {"name": "DeviceTranslation", "value": "{\"enable\":\"feature\"}"}
+                {"name": "TranslationOnboarding", "value": "{\"enable\":\"feature\"}"}
             ]
         }
     }
@@ -71,7 +53,7 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/3 -H 'X-API-KEY: admin' -X PUT
 
 success "Route setup"
 # Check
-info "Test it with: curl http://127.0.0.1:9080/health"
+info "Test it with: curl http://127.0.0.1:9080/onboarding/translation"
 
 
 # Gateway admin
