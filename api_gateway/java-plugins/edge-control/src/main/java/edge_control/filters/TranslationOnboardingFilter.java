@@ -1,10 +1,7 @@
 package edge_control.filters;
 
 import edge_control.RequestHandler;
-import edge_control.exceptions.CorruptedConfiguration;
-import edge_control.exceptions.EdgeControlException;
-import edge_control.exceptions.IllegalOperation;
-import edge_control.exceptions.OperationNotSupported;
+import edge_control.exceptions.*;
 import edge_control.logger.EdgeControlLogger;
 import edge_control.translation.DeviceTranslationManager;
 import edge_control.translation.config.DeviceConfig;
@@ -95,7 +92,7 @@ public class TranslationOnboardingFilter implements PluginFilter {
             }
         } catch (Exception e) {
             // Synchronous error handling
-            handleException(response, e);
+            ExceptionHandler.handleException(response, e);
             requestHandler.skipChain(request);
             chain.filter(request, response);
         }
@@ -146,42 +143,6 @@ public class TranslationOnboardingFilter implements PluginFilter {
             }
             default: {
                 throw new OperationNotSupported("Method: " + request.getMethod() + " not supported on route /devices");
-            }
-        }
-    }
-
-    /**
-     * Handles exceptions thrown during request processing.
-     * Maps known exceptions to specific HTTP response codes and headers.
-     *
-     * @param response the HTTP response to populate
-     * @param e the exception to handle
-     */
-    private void handleException(HttpResponse response, Exception e) {
-        logger.error("Request failed: " + e);
-        logger.debug("Stack trace: " + Arrays.toString(e.getStackTrace()));
-
-
-        switch (e) {
-            case CorruptedConfiguration corruptedConfiguration -> {
-                response.setStatusCode(400);
-                response.setHeader("X-Error", e.getMessage());
-                response.setBody(e.getMessage());
-            }
-            case IllegalOperation illegalOperation -> {
-                response.setStatusCode(403);
-                response.setHeader("X-Error", e.getMessage());
-                response.setBody(e.getMessage());
-            }
-            case OperationNotSupported operationNotSupported -> {
-                response.setStatusCode(501);
-                response.setHeader("X-Error", e.getMessage());
-                response.setBody(e.getMessage());
-            }
-            default -> {
-                response.setStatusCode(500);
-                response.setHeader("X-Error", e.getMessage());
-                response.setBody(e.getMessage());
             }
         }
     }

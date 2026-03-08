@@ -4,6 +4,7 @@ import edge_control.RequestHandler;
 import edge_control.auth.AuthenticationManager;
 import edge_control.auth.AuthorizationManager;
 import edge_control.exceptions.CorruptedConfiguration;
+import edge_control.exceptions.ExceptionHandler;
 import edge_control.exceptions.IllegalOperation;
 import edge_control.exceptions.OperationNotSupported;
 import edge_control.logger.EdgeControlLogger;
@@ -80,7 +81,7 @@ public class AuthFilter implements PluginFilter {
 
         String authenticationcheckerResult = authenticationManager.checkAuthentication(request.getHeader("apikey"));
         if (authenticationcheckerResult.startsWith("Invalid API key")) {
-            handleException(response, new IllegalOperation(authenticationcheckerResult));
+            ExceptionHandler.handleException(response, new IllegalOperation(authenticationcheckerResult));
             return;
         }
 
@@ -98,46 +99,12 @@ public class AuthFilter implements PluginFilter {
                 logger.info(authenticationcheckerResult+ " is authorized to perform the operation.");
             }
         } else {
-            handleException(response, new IllegalOperation("Unauthorized access"));
+            ExceptionHandler.handleException(response, new IllegalOperation("Unauthorized access"));
             return;
         }
 
         // Continue APISIX chain
         chain.filter(request, response);
-    }
-
-    /**
-     * Handles exceptions thrown during request processing.
-     * Maps known exceptions to specific HTTP response codes and headers.
-     *
-     * @param response the HTTP response to populate
-     * @param e the exception to handle
-     */
-    private void handleException(HttpResponse response, Exception e) {
-        logger.error("Request failed: " + e);
-
-        switch (e) {
-            case CorruptedConfiguration corruptedConfiguration -> {
-                response.setStatusCode(400);
-                response.setHeader("X-Error", e.getMessage());
-                response.setBody(e.getMessage());
-            }
-            case IllegalOperation illegalOperation -> {
-                response.setStatusCode(403);
-                response.setHeader("X-Error", e.getMessage());
-                response.setBody(e.getMessage());
-            }
-            case OperationNotSupported operationNotSupported -> {
-                response.setStatusCode(501);
-                response.setHeader("X-Error", e.getMessage());
-                response.setBody(e.getMessage());
-            }
-            default -> {
-                response.setStatusCode(500);
-                response.setHeader("X-Error", e.getMessage());
-                response.setBody(e.getMessage());
-            }
-        }
     }
 
     /**

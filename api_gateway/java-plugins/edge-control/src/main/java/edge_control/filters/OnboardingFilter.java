@@ -4,6 +4,7 @@ import edge_control.RequestHandler;
 import edge_control.backend.BackendManager;
 import edge_control.device.DeviceManager;
 import edge_control.exceptions.CorruptedConfiguration;
+import edge_control.exceptions.ExceptionHandler;
 import edge_control.exceptions.IllegalOperation;
 import edge_control.exceptions.OperationNotSupported;
 import edge_control.logger.EdgeControlLogger;
@@ -104,7 +105,7 @@ public class OnboardingFilter implements PluginFilter {
 
                     }
                 } catch (Exception e) {
-                    this.handleException(response, e);
+                    ExceptionHandler.handleException(response, e);
                 }
             } case PATCH -> {
                 try {
@@ -126,7 +127,7 @@ public class OnboardingFilter implements PluginFilter {
 
                     }
                 } catch (Exception e) {
-                    this.handleException(response, e);
+                    ExceptionHandler.handleException(response, e);
                 }
             } case DELETE -> {
                 try {
@@ -148,7 +149,7 @@ public class OnboardingFilter implements PluginFilter {
 
                     }
                 } catch (Exception e) {
-                    this.handleException(response, e);
+                    ExceptionHandler.handleException(response, e);
                 }
 
             } case GET -> {
@@ -294,40 +295,6 @@ public class OnboardingFilter implements PluginFilter {
         }
         response.setBody(resp.toJson());
         requestHandler.skipChain(request);
-    }
-
-    /**
-     * Handles exceptions thrown during request processing.
-     * Maps known exceptions to specific HTTP response codes and headers.
-     *
-     * @param response the HTTP response to populate
-     * @param e the exception to handle
-     */
-    private void handleException(HttpResponse response, Exception e) {
-        logger.error("Request failed: " + e);
-
-        switch (e) {
-            case CorruptedConfiguration corruptedConfiguration -> {
-                response.setStatusCode(400);
-                response.setHeader("X-Error", e.getMessage());
-                response.setBody(e.getMessage());
-            }
-            case IllegalOperation illegalOperation -> {
-                response.setStatusCode(403);
-                response.setHeader("X-Error", e.getMessage());
-                response.setBody(e.getMessage());
-            }
-            case OperationNotSupported operationNotSupported -> {
-                response.setStatusCode(501);
-                response.setHeader("X-Error", e.getMessage());
-                response.setBody(e.getMessage());
-            }
-            default -> {
-                response.setStatusCode(500);
-                response.setHeader("X-Error", e.getMessage());
-                response.setBody(e.getMessage());
-            }
-        }
     }
 
     /**

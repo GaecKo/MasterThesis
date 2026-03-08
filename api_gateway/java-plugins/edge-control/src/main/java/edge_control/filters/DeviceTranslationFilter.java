@@ -103,7 +103,7 @@ public class DeviceTranslationFilter implements PluginFilter {
             }
         } catch (Exception e) {
             // Synchronous error handling
-            handleException(response, e);
+            ExceptionHandler.handleException(response, e);
             requestHandler.skipChain(request);
             chain.filter(request, response);
         }
@@ -165,46 +165,10 @@ public class DeviceTranslationFilter implements PluginFilter {
         } catch (Exception e) {
             // Handle any synchronous errors in the setup phase
             logger.error("Error in handleDeviceRequestAsync setup: " + e.getMessage());
-            handleException(response, e);
+            ExceptionHandler.handleException(response, e);
             chain.filter(request, response);
         }
         // Method returns immediately - NO WAITING, NO BLOCKING
-    }
-
-    /**
-     * Handles exceptions thrown during request processing.
-     * Maps known exceptions to specific HTTP response codes and headers.
-     *
-     * @param response the HTTP response to populate
-     * @param e the exception to handle
-     */
-    private void handleException(HttpResponse response, Exception e) {
-        logger.error("Request failed: " + e);
-        logger.debug("Stack trace: " + Arrays.toString(e.getStackTrace()));
-
-
-        switch (e) {
-            case CorruptedConfiguration corruptedConfiguration -> {
-                response.setStatusCode(400);
-                response.setHeader("X-Error", e.getMessage());
-                response.setBody(e.getMessage());
-            }
-            case IllegalOperation illegalOperation -> {
-                response.setStatusCode(403);
-                response.setHeader("X-Error", e.getMessage());
-                response.setBody(e.getMessage());
-            }
-            case OperationNotSupported operationNotSupported -> {
-                response.setStatusCode(501);
-                response.setHeader("X-Error", e.getMessage());
-                response.setBody(e.getMessage());
-            }
-            default -> {
-                response.setStatusCode(500);
-                response.setHeader("X-Error", e.getMessage());
-                response.setBody(e.getMessage());
-            }
-        }
     }
 
     /**
