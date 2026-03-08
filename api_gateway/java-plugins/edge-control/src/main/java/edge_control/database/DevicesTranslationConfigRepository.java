@@ -4,6 +4,9 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.ReplaceOptions;
+import com.mongodb.client.result.DeleteResult;
+import edge_control.exceptions.CorruptedConfiguration;
+import edge_control.logger.EdgeControlLogger;
 import edge_control.translation.config.DeviceConfig;
 import edge_control.exceptions.EdgeControlException;
 import org.bson.Document;
@@ -24,7 +27,7 @@ import org.json.JSONObject;
 public class DevicesTranslationConfigRepository {
 
     private final MongoCollection<Document> collection;
-
+    private final EdgeControlLogger logger = EdgeControlLogger.getInstance();
     /**
      * Initializes the repository by connecting to the "devices" collection
      * in the configured MongoDB database.
@@ -42,9 +45,26 @@ public class DevicesTranslationConfigRepository {
     public List<DeviceConfig> findAll() {
         List<DeviceConfig> result = new ArrayList<>();
         for (Document doc : collection.find()) {
-            result.add(new DeviceConfig(new JSONObject(doc.toJson())));
+            try {
+                result.add(new DeviceConfig(new JSONObject(doc.toJson())));
+            } catch (CorruptedConfiguration e) {
+                logger.error(e.getMessage() + " - data corrupted in db! Doc ID: " + doc.getString("_id"));
+            }
         }
         return result;
+    }
+
+    public boolean delete(String gatewayDeviceId) throws EdgeControlException {
+
+        if (gatewayDeviceId == null || gatewayDeviceId.isBlank()) {
+            throw new EdgeControlException("Cannot remove device configuration: gatewayDeviceId is null or blank");
+        }
+
+        DeleteResult result = collection.deleteOne(
+                Filters.eq("gatewayDeviceId", gatewayDeviceId)
+        );
+
+        return result.getDeletedCount() > 0;
     }
 
     /**
@@ -58,12 +78,11 @@ public class DevicesTranslationConfigRepository {
     public void save(DeviceConfig config) throws EdgeControlException {
 
         JSONObject configJson = config.getConfig();
+        String gatewayDeviceId = config.getDeviceId();
 
-        if (configJson.getString("gatewayDeviceId") == null) {
-            throw new EdgeControlException("Internal error: gatewayDeviceId must be provided in 'save(RequestObject)', but is null");
+        if (gatewayDeviceId == null || gatewayDeviceId.isBlank()) {
+            throw new EdgeControlException("gatewayDeviceId must be provided when saving a device config");
         }
-
-        String gatewayDeviceId = configJson.getString("gatewayDeviceId");
 
         Document doc = new Document(configJson.toMap());
 

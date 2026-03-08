@@ -96,7 +96,7 @@ public class DeviceRegistry {
             seen.add(deviceId);
 
             if (!fingerprint.equals(fingerprints.get(deviceId))) {
-                rebuild(deviceId, config);
+                rebuild(config);
             }
         }
 
@@ -114,12 +114,11 @@ public class DeviceRegistry {
      * - Creates and initializes a new adapter.
      * - Updates the fingerprints and adapters maps.
      *
-     * @param deviceId the ID of the device
      * @param config the configuration to use
      */
-    public void rebuild(String deviceId,
-                        DeviceConfig config) {
+    public void rebuild(DeviceConfig config) {
 
+        String deviceId = config.getDeviceId();
         remove(deviceId);
 
         DeviceAdapter adapter = adapterFactory.create(config);
@@ -148,6 +147,16 @@ public class DeviceRegistry {
         fingerprints.remove(deviceId);
     }
 
+    public boolean delete(String gatewayDeviceId) throws EdgeControlException {
+        // remove from db first (so deviceRegistry can't fetch it anymore)
+        boolean db_del = repository.delete(gatewayDeviceId);
+
+        // remove from deviceRegistry
+        remove(gatewayDeviceId);
+
+        return db_del;
+    }
+
     /**
      * Inserts or updates a device configuration in the repository
      * and rebuilds the corresponding adapter.
@@ -157,7 +166,7 @@ public class DeviceRegistry {
     public synchronized void upsert(DeviceConfig config) throws EdgeControlException {
         repository.save(config);
 
-        rebuild(config.getDeviceId(), config);
+        rebuild(config);
     }
 
 }

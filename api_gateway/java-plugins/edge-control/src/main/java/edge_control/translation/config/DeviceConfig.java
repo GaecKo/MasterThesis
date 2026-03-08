@@ -1,5 +1,6 @@
 package edge_control.translation.config;
 
+import edge_control.exceptions.CorruptedConfiguration;
 import org.json.JSONObject;
 import org.springframework.util.DigestUtils;
 
@@ -9,10 +10,16 @@ public class DeviceConfig {
     private String deviceId;
     private String adapter;
 
-    public DeviceConfig(JSONObject config) {
+    public DeviceConfig(JSONObject config) throws CorruptedConfiguration {
         this.config = config;
         this.deviceId = config.getString("gatewayDeviceId");
+        if (deviceId == null || deviceId.isBlank()) {
+            throw new CorruptedConfiguration("Missing 'gatewayDeviceId' field for creating DeviceConfig");
+        }
         this.adapter = config.getString("adapter");
+        if (adapter == null || adapter.isBlank()) {
+            throw new CorruptedConfiguration("Missing 'adapter' field for creating DeviceConfig");
+        }
     }
 
     public String fingerprint() {

@@ -52,6 +52,15 @@ public class DeviceTranslationManager {
         return deviceRegistry.get(deviceId);
     }
 
+    public boolean deleteDeviceConfig(String requestBody) throws EdgeControlException, CorruptedConfiguration {
+        JSONObject config = new JSONObject(requestBody);
 
+        if (!config.has("gatewayDeviceId")) {
+            throw new CorruptedConfiguration("The JSON file you provided misses the following field: 'gatewayDeviceId', can't delete device");
+        }
+        String gatewayDeviceId = config.getString("gatewayDeviceId");
+        logger.info("Deleting device config for device: " + gatewayDeviceId);
+        return deviceRegistry.delete(gatewayDeviceId);
+    }
 
 }

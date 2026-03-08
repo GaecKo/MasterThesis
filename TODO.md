@@ -56,8 +56,6 @@
 * [] Choose which one could be applied
 * [] Implement 
 
-
-
 # Report
 
 ## State of the art 

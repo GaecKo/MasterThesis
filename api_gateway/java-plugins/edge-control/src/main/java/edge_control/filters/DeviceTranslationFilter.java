@@ -142,8 +142,20 @@ public class DeviceTranslationFilter implements PluginFilter {
                 deviceTranslationManager.createAdapter(request.getBody());
                 response.setStatusCode(200);
                 response.setBody("Device Translation Created");
-                requestHandler.skipChain(request);
                 chain.filter(request, response);
+                break;
+            }
+            case DELETE: {
+                if (deviceTranslationManager.deleteDeviceConfig(request.getBody())) {
+                    response.setStatusCode(200);
+                    response.setBody("Device Translation Config Deleted - success");
+                    chain.filter(request, response);
+                } else {
+                    response.setStatusCode(404);
+                    response.setHeader("X-Error", "Unknown device - no config to delete");
+                    response.setBody("X-Error: Unknown device - no config to delete");
+                    chain.filter(request, response);
+                }
                 break;
             }
             default: {
@@ -188,6 +200,7 @@ public class DeviceTranslationFilter implements PluginFilter {
                 response.setStatusCode(404);
                 response.setHeader("X-Error", "Unknown device - no adapter linked: " + gatewayDeviceId);
                 response.setBody("X-Error: Unknown device - no adapter linked: " + gatewayDeviceId);
+                requestHandler.skipChain(request);
                 chain.filter(request, response);
                 return;
             }
