@@ -7,9 +7,7 @@ import org.bson.Document;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Repository for creation and modification of a device entry from MongoDB.
@@ -57,6 +55,10 @@ public class DeviceConfigRepository {
 
         Document deviceDoc = deviceConfigCollection.find(new Document("gatewayDeviceId", gatewayDeviceId)).first();
         return deviceDoc != null;
+    }
+
+    public List<Document> findAll() {
+        return deviceConfigCollection.find().into(new ArrayList<>());
     }
 
     /**

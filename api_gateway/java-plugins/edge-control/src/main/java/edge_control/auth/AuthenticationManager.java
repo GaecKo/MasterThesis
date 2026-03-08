@@ -14,6 +14,7 @@ public class AuthenticationManager {
 
     private final DeviceConfigRepository deviceConfig = new DeviceConfigRepository();
 
+    private final AuthRegistry authRegistry = AuthRegistry.getInstance();
 
 
     private AuthenticationManager() {
@@ -28,18 +29,34 @@ public class AuthenticationManager {
         return instance;
     }
 
-    public String checkAuthentication(String apiKey){
+    public String checkAuthentication(String apiKey) {
+        if (apiKey == null) {
+            return "API key cannot be null";
+        }
+
+        String hash = backendConfig.hashApiKey(apiKey);
+
+        // 1. Check registry cache first
+        String cached = authRegistry.getGatewayId(hash);
+        if (cached != null) {
+            logger.info("AuthRegistry cache hit");
+            return cached;
+        }
+
+        // 2. Cache miss — existing logic unchanged
         String gatewayBackendId = backendConfig.validateApiKey(apiKey);
         if (!gatewayBackendId.startsWith("Invalid API key") && !gatewayBackendId.equals("API key cannot be null")) {
+            authRegistry.putGatewayId(hash, gatewayBackendId);
             return gatewayBackendId;
-        } else {
-            String gatewayDeviceId = deviceConfig.validateApiKey(apiKey);
-            if (!gatewayDeviceId.equals("Invalid API key") && !gatewayDeviceId.equals("API key cannot be null")) {
-                return gatewayDeviceId;
-            } else {
-                return "Invalid API key or API key cannot be null";
-            }
         }
+
+        String gatewayDeviceId = deviceConfig.validateApiKey(apiKey);
+        if (!gatewayDeviceId.equals("Invalid API key") && !gatewayDeviceId.equals("API key cannot be null")) {
+            authRegistry.putGatewayId(hash, gatewayDeviceId);
+            return gatewayDeviceId;
+        }
+
+        return "Invalid API key or API key cannot be null";
     }
 
 }

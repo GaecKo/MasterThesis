@@ -5,6 +5,7 @@ import com.mongodb.client.MongoDatabase;
 import edge_control.logger.EdgeControlLogger;
 import org.bson.Document;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -221,6 +222,15 @@ public class BackendAuthorizationsRepository {
 
         return authorizedCommandsObj.contains(commandName);
 
+    }
+
+    public List<Document> findAll() {
+        return backendAuthorizationCollection.find().into(new ArrayList<>());
+    }
+    public Document findAuthorizationsById(String gatewayBackendId) {
+        Document doc = backendAuthorizationCollection.find(
+                new Document("gatewayBackendId", gatewayBackendId)).first();
+        return doc != null ? (Document) doc.get("listOfAuthorizations") : null;
     }
 
 }

@@ -4,6 +4,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -169,6 +170,15 @@ public class DeviceAuthorizationsRepository {
 
         return listOfAuthorizations.contains(gatewayBackendId);
 
+    }
+
+    public List<Document> findAll() {
+        return deviceAuthorizationCollection.find().into(new ArrayList<>());
+    }
+    public List<String> findAuthorizationsById(String gatewayDeviceId) {
+        Document doc = deviceAuthorizationCollection.find(
+                new Document("gatewayDeviceId", gatewayDeviceId)).first();
+        return doc != null ? doc.getList("listOfAuthorizations", String.class) : null;
     }
 
 }

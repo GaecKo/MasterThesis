@@ -7,6 +7,7 @@ import org.bson.Document;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
@@ -59,6 +60,10 @@ public class BackendConfigRepository {
 
         Document backendDoc = backendConfigCollection.find(new Document("gatewayBackendId", gatewayBackendId)).first();
         return backendDoc != null;
+    }
+
+    public List<Document> findAll() {
+        return backendConfigCollection.find().into(new ArrayList<>());
     }
 
     /**
@@ -190,7 +195,7 @@ public class BackendConfigRepository {
      * @param apiKey the plain text API key
      * @return the SHA-256 hash of the API key
      */
-    private String hashApiKey(String apiKey) {
+    public String hashApiKey(String apiKey) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hash = digest.digest(apiKey.getBytes());
