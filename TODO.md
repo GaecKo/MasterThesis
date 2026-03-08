@@ -1,7 +1,7 @@
 # Implementation
 ## Device Translation Filter
 > **deadline**: 16/03 (Arthur)
-* [] DeviceTranslationFilter: finisses `DELETE`/`GET` pour l'onboarding des cmds
+* [X] DeviceTranslationFilter: finisses `DELETE`/`GET` pour l'onboarding des cmds
 * [] DeviceTranslationFilter: finisse `MQTTAdapter`
 * [] DeviceTranslationFilter: cleaning step of payload
 * [] DeviceTranslationFilter: multithreading 

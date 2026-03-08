@@ -31,6 +31,7 @@ public class DeviceRegistry {
 
     private final Map<String, DeviceAdapter> adapters = new ConcurrentHashMap<>();
     private final Map<String, String> fingerprints = new ConcurrentHashMap<>();
+    private final Map<String, DeviceConfig> deviceConfigs = new ConcurrentHashMap<>();
 
     private final AdapterFactory adapterFactory = new AdapterFactory();
     private final DevicesTranslationConfigRepository repository = new DevicesTranslationConfigRepository();
@@ -76,6 +77,10 @@ public class DeviceRegistry {
      */
     public DeviceAdapter get(String deviceId) {
         return adapters.get(deviceId);
+    }
+
+    public DeviceConfig getConfig(String deviceId) {
+        return deviceConfigs.get(deviceId);
     }
 
     /**
@@ -131,6 +136,7 @@ public class DeviceRegistry {
         // logger.debug("Rebuilding device: " + deviceId + "\n" + config);
 
         adapters.put(deviceId, adapter);
+        deviceConfigs.put(deviceId, config);
         fingerprints.put(deviceId, config.fingerprint());
     }
 
@@ -145,13 +151,14 @@ public class DeviceRegistry {
             existing.shutdown();
         }
         fingerprints.remove(deviceId);
+        deviceConfigs.remove(deviceId);
     }
 
     public boolean delete(String gatewayDeviceId) throws EdgeControlException {
         // remove from db first (so deviceRegistry can't fetch it anymore)
         boolean db_del = repository.delete(gatewayDeviceId);
 
-        // remove from deviceRegistry
+        // remove from deviceRegistry - optional, will be updated by refresh anyway
         remove(gatewayDeviceId);
 
         return db_del;

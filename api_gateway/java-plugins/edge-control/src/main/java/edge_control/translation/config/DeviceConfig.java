@@ -43,6 +43,9 @@ public class DeviceConfig {
 
     @Override
     public String toString() {
-        return config.toString();
+        Object o = config.remove("_id");
+        String configString = config.toString(4);
+        config.put("_id", o);
+        return configString;
     }
 }

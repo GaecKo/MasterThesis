@@ -1,6 +1,7 @@
 package edge_control.filters;
 
 import edge_control.RequestHandler;
+import edge_control.translation.config.DeviceConfig;
 import org.apache.apisix.plugin.runner.HttpRequest;
 import org.apache.apisix.plugin.runner.HttpResponse;
 import org.apache.apisix.plugin.runner.filter.PluginFilter;
@@ -43,7 +44,6 @@ public class DeviceTranslationFilter implements PluginFilter {
     private static final RequestHandler requestHandler =
             RequestHandler.getInstance();
 
-    // NO THREAD POOL - we let APISIX manage concurrency
 
     /**
      * Initializes the plugin and logs startup messages.
@@ -154,6 +154,20 @@ public class DeviceTranslationFilter implements PluginFilter {
                     response.setStatusCode(404);
                     response.setHeader("X-Error", "Unknown device - no config to delete");
                     response.setBody("X-Error: Unknown device - no config to delete");
+                    chain.filter(request, response);
+                }
+                break;
+            }
+            case GET: {
+                DeviceConfig deviceConfig = deviceTranslationManager.getConfig(request.getBody());
+                if (deviceConfig == null) {
+                    response.setStatusCode(404);
+                    response.setHeader("X-Error", "Unknown device - no config to retrieve");
+                    response.setBody("X-Error: Unknown device - no config to retrieve");
+                    chain.filter(request, response);
+                } else {
+                    response.setStatusCode(200);
+                    response.setBody(deviceConfig.toString()); // to string removes _id automatically
                     chain.filter(request, response);
                 }
                 break;
