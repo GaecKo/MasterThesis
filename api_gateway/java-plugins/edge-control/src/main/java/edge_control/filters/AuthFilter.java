@@ -99,6 +99,7 @@ public class AuthFilter implements PluginFilter {
                 logger.info(authenticationcheckerResult+ " is authorized to perform the operation.");
             }
         } else {
+            requestHandler.skipChain(request);
             ExceptionHandler.handleException(response, new IllegalOperation("Unauthorized access"));
             return;
         }

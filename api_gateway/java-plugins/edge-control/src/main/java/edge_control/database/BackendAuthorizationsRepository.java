@@ -203,8 +203,7 @@ public class BackendAuthorizationsRepository {
                 new Document("gatewayBackendId", gatewayBackendId)).first();
 
         String gatewayDeviceId = body.getString("gatewayDeviceId");
-        Document params = (Document) body.get("params");
-        String commandName = params.getString("type");
+        String commandName = body.getString("command");
 
         if (backendAuth == null || gatewayDeviceId == null || commandName == null) {
             return false;
