@@ -27,6 +27,7 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/1 -H 'X-API-KEY: admin' -X PUT
     "plugins": {
         "ext-plugin-pre-req": {
             "conf" : [
+                {"name": "AuthFilter", "value": "{\"enable\":\"feature\"}"},
                 {"name": "DeviceTranslation", "value": "{\"enable\":\"feature\"}"}
             ]
         }
@@ -37,13 +38,29 @@ success "Route setup"
 # Check
 info "Test it with: curl http://127.0.0.1:9080/command"
 
+
 # Setup the device route:
 info "Setting route /onboarding/translation with DeviceConfig plugin enabled..."
 curl -i http://127.0.0.1:9180/apisix/admin/routes/2 -H 'X-API-KEY: admin' -X PUT -d '
 {
     "uri": "/onboarding/translation",
     "plugins": {
+        "jwt-auth": {
+            "_meta": {
+                "priority": 13000
+            }
+        },
+        "serverless-pre-function": {
+            "_meta": { "priority": 12500 },
+            "phase": "rewrite",
+            "functions": [
+                "return function(conf, ctx)\n  local consumer = ctx.consumer\n  if not consumer then ngx.status = 401 ngx.say(\"401\") ngx.exit(401) end\n  local allowed = {[\"gateway-admin\"]=true,[\"device-admin\"]=true}\n  if not allowed[consumer.username] then ngx.status = 403 ngx.say(\"{\\\"message\\\":\\\"Forbidden\\\"}\") ngx.exit(403) end\nend"
+            ]
+        },
         "ext-plugin-pre-req": {
+            "_meta": {
+                "priority": 12000
+            },
             "conf" : [
                 {"name": "TranslationOnboarding", "value": "{\"enable\":\"feature\"}"}
             ]
@@ -242,24 +259,6 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/7 -H 'X-API-KEY: admin' -X PUT
 }'
 success "Route setup"
 info "Test it with: curl http://127.0.0.1:9080/onboarding/deviceAuthZ"
-
-
-# Setup /device/command
-info "Setting route /device/command with AuthFilter enabled..."
-curl -i http://127.0.0.1:9180/apisix/admin/routes/8 -H 'X-API-KEY: admin' -X PUT -d '
-{
-    "uri": "/device/command",
-    "methods": ["POST", "PATCH", "DELETE"],
-    "plugins": {
-        "ext-plugin-pre-req": {
-            "conf" : [
-                {"name": "AuthFilter", "value": "{\"enable\":\"feature\"}"}
-            ]
-        }
-    }
-}'
-success "Route setup"
-info "Test it with: curl http://127.0.0.1:9080/device/command"
 
 
 # Setup /backend/info
