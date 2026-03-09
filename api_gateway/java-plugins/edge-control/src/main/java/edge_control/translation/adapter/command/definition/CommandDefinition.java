@@ -12,4 +12,11 @@ public interface CommandDefinition {
     JsonNode createPayloadInstance();
 
     Map<String, CompiledPath> getCompiledMappings();
+
+    // Getters - cleanup
+    boolean removeNulls();
+
+    boolean removeEmpty();
+
+    boolean emptyObjectToNull();
 }

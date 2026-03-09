@@ -45,6 +45,14 @@ public class CommandTranslationEngine {
             }
         }
 
+        // cleanup
+        CleanupEngine.clean(
+                result,
+                definition.removeNulls(),
+                definition.removeEmpty(),
+                definition.emptyObjectToNull()
+        );
+
         return result;
     }
 }

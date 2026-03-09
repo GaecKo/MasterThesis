@@ -31,9 +31,9 @@ public class HTTPCommandDefinition implements CommandDefinition {
     private final String endpoint;
     private final String method;
 
-    private final boolean putToNullEmptyObjects;
-    private final boolean removeEmptyObjects;
-    private final boolean removeNullFields;
+    private final boolean removeNulls;
+    private final boolean removeEmpty;
+    private final boolean emptyObjectToNull;
 
     private final JsonNode payloadTemplate;
 
@@ -108,14 +108,14 @@ public class HTTPCommandDefinition implements CommandDefinition {
         // ---- Cleanup policy ----
         JSONObject cleanupJson = commandJson.optJSONObject("cleanup");
         if (cleanupJson != null) {
-            this.putToNullEmptyObjects = cleanupJson.optBoolean("putToNullEmptyObjects", false);
-            this.removeEmptyObjects = cleanupJson.optBoolean("removeEmptyObjects", false);
-            this.removeNullFields = cleanupJson.optBoolean("removeNullFields", false);
+            this.removeNulls = cleanupJson.optBoolean("removeNulls", false);
+            this.removeEmpty = cleanupJson.optBoolean("removeEmpty", false);
+            this.emptyObjectToNull = cleanupJson.optBoolean("emptyObjectToNull", false);
         } else {
             // Defaults when cleanup block is absent entirely
-            this.putToNullEmptyObjects = false;
-            this.removeEmptyObjects = false;
-            this.removeNullFields = false;
+            this.removeNulls = false;
+            this.removeEmpty = false;
+            this.emptyObjectToNull = false;
         }
     }
     boolean isValidURL(String url)  {
@@ -152,6 +152,22 @@ public class HTTPCommandDefinition implements CommandDefinition {
         return method;
     }
 
+    // cleanup:
+    @Override
+    public boolean removeNulls() {
+        return removeNulls;
+    }
+
+    @Override
+    public boolean removeEmpty() {
+        return removeEmpty;
+    }
+
+    @Override
+    public boolean emptyObjectToNull() {
+        return emptyObjectToNull;
+    }
+
     /**
      * Returns a deep copy of the payload template.
      * This is critical to avoid modifying the base template.
@@ -167,4 +183,6 @@ public class HTTPCommandDefinition implements CommandDefinition {
     public Map<String, CompiledPath> getCompiledMappings() {
         return compiledMappings;
     }
+
+
 }
