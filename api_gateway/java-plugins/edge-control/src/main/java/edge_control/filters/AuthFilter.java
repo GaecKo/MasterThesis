@@ -82,6 +82,7 @@ public class AuthFilter implements PluginFilter {
         String authenticationcheckerResult = authenticationManager.checkAuthentication(request.getHeader("apikey"));
         if (authenticationcheckerResult.startsWith("Invalid API key")) {
             ExceptionHandler.handleException(response, new IllegalOperation(authenticationcheckerResult));
+            requestHandler.skipChain(request);
             chain.filter(request, response);
             return;
         }
@@ -100,8 +101,8 @@ public class AuthFilter implements PluginFilter {
                 logger.info(authenticationcheckerResult+ " is authorized to perform the operation.");
             }
         } else {
-            requestHandler.skipChain(request);
             ExceptionHandler.handleException(response, new IllegalOperation("Unauthorized access"));
+            requestHandler.skipChain(request);
             chain.filter(request, response);
             return;
         }
