@@ -4,7 +4,6 @@ import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.translation.adapter.command.engine.path.CompiledPath;
 import edge_control.translation.adapter.command.engine.path.PathCompiler;
 
-import io.netty.handler.codec.http.HttpMethod;
 import org.apache.apisix.plugin.runner.HttpRequest;
 import org.json.JSONObject;
 
@@ -14,18 +13,12 @@ import tools.jackson.databind.ObjectMapper;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.time.Duration;
+import java.util.*;
 
 public class HTTPCommandDefinition implements CommandDefinition {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-
-    // ------------------------------------------------------------
-    // Immutable Fields
-    // ------------------------------------------------------------
 
     private final String name;
     private final String endpoint;
@@ -35,13 +28,12 @@ public class HTTPCommandDefinition implements CommandDefinition {
     private final boolean removeEmpty;
     private final boolean emptyObjectToNull;
 
+    private final Duration connectTimeout;
+    private final Duration requestTimeout;
+
     private final JsonNode payloadTemplate;
 
     private final Map<String, CompiledPath> compiledMappings;
-
-    // ------------------------------------------------------------
-    // Constructor (compile everything here)
-    // ------------------------------------------------------------
 
     public HTTPCommandDefinition(String commandName, JSONObject commandJson) throws CorruptedConfiguration {
 
@@ -117,6 +109,19 @@ public class HTTPCommandDefinition implements CommandDefinition {
             this.removeEmpty = false;
             this.emptyObjectToNull = false;
         }
+
+        // ---- timeouts ----
+        JSONObject timeoutsJson = commandJson.optJSONObject("timeouts");
+        if (cleanupJson != null) {
+            this.connectTimeout = Duration.ofSeconds(timeoutsJson.optInt("connect", 0));
+            this.requestTimeout = Duration.ofSeconds(timeoutsJson.optInt("request", 0));
+
+        } else {
+            // Defaults when cleanup block is absent entirely
+            this.connectTimeout = Duration.ofSeconds(0);
+            this.requestTimeout = Duration.ofSeconds(0);
+        }
+
     }
     boolean isValidURL(String url)  {
         try {
@@ -136,9 +141,7 @@ public class HTTPCommandDefinition implements CommandDefinition {
         }
     }
 
-    // ------------------------------------------------------------
     // Getters
-    // ------------------------------------------------------------
 
     public String getName() {
         return name;
@@ -168,10 +171,14 @@ public class HTTPCommandDefinition implements CommandDefinition {
         return emptyObjectToNull;
     }
 
-    /**
-     * Returns a deep copy of the payload template.
-     * This is critical to avoid modifying the base template.
-     */
+    public Duration getConnectTimeout() {
+        return connectTimeout;
+    }
+
+    public Duration getRequestTimeout() {
+        return requestTimeout;
+    }
+
     public JsonNode createPayloadInstance() {
         return payloadTemplate.deepCopy();
     }

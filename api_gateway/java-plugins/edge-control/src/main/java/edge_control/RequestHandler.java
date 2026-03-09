@@ -4,7 +4,6 @@ import edge_control.logger.EdgeControlLogger;
 import org.apache.apisix.plugin.runner.HttpRequest;
 import org.apache.apisix.plugin.runner.filter.PluginFilterChain;
 
-import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class RequestHandler {

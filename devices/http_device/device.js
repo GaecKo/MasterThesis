@@ -21,11 +21,15 @@ app.get('/health', (req, res) => {
     });
 });
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 // Handle all HTTP methods and all paths
-app.all('*', (req, res) => {
+app.all('*', async (req, res) => {
 
     console.log(".".repeat(Math.random() * (50 - 1) + 1));
-    
+    await sleep(10000)
     res.json({
         path: req.path,
         method: req.method,

@@ -1,7 +1,6 @@
 package edge_control.translation.adapter.command.engine;
 
 import edge_control.translation.adapter.command.definition.CommandDefinition;
-import edge_control.translation.adapter.command.definition.CommandDefinitionRegistry;
 import edge_control.translation.adapter.command.engine.path.CompiledPath;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -29,7 +28,7 @@ public class CommandTranslationEngine {
             throw new IllegalArgumentException("Missing or invalid 'params'");
         }
 
-        // Retrive payload template (copy)
+        // Retrieve payload template (copy)
         ObjectNode result =
                 (ObjectNode) definition.createPayloadInstance();
 

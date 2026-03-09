@@ -61,7 +61,6 @@ public class CleanupEngine {
                 }
                 if (cleanedValue.isArray() && cleanedValue.isEmpty()) {
                     fieldsToRemove.add(field);
-                    continue;
                 }
             }
         }

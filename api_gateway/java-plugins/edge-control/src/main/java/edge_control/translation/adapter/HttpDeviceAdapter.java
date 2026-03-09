@@ -85,44 +85,41 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
 
         JsonNode finalPayload = translationEngine.translate(commandDefinition, backendRequest);
 
-        // Make async HTTP call - NON-BLOCKING
         HttpForgery.doRequestAsync(
                         commandDefinition.getMethod(),
                         commandDefinition.getEndpoint(),
                         finalPayload.toString(),
-                        request.getHeaders())
+                        request.getHeaders(),
+                        commandDefinition.getConnectTimeout(),
+                        commandDefinition.getRequestTimeout())
                 .thenAccept(result -> {
                     try {
-                        // This runs on the HttpClient's thread pool
-                        response.setBody(result);
-                        response.setStatusCode(200);
+                        response.setStatusCode(result.statusCode());
+                        response.setBody(result.body());
                         response.setHeader("MODIFIED-BY", "EdgeControl/Protocol-Translation");
                         logger.debug("Successfully processed request for device: " + gatewayDeviceId);
                     } catch (Exception e) {
                         logger.error("Error setting response: " + e.getMessage());
                         response.setStatusCode(500);
-                        response.setBody("Error processing response");
+                        response.setBody("{\"error\":\"Error processing response\"}");
                     } finally {
-                        // ALWAYS call the callback to continue the filter chain
                         callback.run();
                     }
                 })
                 .exceptionally(throwable -> {
+                    Throwable cause = throwable.getCause() != null ? throwable.getCause() : throwable;
                     try {
-                        logger.error("Async request failed: " + throwable.getMessage());
-                        response.setStatusCode(500);
-                        response.setBody("Error: " + throwable.getMessage());
+                        logger.error("Async request failed: " + cause.getMessage());
+                        response.setStatusCode(502); // 502 Bad Gateway - upstream device failed
+                        response.setBody("{\"error\":\"" + cause.getMessage() + "\"}");
                         response.setHeader("MODIFIED-BY", "EdgeControl/Protocol-Translation");
                     } catch (Exception e) {
                         logger.error("Error setting error response: " + e.getMessage());
                     } finally {
-                        // ALWAYS call the callback even on error
                         callback.run();
                     }
                     return null;
                 });
-
-        // Method returns immediately - NO WAITING
     }
 
     @Override

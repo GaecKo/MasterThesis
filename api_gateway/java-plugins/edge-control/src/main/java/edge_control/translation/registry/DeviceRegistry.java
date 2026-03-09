@@ -50,8 +50,8 @@ public class DeviceRegistry {
         // TODO: change delay to something else
         scheduler.scheduleAtFixedRate(
                 this::refresh,
-                5,          // initial delay
-                30,          // period
+                5,              // initial delay
+                5,                        // period
                 TimeUnit.SECONDS
         );
     }
