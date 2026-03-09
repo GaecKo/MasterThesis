@@ -37,7 +37,7 @@
 * [X] JWT and RBAC 
 * [X] Routes 
 * [ ] HTTPs (TLS)
-* [ ] `GET` methods 
+* [X] `GET` methods 
 * [X] apply JWT / RBAC for all onboarding route
 
 ## Auth Filter
