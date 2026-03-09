@@ -1,5 +1,6 @@
 package edge_control.translation.adapter;
 
+import edge_control.exceptions.EdgeControlException;
 import edge_control.exceptions.IllegalOperation;
 import edge_control.translation.adapter.command.definition.CommandDefinitionRegistry;
 import edge_control.translation.adapter.command.definition.HTTPCommandDefinition;
@@ -30,7 +31,7 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
     private String gatewayDeviceId;
 
     @Override
-    public void init(DeviceConfig config) throws Exception {
+    public void init(DeviceConfig config) throws EdgeControlException {
         this.gatewayDeviceId = config.getDeviceId();
         JSONObject root = config.getConfig();
 
@@ -48,7 +49,7 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
         while (commandNames.hasNext()) {
             String commandName = commandNames.next();
             JSONObject commandJson = commands.getJSONObject(commandName);
-            HTTPCommandDefinition definition = new HTTPCommandDefinition(commandJson);
+            HTTPCommandDefinition definition = new HTTPCommandDefinition(commandName, commandJson);
             logger.debug("Added command: " + commandName);
             commandDefinitions.put(commandName, definition);
         }

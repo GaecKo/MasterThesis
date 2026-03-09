@@ -99,7 +99,7 @@ public class DeviceTranslationFilter implements PluginFilter {
                 // The async handler will call it later
 
             } else {
-                throw new IllegalOperation("ProtocolTranslation filter is available for POST on /command route.");
+                throw new IllegalOperation("DeviceTranslation filter is available for POST on /command route.");
             }
         } catch (Exception e) {
             // Synchronous error handling

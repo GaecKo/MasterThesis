@@ -3,8 +3,8 @@
 > **deadline**: 16/03 (Arthur)
 * [X] DeviceTranslationFilter: finisses `DELETE`/`GET` pour l'onboarding des cmds
 * [ ] DeviceTranslationFilter: finisse `MQTTAdapter`
-* [ ] Better corrupted config handling for http command def
-* [ ] ExceptionHandler used by every filter
+* [X] Better corrupted config handling for http command def
+* [X] ExceptionHandler used by every filter
 * [ ] DeviceTranslationFilter: cleaning step of payload
 * [ ] DeviceTranslationFilter: multithreading 
 * [X] Separate filter in two: cmd onboarding and device translation 

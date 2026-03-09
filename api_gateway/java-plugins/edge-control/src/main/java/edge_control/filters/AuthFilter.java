@@ -82,12 +82,13 @@ public class AuthFilter implements PluginFilter {
         String authenticationcheckerResult = authenticationManager.checkAuthentication(request.getHeader("apikey"));
         if (authenticationcheckerResult.startsWith("Invalid API key")) {
             ExceptionHandler.handleException(response, new IllegalOperation(authenticationcheckerResult));
+            chain.filter(request, response);
             return;
         }
 
         logger.info("Authentication successful for API key: " + request.getHeader("apikey") + " | Result: " + authenticationcheckerResult);
 
-        if(authorizationManager.checkAuthorization(authenticationcheckerResult, Document.parse(request.getBody()))){
+        if (authorizationManager.checkAuthorization(authenticationcheckerResult, Document.parse(request.getBody()))){
             JSONObject body = new JSONObject(request.getBody());
             if (authenticationcheckerResult.startsWith("backend_")){
                 body.put("gatewayBackendId", authenticationcheckerResult);
@@ -101,6 +102,7 @@ public class AuthFilter implements PluginFilter {
         } else {
             requestHandler.skipChain(request);
             ExceptionHandler.handleException(response, new IllegalOperation("Unauthorized access"));
+            chain.filter(request, response);
             return;
         }
 

@@ -21,7 +21,7 @@ public class HttpForgery {
         httpExecutor = Executors.newFixedThreadPool(20);
         sharedHttpClient = HttpClient.newBuilder()
                 .executor(httpExecutor)
-                .connectTimeout(Duration.ofSeconds(10))
+                .connectTimeout(Duration.ofSeconds(10)) // TODO: timeout?
                 .build();
     }
 

@@ -2,6 +2,8 @@ package edge_control.translation.adapter;
 
 
 
+import edge_control.exceptions.CorruptedConfiguration;
+import edge_control.exceptions.EdgeControlException;
 import edge_control.translation.config.DeviceConfig;
 import org.apache.apisix.plugin.runner.HttpRequest;
 import org.apache.apisix.plugin.runner.HttpResponse;
@@ -11,7 +13,7 @@ import java.util.concurrent.CompletableFuture;
 public interface DeviceAdapter {
 
     /** Called once when the device is created  */
-    void init(DeviceConfig config) throws Exception;
+    void init(DeviceConfig config) throws EdgeControlException;
 
     /** Handle a request coming from APISIX/backend */
     void handleRequest(HttpRequest request, HttpResponse response,

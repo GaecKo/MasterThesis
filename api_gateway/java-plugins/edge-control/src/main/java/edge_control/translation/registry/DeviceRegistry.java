@@ -1,6 +1,7 @@
 package edge_control.translation.registry;
 
 import edge_control.database.DevicesTranslationConfigRepository;
+import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.translation.adapter.AdapterFactory;
 import edge_control.translation.adapter.DeviceAdapter;
 import edge_control.translation.config.DeviceConfig;
@@ -101,7 +102,19 @@ public class DeviceRegistry {
             seen.add(deviceId);
 
             if (!fingerprint.equals(fingerprints.get(deviceId))) {
-                rebuild(config);
+                try {
+                    rebuild(config);
+                } catch (EdgeControlException e) {
+                    logger.error(e.getMessage());
+                    logger.error("Removing config for device " + deviceId + " due to error (refresh)");
+                    try {
+                        delete(config.getDeviceId());
+                    } catch (EdgeControlException ex) {
+                        logger.error(ex.getMessage());
+                        logger.error("Unable to remove config of " + deviceId + " due to error (refresh)");
+                    }
+                }
+
             }
         }
 
@@ -121,7 +134,7 @@ public class DeviceRegistry {
      *
      * @param config the configuration to use
      */
-    public void rebuild(DeviceConfig config) {
+    public void rebuild(DeviceConfig config) throws EdgeControlException {
 
         String deviceId = config.getDeviceId();
         remove(deviceId);
@@ -129,8 +142,8 @@ public class DeviceRegistry {
         DeviceAdapter adapter = adapterFactory.create(config);
         try {
             adapter.init(config);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to init device " + deviceId, e);
+        } catch (EdgeControlException e) {
+            throw e;
         }
 
         // logger.debug("Rebuilding device: " + deviceId + "\n" + config);
@@ -173,7 +186,12 @@ public class DeviceRegistry {
     public synchronized void upsert(DeviceConfig config) throws EdgeControlException {
         repository.save(config);
 
-        rebuild(config);
+        try {
+            rebuild(config);
+        } catch (EdgeControlException e) {
+            delete(config.getDeviceId());
+            throw e;
+        }
     }
 
 }

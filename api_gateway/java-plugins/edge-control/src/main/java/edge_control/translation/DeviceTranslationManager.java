@@ -28,7 +28,12 @@ public class DeviceTranslationManager {
 
     public void createAdapter(String requestBody) throws CorruptedConfiguration, EdgeControlException {
 
-        JSONObject config = new JSONObject(requestBody);
+        JSONObject config;
+        try {
+            config = new JSONObject(requestBody);
+        } catch (Exception e) {
+            throw new CorruptedConfiguration("Unable to parse JSON of request body: " + e.getMessage() + ", please provide a valid JSON body");
+        }
 
         if (!config.has("adapter")) {
             throw new CorruptedConfiguration("The JSON file you provided misses the following field: 'adapter'" );
@@ -53,10 +58,16 @@ public class DeviceTranslationManager {
     }
 
     public DeviceConfig getConfig(String requestBody) throws CorruptedConfiguration {
-        JSONObject config = new JSONObject(requestBody);
+        JSONObject config;
+        try {
+            config = new JSONObject(requestBody);
+        } catch (Exception e) {
+            throw new CorruptedConfiguration("Unable to parse JSON of request body: " + e.getMessage() + ", please provide a valid JSON body");
+        }
+
 
         if (!config.has("gatewayDeviceId")) {
-            throw new CorruptedConfiguration("The JSON file you provided misses the following field: 'gatewayDeviceId', can't delete device");
+            throw new CorruptedConfiguration("The JSON file you provided misses the following field: 'gatewayDeviceId', can't get device");
         }
 
         String gatewayDeviceId = config.getString("gatewayDeviceId");
@@ -65,7 +76,12 @@ public class DeviceTranslationManager {
     }
 
     public boolean deleteDeviceConfig(String requestBody) throws EdgeControlException, CorruptedConfiguration {
-        JSONObject config = new JSONObject(requestBody);
+        JSONObject config;
+        try {
+            config = new JSONObject(requestBody);
+        } catch (Exception e) {
+            throw new CorruptedConfiguration("Unable to parse JSON of request body: " + e.getMessage() + ", please provide a valid JSON body");
+        }
 
         if (!config.has("gatewayDeviceId")) {
             throw new CorruptedConfiguration("The JSON file you provided misses the following field: 'gatewayDeviceId', can't delete device");

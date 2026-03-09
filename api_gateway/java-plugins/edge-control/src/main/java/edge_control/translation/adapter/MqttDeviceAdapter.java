@@ -1,5 +1,6 @@
 package edge_control.translation.adapter;
 
+import edge_control.exceptions.EdgeControlException;
 import edge_control.translation.config.DeviceConfig;
 import org.apache.apisix.plugin.runner.HttpRequest;
 import org.apache.apisix.plugin.runner.HttpResponse;
@@ -9,7 +10,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class MqttDeviceAdapter implements DeviceAdapter {
     @Override
-    public void init(DeviceConfig config) throws Exception {
+    public void init(DeviceConfig config) throws EdgeControlException {
 
     }
 

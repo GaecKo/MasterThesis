@@ -1,13 +1,19 @@
 package edge_control.translation.adapter.command.definition;
 
+import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.translation.adapter.command.engine.path.CompiledPath;
 import edge_control.translation.adapter.command.engine.path.PathCompiler;
 
+import io.netty.handler.codec.http.HttpMethod;
+import org.apache.apisix.plugin.runner.HttpRequest;
 import org.json.JSONObject;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -25,6 +31,10 @@ public class HTTPCommandDefinition implements CommandDefinition {
     private final String endpoint;
     private final String method;
 
+    private final boolean putToNullEmptyObjects;
+    private final boolean removeEmptyObjects;
+    private final boolean removeNullFields;
+
     private final JsonNode payloadTemplate;
 
     private final Map<String, CompiledPath> compiledMappings;
@@ -33,34 +43,97 @@ public class HTTPCommandDefinition implements CommandDefinition {
     // Constructor (compile everything here)
     // ------------------------------------------------------------
 
-    public HTTPCommandDefinition(JSONObject commandJson) throws Exception {
+    public HTTPCommandDefinition(String commandName, JSONObject commandJson) throws CorruptedConfiguration {
 
-        this.name = commandJson.getString("name");
-        this.endpoint = commandJson.getString("endpoint");
-        this.method = commandJson.getString("method");
+        // ---- Name ----
+        this.name = commandJson.optString("name", null);
+        if (name == null || name.isEmpty()) {
+            throw new CorruptedConfiguration("HTTP command: " + commandName + " misses 'name' field or is empty");
+        }
+
+        // ---- Endpoint ----
+        this.endpoint = commandJson.optString("endpoint", null);
+        if (endpoint == null || endpoint.isEmpty()) {
+            throw new CorruptedConfiguration("HTTP command: " + commandName + " misses 'endpoint' field or is empty");
+        } else if (!isValidURL(endpoint)) {
+            throw new CorruptedConfiguration("HTTP command: " + commandName + " has invalid endpoint: " + endpoint);
+        }
+
+        // ---- Method ----
+        this.method = commandJson.optString("method", null);
+        if (method == null || method.isEmpty()) {
+            throw new CorruptedConfiguration("HTTP command: " + commandName + " misses 'method' field or is empty");
+        } else if (!isValidMethod(method)) {
+            throw new CorruptedConfiguration("HTTP command: " + commandName + " has invalid method: " + method +
+                    ". Valid values: [GET, HEAD, POST, PUT, DELETE, MKCOL, COPY, MOVE, OPTIONS, PROPFIND, PROPPATCH, LOCK, UNLOCK, PATCH, TRACE]");
+
+        }
 
         // ---- Payload template ----
+        if (!commandJson.has("payloadTemplate")) {
+            throw new CorruptedConfiguration("HTTP command: " + commandName + " misses 'payloadTemplate' field");
+        }
         JSONObject payloadJson = commandJson.getJSONObject("payloadTemplate");
-        this.payloadTemplate =
-                MAPPER.readTree(payloadJson.toString());
+        // payload template can be empty
+        try {
+            this.payloadTemplate = MAPPER.readTree(payloadJson.toString());
+        } catch (Exception e) {
+            throw new CorruptedConfiguration("HTTP command: " + commandName + " has invalid 'payloadTemplate': " + e.getMessage());
+        }
 
         // ---- Compile mappings ----
+        if (!commandJson.has("mappings")) {
+            throw new CorruptedConfiguration("HTTP command: " + commandName + " misses 'mappings' field");
+        }
         JSONObject mappingsJson = commandJson.getJSONObject("mappings");
+        // mappings can be empty
 
         Map<String, CompiledPath> compiled = new HashMap<>();
         Iterator<String> keys = mappingsJson.keys();
-
         while (keys.hasNext()) {
             String paramName = keys.next();
-            String path = mappingsJson.getString(paramName);
+            String path = mappingsJson.optString(paramName, null);
 
-            compiled.put(paramName, PathCompiler.compile(path));
+            if (path == null || path.isEmpty()) {
+                throw new CorruptedConfiguration("HTTP command: " + commandName + " mapping '" + paramName + "' has a null or empty path");
+            }
+            try {
+                compiled.put(paramName, PathCompiler.compile(path));
+            } catch (Exception e) {
+                throw new CorruptedConfiguration("HTTP command: " + commandName + " mapping '" + paramName + "' has invalid JsonPath '" + path + "': " + e.getMessage());
+            }
         }
-
         this.compiledMappings = Collections.unmodifiableMap(compiled);
 
         // ---- Cleanup policy ----
         JSONObject cleanupJson = commandJson.optJSONObject("cleanup");
+        if (cleanupJson != null) {
+            this.putToNullEmptyObjects = cleanupJson.optBoolean("putToNullEmptyObjects", false);
+            this.removeEmptyObjects = cleanupJson.optBoolean("removeEmptyObjects", false);
+            this.removeNullFields = cleanupJson.optBoolean("removeNullFields", false);
+        } else {
+            // Defaults when cleanup block is absent entirely
+            this.putToNullEmptyObjects = false;
+            this.removeEmptyObjects = false;
+            this.removeNullFields = false;
+        }
+    }
+    boolean isValidURL(String url)  {
+        try {
+            new URL(url).toURI();
+            return true;
+        } catch (MalformedURLException | URISyntaxException e) {
+            return false;
+        }
+    }
+
+    boolean isValidMethod(String method) {
+        try {
+            HttpRequest.Method.valueOf(method);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     // ------------------------------------------------------------
