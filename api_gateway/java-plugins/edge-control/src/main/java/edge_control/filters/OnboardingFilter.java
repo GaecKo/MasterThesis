@@ -1,6 +1,8 @@
 package edge_control.filters;
 
 import edge_control.RequestHandler;
+import edge_control.auth.AuthenticationManager;
+import edge_control.auth.AuthorizationManager;
 import edge_control.backend.BackendManager;
 import edge_control.device.DeviceManager;
 import edge_control.exceptions.CorruptedConfiguration;
@@ -13,6 +15,7 @@ import org.apache.apisix.plugin.runner.HttpResponse;
 import org.apache.apisix.plugin.runner.filter.PluginFilter;
 import org.apache.apisix.plugin.runner.filter.PluginFilterChain;
 import org.bson.Document;
+import org.bson.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -40,6 +43,9 @@ public class OnboardingFilter implements PluginFilter {
 
     private final DeviceManager deviceManager =
             DeviceManager.getInstance();
+
+    private final AuthenticationManager authenticationManager =
+            AuthenticationManager.getInstance();
 
     private static final RequestHandler requestHandler =
             RequestHandler.getInstance();
@@ -153,7 +159,14 @@ public class OnboardingFilter implements PluginFilter {
                 }
 
             } case GET -> {
-
+                try {
+                    if (request.getPath().endsWith("/commands")) {
+                        logger.debug("getCommands reached");
+                        this.handleBackendAuthorizedCommands(request, response);
+                    }
+                } catch (Exception e) {
+                    ExceptionHandler.handleException(response, e);
+                }
             }
             default -> {
                 logger.debug("Received unsupported HTTP method: " + request.getMethod());
@@ -287,6 +300,39 @@ public class OnboardingFilter implements PluginFilter {
         } else if (method.equals("DELETE")){
             resp = deviceManager.deleteDeviceAuthorizationConfig(request.getBody());
         }
+
+        if (resp.get("status").equals("success")){
+            response.setStatusCode(200);
+        } else {
+            response.setStatusCode(400);
+        }
+        response.setBody(resp.toJson());
+        requestHandler.skipChain(request);
+    }
+
+    /**
+     * Handles the retrieval of authorized commands and params of all devices of a backend based on the request body.
+     * @param request the incoming HTTP request containing the backend ID
+     * @param response the HTTP response to populate
+     * @throws CorruptedConfiguration if the configuration is invalid
+     */
+    private void handleBackendAuthorizedCommands(HttpRequest request, HttpResponse response) throws Exception {
+        String authenticationcheckerResult = authenticationManager.checkAuthentication(request.getHeader("apikey"));
+        Document resp = new Document();
+
+        if (authenticationcheckerResult.startsWith("device_")){
+            ExceptionHandler.handleException(response, new IllegalOperation("Unauthorized access: API key belongs to a device"));
+            return;
+        } else if (authenticationcheckerResult.startsWith("Invalid API key")) {
+            ExceptionHandler.handleException(response, new IllegalOperation(authenticationcheckerResult));
+            return;
+        }
+
+        if(authenticationcheckerResult.startsWith("backend_")){
+            resp = backendManager.getBackendAuthorizedCommands(authenticationcheckerResult);
+        }
+
+        logger.info(resp.toJson());
 
         if (resp.get("status").equals("success")){
             response.setStatusCode(200);
