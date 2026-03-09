@@ -261,12 +261,30 @@ success "Route setup"
 info "Test it with: curl http://127.0.0.1:9080/onboarding/deviceAuthZ"
 
 
+# Settup /commands
+info "Setting route /commands with Onboarding filter enabled..."
+curl -i http://127.0.0.1:9180/apisix/admin/routes/8 -H 'X-API-KEY: admin' -X PUT -d '
+{
+    "uri": "/commands",
+    "methods": ["GET"],
+    "plugins": {
+        "ext-plugin-pre-req": {
+            "conf" : [
+                {"name": "Onboarding", "value": "{\"enable\":\"feature\"}"}
+            ]
+        }
+    }
+}'
+success "Route setup"
+info "Test it with: curl http://127.0.0.1:9080/commands"
+
+
 # Setup /backend/info
 info "Setting route /backend/info with AuthFilter enabled..."
 curl -i http://127.0.0.1:9180/apisix/admin/routes/9 -H 'X-API-KEY: admin' -X PUT -d '
 {
     "uri": "/backend/info",
-    "methods": ["POST", "PATCH", "DELETE"],
+    "methods": ["POST"],
     "plugins": {
         "ext-plugin-pre-req": {
             "conf" : [
@@ -277,3 +295,4 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/9 -H 'X-API-KEY: admin' -X PUT
 }'
 success "Route setup"
 info "Test it with: curl http://127.0.0.1:9080/backend/info"
+

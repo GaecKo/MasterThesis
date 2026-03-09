@@ -250,8 +250,26 @@ public class DeviceConfigRepository {
     }
 
     /**
+     * Finds a device configuration by its gatewayDeviceId.
+     *
+     * @param gatewayDeviceId the ID of the device to find
+     * @return the device Document (without apiKeyHash), or null if not found
+     */
+    public Document findDeviceById(String gatewayDeviceId) {
+        if (gatewayDeviceId == null) {
+            return null;
+        }
+        Document doc = deviceConfigCollection.find(new Document("gatewayDeviceId", gatewayDeviceId)).first();
+        if (doc != null) {
+            doc.remove("apiKeyHash");
+            doc.remove("_id");
+        }
+        return doc;
+    }
+
+    /**
      * Validates an API key for a given device ID.
-     * Compares the hash of the provided API key with the stored hash.
+     * Uses AuthRegistry cache first, falls back to DB lookup.
      *
      * @param apiKey the plain text API key to validate
      * @return gatewayDeviceId if the API key hash matches

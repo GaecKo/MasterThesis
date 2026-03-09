@@ -1,9 +1,13 @@
 package edge_control.backend;
 
+import edge_control.auth.AuthRegistry;
 import edge_control.database.BackendAuthorizationsRepository;
 import edge_control.database.BackendConfigRepository;
+import edge_control.database.DeviceConfigRepository;
 import edge_control.logger.EdgeControlLogger;
 import org.bson.Document;
+
+import java.util.List;
 
 public class BackendManager {
 
@@ -14,6 +18,10 @@ public class BackendManager {
     private final BackendConfigRepository backendConfig = new BackendConfigRepository();
 
     private final BackendAuthorizationsRepository backendAuthorizations = new BackendAuthorizationsRepository();
+
+    private final DeviceConfigRepository deviceConfig = new DeviceConfigRepository();
+
+    private final AuthRegistry authRegistry = AuthRegistry.getInstance();
 
     private BackendManager() {
         // Initialize database configuration on first instantiation
@@ -193,6 +201,77 @@ public class BackendManager {
             responseDoc.put("status", "failure");
             responseDoc.put("message", "Failed to remove device from backend authorizations. Device may not exist or invalid request format.");
             logger.error("Failed to remove device from backend authorizations");
+        }
+        return responseDoc;
+    }
+
+    /**
+     * Get a list of authorized devices with their commands and params for a specified backend.
+     * Returns enriched device info including deviceName, type, and full command details.
+     *
+     * @param authenticationcheckerResult the result of the authentication check containing the backend ID
+     * @return a Document containing the enriched authorizations for the specified backend
+     **/
+    public Document getBackendAuthorizedCommands(String authenticationcheckerResult){
+        Document authzList = authRegistry.getBackendAuth(authenticationcheckerResult);
+
+        if (authzList != null) {
+            logger.info("AuthRegistry cache hit for backend auth");
+        } else {
+            logger.info("AuthRegistry cache miss for backend auth");
+            authzList = backendAuthorizations.findAuthorizationsById(authenticationcheckerResult);
+            if (authzList != null) {
+                authRegistry.putBackendAuth(authenticationcheckerResult, authzList);
+            }
+        }
+
+        Document responseDoc = new Document();
+
+        if (authzList != null) {
+            // Build enriched response: for each authorized device, fetch its info and filter commands
+            Document authorizedDevices = new Document();
+
+            for (String gatewayDeviceId : authzList.keySet()) {
+                List<String> authorizedCommandNames = authzList.getList(gatewayDeviceId, String.class);
+                if (authorizedCommandNames == null) continue;
+
+                // Fetch device info from deviceConfig
+                Document deviceInfo = deviceConfig.findDeviceById(gatewayDeviceId);
+
+                Document deviceEntry = new Document();
+                if (deviceInfo != null) {
+                    deviceEntry.put("deviceName", deviceInfo.getString("deviceName"));
+
+                    // Get commands from device config and filter to only authorized ones
+                    Document allCommands = (Document) deviceInfo.get("commands");
+                    if (allCommands != null) {
+                        Document filteredCommands = new Document();
+                        for (String commandName : authorizedCommandNames) {
+                            Object commandDetail = allCommands.get(commandName);
+                            if (commandDetail != null) {
+                                filteredCommands.put(commandName, commandDetail);
+                            }
+                        }
+                        deviceEntry.put("commands", filteredCommands);
+                    }
+                } else {
+                    // Device config not found, return minimal info
+                    deviceEntry.put("deviceName", "unknown");
+                    deviceEntry.put("type", "unknown");
+                    deviceEntry.put("commands", new Document());
+                }
+
+                authorizedDevices.put(gatewayDeviceId, deviceEntry);
+            }
+
+            responseDoc.put("status", "success");
+            responseDoc.put("message", "Retrieved backend authorizations successfully.");
+            responseDoc.put("authorizedDevices", authorizedDevices);
+            logger.info("Retrieved backend authorizations successfully.");
+        } else {
+            responseDoc.put("status", "failure");
+            responseDoc.put("message", "Failed to retrieve backend authorizations. Backend may not exist or invalid request format.");
+            logger.error("Failed to retrieve backend authorizations. Backend may not exist.");
         }
         return responseDoc;
     }
