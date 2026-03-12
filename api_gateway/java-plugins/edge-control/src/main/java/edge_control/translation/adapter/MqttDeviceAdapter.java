@@ -33,12 +33,12 @@ public class MqttDeviceAdapter implements DeviceAdapter {
     private String gatewayDeviceId;
 
     // Connection
-    private String   brokerUrl;
-    private int      qos;
-    private int      keepAliveInterval;
-    private int      connectionTimeout;
-    private boolean  cleanSession;
-    private int      reconnectDelay;
+    private String  brokerUrl;
+    private int     qos;
+    private int     keepAliveInterval;
+    private int     connectionTimeout;
+    private boolean cleanSession;
+    private int     reconnectDelay;
 
     // Commands and subscriptions
     private final Map<String, MqttCommandDefinition> commandDefinitions = new HashMap<>();
@@ -56,10 +56,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
 
     // ── Subscription config record ────────────────────────────────────────────
 
-    /**
-     * @param type "telemetry" | "status"
-     */
-    private record MqttSubscriptionConfig(String topic, String type, boolean forwardToBackend) {
+    private record MqttSubscriptionConfig(String topic, boolean forwardToBackend) {
     }
 
     // ── Init ──────────────────────────────────────────────────────────────────
@@ -123,22 +120,9 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                                 + ": subscription[" + i + "] is missing 'topic'");
             }
 
-            String type = sub.optString("type", null);
-            if (type == null || type.isBlank()) {
-                throw new CorruptedConfiguration(
-                        "MQTT adapter for device " + gatewayDeviceId
-                                + ": subscription[" + i + "] is missing 'type'");
-            }
-            if (!type.equals("telemetry") && !type.equals("status")) {
-                throw new CorruptedConfiguration(
-                        "MQTT adapter for device " + gatewayDeviceId
-                                + ": subscription[" + i + "] has unknown type '" + type
-                                + "'. Valid values: telemetry, status");
-            }
-
             boolean forwardToBackend = sub.optBoolean("forwardToBackend", false);
-            subscriptions.add(new MqttSubscriptionConfig(topic, type, forwardToBackend));
-            logger.debug("Registered subscription — topic=" + topic + " type=" + type
+            subscriptions.add(new MqttSubscriptionConfig(topic, forwardToBackend));
+            logger.debug("Registered subscription — topic=" + topic
                     + " forward=" + forwardToBackend);
         }
 
@@ -183,7 +167,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             options.setAutomaticReconnect(true);
             options.setConnectionTimeout(connectionTimeout);
             options.setKeepAliveInterval(keepAliveInterval);
-            // Paho expects reconnect delay in ms
             options.setMaxReconnectDelay(reconnectDelay * 1000);
 
             // MqttCallbackExtended fires connectComplete() on every connect/reconnect,
@@ -232,7 +215,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         for (MqttSubscriptionConfig sub : subscriptions) {
             try {
                 mqttClient.subscribe(sub.topic, qos);
-                logger.info("Subscribed to " + sub.topic + " [type=" + sub.type + "]");
+                logger.info("Subscribed to " + sub.topic);
             } catch (MqttException e) {
                 logger.error("Failed to subscribe to " + sub.topic + ": " + e.getMessage());
             }
@@ -302,11 +285,14 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         envelope.put("timestamp",     Instant.now().toString());
         envelope.put("type",          "command");
         envelope.put("correlationId", correlationId);
+        if (!commandDefinition.hasResponseTopic()) {
+            envelope.put("responseTopic", commandDefinition.getResponseTopic());
+        }
         envelope.put("payload",       new JSONObject(finalPayload.toString()));
 
         // Register pending future BEFORE publishing to avoid a response race
         CompletableFuture<String> responseFuture = null;
-        if (!commandDefinition.isFireAndForget()) {
+        if (!commandDefinition.hasResponseTopic()) {
             responseFuture = new CompletableFuture<>();
             pendingResponses.put(correlationId, responseFuture);
         }
@@ -329,7 +315,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         }
 
         // Fire-and-forget: return 202 Accepted immediately
-        if (commandDefinition.isFireAndForget()) {
+        if (commandDefinition.hasResponseTopic()) {
             response.setStatusCode(202);
             response.setBody("{\"status\":\"sent\",\"correlationId\":\"" + correlationId + "\"}");
             response.setHeader("MODIFIED-BY", "EdgeControl/MQTT-Translation");
@@ -384,7 +370,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
     // ── Inbound message routing ───────────────────────────────────────────────
 
     private void onMessageArrived(String topic, String payload) {
-        // Find which declared subscription this topic matches
         MqttSubscriptionConfig matched = subscriptions.stream()
                 .filter(s -> s.topic.equals(topic))
                 .findFirst()
@@ -395,19 +380,17 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             return;
         }
 
-        switch (matched.type) {
-            case "telemetry" -> handleTelemetry(payload, matched);
-            case "status"    -> handleStatus(payload, matched);
-            default          -> logger.debug("Unhandled subscription type: " + matched.type);
-        }
+        handleInboundMessage(payload, matched);
     }
 
     /**
-     * Telemetry from the device. If the message carries a correlationId matching a
-     * pending request, resolve that future. Otherwise treat as unsolicited telemetry.
-     * TODO: forward to backend via HTTP when that flow is wired up.
+     * Handles any inbound message regardless of topic semantics.
+     * If the message carries a correlationId matching a pending request, that future
+     * is resolved and the waiting handleRequest() unblocks.
+     * Otherwise it is unsolicited — logged and optionally forwarded to the backend.
+     * TODO: implement forwardToBackend when that flow is designed.
      */
-    private void handleTelemetry(String payload, MqttSubscriptionConfig sub) {
+    private void handleInboundMessage(String payload, MqttSubscriptionConfig sub) {
         try {
             JSONObject json = new JSONObject(payload);
 
@@ -420,30 +403,14 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                 }
             }
 
-            // Unsolicited telemetry
-            logger.info("Unsolicited telemetry from device " + gatewayDeviceId
-                    + " on " + sub.topic + ": " + payload);
+            // Unsolicited message
+            logger.info("Inbound message on " + sub.topic + " for device "
+                    + gatewayDeviceId + ": " + payload);
             // TODO: if sub.forwardToBackend, POST to backend endpoint
 
         } catch (Exception e) {
-            logger.error("Failed to parse telemetry payload: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Status events (connected / heartbeat / disconnected).
-     * TODO: forward to backend if sub.forwardToBackend.
-     */
-    private void handleStatus(String payload, MqttSubscriptionConfig sub) {
-        try {
-            JSONObject json  = new JSONObject(payload);
-            JSONObject inner = json.optJSONObject("payload");
-            String     state = inner != null ? inner.optString("state", "unknown") : "unknown";
-            logger.info("Device " + gatewayDeviceId + " status: " + state);
-            // TODO: if sub.forwardToBackend, POST to backend endpoint
-
-        } catch (Exception e) {
-            logger.error("Failed to parse status payload: " + e.getMessage());
+            logger.error("Failed to handle inbound message on " + sub.topic
+                    + ": " + e.getMessage());
         }
     }
 }

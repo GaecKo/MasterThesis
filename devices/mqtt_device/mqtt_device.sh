@@ -38,7 +38,7 @@ info "Writing ${MQTT_DIR}/.env ..."
 cat > "${MQTT_DIR}/.env" <<EOF
 DEVICE_ID=device_3714cba3-8be4-4097-b862-b06c73e75d5b
 BROKER_URL=mqtt://127.0.0.1:1883
-INTERVAL_MS=30000
+INTERVAL_MS=20000
 EOF
 success ".env written"
 
