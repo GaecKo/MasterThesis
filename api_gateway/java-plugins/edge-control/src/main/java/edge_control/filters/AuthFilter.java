@@ -81,7 +81,7 @@ public class AuthFilter implements PluginFilter {
             return;
         }
 
-        // Named authenticationcheckerResult insted of gatewayId because it can be either backend_ or device_ ID, but also the result of the authentication
+        // Named authenticationcheckerResult instead of gatewayId because it can be either backend_ or device_ ID, but also the result of the authentication
         // check (e.g. "Invalid API key or API key cannot be null") in case of failed authentication
         String authenticationcheckerResult = authenticationManager.checkAuthentication(request.getHeader("apikey"));
         if (authenticationcheckerResult.startsWith("Invalid API key")) {
