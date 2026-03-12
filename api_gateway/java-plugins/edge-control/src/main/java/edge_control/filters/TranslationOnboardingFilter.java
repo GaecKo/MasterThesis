@@ -84,11 +84,11 @@ public class TranslationOnboardingFilter implements PluginFilter {
 
         try {
             if (request.getPath().startsWith("/onboarding/translation")) {
-                // Fast path - handle synchronously
+
                 handleDeviceManagementRequest(request, response, chain);
 
             } else {
-                throw new IllegalOperation("CommandsOnboarding filter is available for /onboarding/translation route.");
+                throw new IllegalOperation("TranslationOnboarding filter is available for /onboarding/translation route.");
             }
         } catch (Exception e) {
             // Synchronous error handling

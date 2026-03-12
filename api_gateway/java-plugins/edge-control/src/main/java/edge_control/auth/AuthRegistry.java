@@ -70,9 +70,9 @@ public class AuthRegistry {
                 if (id != null && auths != null) deviceAuthCache.put(id, auths);
         });
 
-        logger.info("AuthRegistry refreshed: " + apiKeyCache.size() + " keys, "
-                + backendAuthCache.size() + " backend auths, "
-                + deviceAuthCache.size() + " device auths");
+//        logger.info("AuthRegistry refreshed: " + apiKeyCache.size() + " keys, "
+//                + backendAuthCache.size() + " backend auths, "
+//                + deviceAuthCache.size() + " device auths");
     }
 
 

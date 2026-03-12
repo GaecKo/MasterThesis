@@ -3,7 +3,7 @@ package edge_control.translation.adapter;
 import edge_control.exceptions.EdgeControlException;
 import edge_control.exceptions.IllegalOperation;
 import edge_control.translation.adapter.command.definition.CommandDefinitionRegistry;
-import edge_control.translation.adapter.command.definition.HTTPCommandDefinition;
+import edge_control.translation.adapter.command.definition.HttpCommandDefinition;
 import edge_control.translation.adapter.command.engine.CommandTranslationEngine;
 import edge_control.translation.config.DeviceConfig;
 import edge_control.exceptions.CorruptedConfiguration;
@@ -26,7 +26,7 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final CommandTranslationEngine translationEngine = new CommandTranslationEngine();
-    private final Map<String, HTTPCommandDefinition> commandDefinitions = new HashMap<>();
+    private final Map<String, HttpCommandDefinition> commandDefinitions = new HashMap<>();
 
     private String gatewayDeviceId;
 
@@ -49,7 +49,7 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
         while (commandNames.hasNext()) {
             String commandName = commandNames.next();
             JSONObject commandJson = commands.getJSONObject(commandName);
-            HTTPCommandDefinition definition = new HTTPCommandDefinition(commandName, commandJson);
+            HttpCommandDefinition definition = new HttpCommandDefinition(commandName, commandJson);
             logger.debug("Added command: " + commandName);
             commandDefinitions.put(commandName, definition);
         }
@@ -77,7 +77,7 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
             throw new CorruptedConfiguration("Missing 'command' field in request body...");
         }
 
-        HTTPCommandDefinition commandDefinition = commandDefinitions.get(backendRequest.get("command").stringValue());
+        HttpCommandDefinition commandDefinition = commandDefinitions.get(backendRequest.get("command").stringValue());
 
         if (commandDefinition == null) {
             throw new IllegalOperation("Unknown command: " + backendRequest.get("command"));
@@ -123,7 +123,7 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
     }
 
     @Override
-    public HTTPCommandDefinition get(String commandName) {
+    public HttpCommandDefinition get(String commandName) {
         return commandDefinitions.get(commandName);
     }
 

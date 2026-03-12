@@ -39,8 +39,6 @@ public class DeviceTranslationManager {
             throw new CorruptedConfiguration("The JSON file you provided misses the following field: 'adapter'" );
         } else if (!config.has("gatewayDeviceId")) {
             throw new CorruptedConfiguration("The JSON file you provided misses the following field: 'gatewayDeviceId'" );
-        } else if (!config.has("commands")) {
-            throw new CorruptedConfiguration("The JSON file you provided misses the following field: 'commands'");
         }
 
         String deviceId = config.getString("gatewayDeviceId");

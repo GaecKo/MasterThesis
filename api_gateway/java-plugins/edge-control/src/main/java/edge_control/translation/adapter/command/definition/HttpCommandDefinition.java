@@ -16,7 +16,7 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.*;
 
-public class HTTPCommandDefinition implements CommandDefinition {
+public class HttpCommandDefinition implements CommandDefinition {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -35,7 +35,7 @@ public class HTTPCommandDefinition implements CommandDefinition {
 
     private final Map<String, CompiledPath> compiledMappings;
 
-    public HTTPCommandDefinition(String commandName, JSONObject commandJson) throws CorruptedConfiguration {
+    public HttpCommandDefinition(String commandName, JSONObject commandJson) throws CorruptedConfiguration {
 
         // ---- Name ----
         this.name = commandJson.optString("name", null);
