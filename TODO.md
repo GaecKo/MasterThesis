@@ -37,20 +37,21 @@
 > **deadline**: 16/03 (Elie)
 * [X] JWT and RBAC 
 * [X] Routes 
-* [ ] HTTPs (TLS)
+* [X] HTTPs (TLS)
 * [X] `GET` methods 
 * [X] apply JWT / RBAC for all onboarding route
+
 
 ## Auth Filter
 > **deadline**: 09/03 (Elie)
 * [X] AuthN AuthZ check mechanism 
 * [X] Optimization 
+* [ ] AuthFilter device --> backend communication flow
 
 ## Protocol Security 
 > **deadline**: 16/03 (Elie)
 * [ ] end device: HTTPs - TLS
 * [ ] end device: MQTTs - TLS
-* [ ] Client MQTT and HTTP 
 * [ ] backend: HTTPs 
 
 ## Traffic Overload Protection
