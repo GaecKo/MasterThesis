@@ -33,6 +33,17 @@ app.get('/info', (req, res) => {
     });
 });
 
+app.post('/info', (req, res) => {
+    console.log("Received request: " + req.body)
+    res.json({
+        service: 'backend-api',
+        version: '1.0.0',
+        gateway_url: APISIX_GATEWAY_URL,
+        accessed_via_gateway: req.headers['x-forwarded-for'] ? true : false,
+        client_ip: req.headers['x-forwarded-for'] || req.ip
+    });
+});
+
 
 
 app.listen(PORT, () => {

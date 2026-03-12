@@ -280,15 +280,16 @@ info "Test it with: curl http://127.0.0.1:9080/commands"
 
 
 # Setup /backend/info
-info "Setting route /backend/info with AuthFilter enabled..."
+info "Setting route /backendForward with AuthFilter enabled..."
 curl -i http://127.0.0.1:9180/apisix/admin/routes/9 -H 'X-API-KEY: admin' -X PUT -d '
 {
-    "uri": "/backend/info",
+    "uri": "/backendForward",
     "methods": ["POST"],
     "plugins": {
         "ext-plugin-pre-req": {
             "conf" : [
-                {"name": "AuthFilter", "value": "{\"enable\":\"feature\"}"}
+                {"name": "AuthFilter", "value": "{\"enable\":\"feature\"}"},
+                {"name": "BackendForwarder", "value": "{\"enable\":\"feature\"}"}
             ]
         }
     }

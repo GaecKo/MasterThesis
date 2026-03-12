@@ -22,6 +22,7 @@ info "Setting up environment variables..."
 cat > /home/ubuntu/devices/http_device/.env <<EOF
 # API Gateway configuration
 HTTP_DEVICE_IP=$DEVICES_IP
+APISIX_IP=$APISIX_IP
 DEVICE_ID=1
 
 

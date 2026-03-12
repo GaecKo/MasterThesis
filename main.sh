@@ -136,6 +136,7 @@ if [ -d "./devices/http_device" ] && [ -f "./devices/http_device/http_device.sh"
     
     multipass exec devices-vm -- bash -c "
         echo '=== Starting HTTP Device setup ==='
+        export APISIX_IP='$APISIX_IP'
         export DEVICES_IP='$DEVICES_IP'
         cd /home/ubuntu/devices/http_device
         $HTTP_DEVICE_SETUP_CONTENT
