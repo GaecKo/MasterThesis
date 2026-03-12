@@ -1,11 +1,14 @@
 package edge_control.auth;
 
 import edge_control.database.BackendAuthorizationsRepository;
+import edge_control.database.BackendConfigRepository;
 import edge_control.database.DeviceAuthorizationsRepository;
 import edge_control.logger.EdgeControlLogger;
 import org.bson.Document;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class AuthorizationManager {
 
@@ -16,6 +19,8 @@ public class AuthorizationManager {
     private final BackendAuthorizationsRepository backendAuthorizations = new BackendAuthorizationsRepository();
 
     private final DeviceAuthorizationsRepository deviceAuthorizations = new DeviceAuthorizationsRepository();
+
+    private final BackendConfigRepository backendConfig = new BackendConfigRepository();
 
     private final AuthRegistry authRegistry = AuthRegistry.getInstance();
 
@@ -65,28 +70,43 @@ public class AuthorizationManager {
             }
             return false;
 
-        } else if (gatewayId.startsWith("device_")) {
-
-            // 1. Check registry cache first
-            List<String> cached = authRegistry.getDeviceAuth(gatewayId);
-            if (cached != null) {
-                logger.info("AuthRegistry cache hit for device auth");
-                String backendId = body.getString("gatewayBackendId");
-                return backendId != null && cached.contains(backendId);
-            }
-
-            // 2. Cache miss — fetch once, cache, then evaluate
-            logger.info("AuthRegistry cache miss for device auth");
-            List<String> auths = deviceAuthorizations.findAuthorizationsById(gatewayId);
-            if (auths != null) {
-                authRegistry.putDeviceAuth(gatewayId, auths);
-                String backendId = body.getString("gatewayBackendId");
-                return backendId != null && auths.contains(backendId);
-            }
-            return false;
         }
 
         return false;
+    }
+
+    /**
+     * Returns a map of { gatewayBackendId → endpoint } for all backends a device is authorized to reach.
+     * Checks the AuthRegistry cache first; falls back to DB on a cache miss and caches the result.
+     *
+     * @param gatewayDeviceId the device whose authorized endpoints are requested
+     * @return map of backendId → endpoint (never null, may be empty)
+     */
+    public Map<String, String> getDeviceEndpoints(String gatewayDeviceId) {
+        // 1. Check registry cache first
+        Map<String, String> cached = authRegistry.getDeviceEndpoints(gatewayDeviceId);
+        if (cached != null) {
+            logger.info("AuthRegistry cache hit for device endpoints");
+            return cached;
+        }
+
+        // 2. Cache miss — fetch authorized backends, resolve endpoints, cache and return
+        logger.info("AuthRegistry cache miss for device endpoints");
+        List<String> auths = deviceAuthorizations.findAuthorizationsById(gatewayDeviceId);
+        Map<String, String> endpointsMap = new HashMap<>();
+        if (auths != null) {
+            for (String backendId : auths) {
+                Document backendDoc = backendConfig.findBackendById(backendId);
+                if (backendDoc != null) {
+                    String endpoint = backendDoc.getString("infoEndpoint");
+                    if (endpoint != null) {
+                        endpointsMap.put(backendId, endpoint);
+                    }
+                }
+            }
+            authRegistry.putDeviceEndpoints(gatewayDeviceId, endpointsMap);
+        }
+        return endpointsMap;
     }
 
 }

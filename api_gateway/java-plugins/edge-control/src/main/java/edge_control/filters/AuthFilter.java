@@ -18,6 +18,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
+
 @Component
 public class AuthFilter implements PluginFilter {
     private static final Logger API_LOGGER =
@@ -89,22 +91,31 @@ public class AuthFilter implements PluginFilter {
 
         logger.info("Authentication successful for API key: " + request.getHeader("apikey") + " | Result: " + authenticationcheckerResult);
 
-        if (authorizationManager.checkAuthorization(authenticationcheckerResult, Document.parse(request.getBody()))){
-            JSONObject body = new JSONObject(request.getBody());
-            if (authenticationcheckerResult.startsWith("backend_")){
+        JSONObject body = new JSONObject(request.getBody());
+        if (authenticationcheckerResult.startsWith("backend_")) {
+            // Backend requests require authorization check
+            if (authorizationManager.checkAuthorization(authenticationcheckerResult, Document.parse(request.getBody()))) {
                 body.put("gatewayBackendId", authenticationcheckerResult);
                 request.setBody(body.toString());
-                logger.info(authenticationcheckerResult+ " is authorized to perform the operation.");
-            } else if (authenticationcheckerResult.startsWith("device_")){
-                body.put("gatewayDeviceId", authenticationcheckerResult);
-                request.setBody(body.toString());
-                logger.info(authenticationcheckerResult+ " is authorized to perform the operation.");
+                logger.info(authenticationcheckerResult + " is authorized to perform the operation.");
+            } else {
+                ExceptionHandler.handleException(response, new IllegalOperation("Unauthorized access"));
+                requestHandler.skipChain(request);
+                chain.filter(request, response);
+                return;
             }
-        } else {
-            ExceptionHandler.handleException(response, new IllegalOperation("Unauthorized access"));
-            requestHandler.skipChain(request);
-            chain.filter(request, response);
-            return;
+        } else if (authenticationcheckerResult.startsWith("device_")) {
+            // Device requests are automatically forwarded to all available endpoints — no authorization check needed
+            body.put("gatewayDeviceId", authenticationcheckerResult);
+
+            // Add listOfEndpoints: { gatewayBackendId → endpoint }
+            Map<String, String> endpoints = authorizationManager.getDeviceEndpoints(authenticationcheckerResult);
+            JSONObject listOfEndpoints = new JSONObject(endpoints);
+            body.put("listOfEndpoints", listOfEndpoints);
+
+            request.setBody(body.toString());
+            logger.info(authenticationcheckerResult + " is authorized to perform the operation.");
+            logger.info(body.toString());
         }
 
         // Continue APISIX chain
