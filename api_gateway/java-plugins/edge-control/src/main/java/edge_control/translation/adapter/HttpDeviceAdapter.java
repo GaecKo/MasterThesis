@@ -1,12 +1,11 @@
 package edge_control.translation.adapter;
 
+import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.exceptions.EdgeControlException;
 import edge_control.exceptions.IllegalOperation;
-import edge_control.translation.adapter.command.definition.CommandDefinitionRegistry;
 import edge_control.translation.adapter.command.definition.HttpCommandDefinition;
 import edge_control.translation.adapter.command.engine.CommandTranslationEngine;
 import edge_control.translation.config.DeviceConfig;
-import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.logger.EdgeControlLogger;
 
 import org.apache.apisix.plugin.runner.HttpRequest;
@@ -20,7 +19,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegistry {
+public class HttpDeviceAdapter implements DeviceAdapter {
 
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -30,17 +29,24 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
 
     private String gatewayDeviceId;
 
+    // ── Init ──────────────────────────────────────────────────────────────────
+
     @Override
     public void init(DeviceConfig config) throws EdgeControlException {
         this.gatewayDeviceId = config.getDeviceId();
-        JSONObject root = config.getConfig();
 
+        logger.info("Initialising HTTP adapter for device: " + gatewayDeviceId);
+
+        loadCommands(config.getConfig());
+    }
+
+    // ── Config loaders ────────────────────────────────────────────────────────
+
+    private void loadCommands(JSONObject root) throws CorruptedConfiguration {
         if (!root.has("commands")) {
             throw new CorruptedConfiguration(
-                    "Configuration for device "
-                            + gatewayDeviceId
-                            + " is missing required 'commands' section."
-            );
+                    "HTTP adapter for device " + gatewayDeviceId
+                            + " is missing required 'commands' section");
         }
 
         JSONObject commands = root.getJSONObject("commands");
@@ -50,15 +56,16 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
             String commandName = commandNames.next();
             JSONObject commandJson = commands.getJSONObject(commandName);
             HttpCommandDefinition definition = new HttpCommandDefinition(commandName, commandJson);
-            logger.debug("Added command: " + commandName);
             commandDefinitions.put(commandName, definition);
+            logger.debug("Added command: " + commandName
+                    + " → " + definition.getMethod() + " " + definition.getEndpoint());
         }
 
-        logger.info("Loaded "
-                + commandDefinitions.size()
-                + " command definitions for device "
-                + gatewayDeviceId);
+        logger.info("Loaded " + commandDefinitions.size()
+                + " command definitions for device " + gatewayDeviceId);
     }
+
+    // ── Request handling ──────────────────────────────────────────────────────
 
     @Override
     public void handleRequest(HttpRequest request, HttpResponse response,
@@ -67,20 +74,21 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
         if (request.getBody() == null || request.getBody().isEmpty()) {
             response.setStatusCode(400);
             response.setBody("{\"error\":\"Empty request body\"}");
-            callback.run(); // Continue chain even on error
+            callback.run();
             return;
         }
 
         JsonNode backendRequest = MAPPER.readTree(request.getBody());
 
         if (backendRequest.get("command") == null || backendRequest.get("command").isNull()) {
-            throw new CorruptedConfiguration("Missing 'command' field in request body...");
+            throw new CorruptedConfiguration("Missing 'command' field in request body");
         }
 
-        HttpCommandDefinition commandDefinition = commandDefinitions.get(backendRequest.get("command").stringValue());
+        String commandName = backendRequest.get("command").stringValue();
+        HttpCommandDefinition commandDefinition = commandDefinitions.get(commandName);
 
         if (commandDefinition == null) {
-            throw new IllegalOperation("Unknown command: " + backendRequest.get("command"));
+            throw new IllegalOperation("Unknown command: " + commandName);
         }
 
         JsonNode finalPayload = translationEngine.translate(commandDefinition, backendRequest);
@@ -110,7 +118,7 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
                     Throwable cause = throwable.getCause() != null ? throwable.getCause() : throwable;
                     try {
                         logger.error("Async request failed: " + cause.getMessage());
-                        response.setStatusCode(502); // 502 Bad Gateway - upstream device failed
+                        response.setStatusCode(502);
                         response.setBody("{\"error\":\"" + cause.getMessage() + "\"}");
                         response.setHeader("MODIFIED-BY", "EdgeControl/Protocol-Translation");
                     } catch (Exception e) {
@@ -122,10 +130,7 @@ public class HttpDeviceAdapter implements DeviceAdapter, CommandDefinitionRegist
                 });
     }
 
-    @Override
-    public HttpCommandDefinition get(String commandName) {
-        return commandDefinitions.get(commandName);
-    }
+    // ── Shutdown ──────────────────────────────────────────────────────────────
 
     @Override
     public void shutdown() {

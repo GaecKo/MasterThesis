@@ -203,7 +203,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         } catch (MqttException e) {
             throw new EdgeControlException(
                     "Failed to connect MQTT adapter for device " + gatewayDeviceId
-                            + ": " + e.getMessage());
+                            + ": " + e.getMessage() + " (reason code: " + e.getReasonCode() + ")");
         }
     }
 

@@ -18,7 +18,6 @@ public class ExceptionHandler {
      */
     static public void handleException(HttpResponse response, Exception e) {
         logger.error("Request failed: " + e);
-        logger.debug("Stack trace: " + Arrays.toString(e.getStackTrace()));
 
         switch (e) {
             case CorruptedConfiguration corruptedConfiguration -> {
@@ -37,6 +36,7 @@ public class ExceptionHandler {
                 response.setBody(e.getMessage());
             }
             default -> {
+                logger.debug("Stack trace: " + Arrays.toString(e.getStackTrace()));
                 response.setStatusCode(500);
                 response.setHeader("X-Error", e.getMessage());
                 response.setBody(e.getMessage());

@@ -79,6 +79,7 @@ public class AuthFilter implements PluginFilter {
             return;
         }
 
+        // HANDLE ERROR HERE: try catch and then forward error to ExceptionHandler
         String authenticationcheckerResult = authenticationManager.checkAuthentication(request.getHeader("apikey"));
         if (authenticationcheckerResult.startsWith("Invalid API key")) {
             ExceptionHandler.handleException(response, new IllegalOperation(authenticationcheckerResult));

@@ -31,6 +31,7 @@ public class AuthenticationManager {
 
     public String checkAuthentication(String apiKey) {
         if (apiKey == null) {
+            // THROW ERROR HERE!!
             return "API key cannot be null";
         }
 
@@ -56,6 +57,7 @@ public class AuthenticationManager {
             return gatewayDeviceId;
         }
 
+        // THROW ERROR HERE
         return "Invalid API key or API key cannot be null";
     }
 
