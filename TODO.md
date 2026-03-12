@@ -46,7 +46,7 @@
 > **deadline**: 09/03 (Elie)
 * [X] AuthN AuthZ check mechanism 
 * [X] Optimization 
-* [ ] AuthFilter device --> backend communication flow
+* [X] AuthFilter device --> backend communication flow
 
 ## Protocol Security 
 > **deadline**: 16/03 (Elie)
