@@ -2,6 +2,7 @@ package edge_control.auth;
 
 import edge_control.database.BackendConfigRepository;
 import edge_control.database.DeviceConfigRepository;
+import edge_control.exceptions.IllegalOperation;
 import edge_control.logger.EdgeControlLogger;
 
 public class AuthenticationManager {
@@ -29,9 +30,9 @@ public class AuthenticationManager {
         return instance;
     }
 
-    public String checkAuthentication(String apiKey) {
+    public String checkAuthentication(String apiKey) throws IllegalOperation {
         if (apiKey == null) {
-            return "API key cannot be null";
+            throw new IllegalOperation("API key cannot be null");
         }
 
         String hash = backendConfig.hashApiKey(apiKey);
@@ -56,7 +57,7 @@ public class AuthenticationManager {
             return gatewayDeviceId;
         }
 
-        return "Invalid API key or API key cannot be null";
+        throw new IllegalOperation("Invalid API key");
     }
 
 }

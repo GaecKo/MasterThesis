@@ -3,10 +3,8 @@ package edge_control.filters;
 import edge_control.RequestHandler;
 import edge_control.auth.AuthenticationManager;
 import edge_control.auth.AuthorizationManager;
-import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.exceptions.ExceptionHandler;
 import edge_control.exceptions.IllegalOperation;
-import edge_control.exceptions.OperationNotSupported;
 import edge_control.logger.EdgeControlLogger;
 import org.apache.apisix.plugin.runner.HttpRequest;
 import org.apache.apisix.plugin.runner.HttpResponse;
@@ -81,42 +79,42 @@ public class AuthFilter implements PluginFilter {
             return;
         }
 
-        // Named authenticationcheckerResult instead of gatewayId because it can be either backend_ or device_ ID, but also the result of the authentication
-        // check (e.g. "Invalid API key or API key cannot be null") in case of failed authentication
-        String authenticationcheckerResult = authenticationManager.checkAuthentication(request.getHeader("apikey"));
-        if (authenticationcheckerResult.startsWith("Invalid API key")) {
-            ExceptionHandler.handleException(response, new IllegalOperation(authenticationcheckerResult));
+        String gatewayId;
+        try {
+            gatewayId = authenticationManager.checkAuthentication(request.getHeader("apikey"));
+        } catch (Exception e) {
+            ExceptionHandler.handleException(response, new IllegalOperation(e.getMessage()));
             requestHandler.skipChain(request);
             chain.filter(request, response);
             return;
         }
 
-        logger.info("Authentication successful for API key: " + request.getHeader("apikey") + " | Result: " + authenticationcheckerResult);
+        logger.info("Authentication successful for API key: " + request.getHeader("apikey") + " | Result: " + gatewayId);
 
         JSONObject body = new JSONObject(request.getBody());
-        if (authenticationcheckerResult.startsWith("backend_")) {
+        if (gatewayId.startsWith("backend_")) {
             // Backend requests require authorization check
-            if (authorizationManager.checkAuthorization(authenticationcheckerResult, Document.parse(request.getBody()))) {
-                body.put("gatewayBackendId", authenticationcheckerResult);
+            if (authorizationManager.checkAuthorization(gatewayId, Document.parse(request.getBody()))) {
+                body.put("gatewayBackendId", gatewayId);
                 request.setBody(body.toString());
-                logger.info(authenticationcheckerResult + " is authorized to perform the operation.");
+                logger.info(gatewayId + " is authorized to perform the operation.");
             } else {
                 ExceptionHandler.handleException(response, new IllegalOperation("Unauthorized access"));
                 requestHandler.skipChain(request);
                 chain.filter(request, response);
                 return;
             }
-        } else if (authenticationcheckerResult.startsWith("device_")) {
+        } else if (gatewayId.startsWith("device_")) {
             // Device requests are automatically forwarded to all available endpoints — no authorization check needed
-            body.put("gatewayDeviceId", authenticationcheckerResult);
+            body.put("gatewayDeviceId", gatewayId);
 
             // Add listOfEndpoints: { gatewayBackendId → endpoint }
-            Map<String, String> endpoints = authorizationManager.getDeviceEndpoints(authenticationcheckerResult);
+            Map<String, String> endpoints = authorizationManager.getDeviceEndpoints(gatewayId);
             JSONObject listOfEndpoints = new JSONObject(endpoints);
             body.put("listOfEndpoints", listOfEndpoints);
 
             request.setBody(body.toString());
-            logger.info(authenticationcheckerResult + " is authorized to perform the operation.");
+            logger.info(gatewayId + " is authorized to perform the operation.");
             logger.info(body.toString());
         }
 
