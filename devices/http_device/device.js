@@ -29,7 +29,7 @@ function sleep(ms) {
 app.all('*', async (req, res) => {
 
     console.log(".".repeat(Math.random() * (50 - 1) + 1));
-    await sleep(10000)
+
     res.json({
         path: req.path,
         method: req.method,

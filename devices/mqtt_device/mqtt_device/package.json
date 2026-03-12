@@ -1,0 +1,13 @@
+{
+  "name": "mqtt-device",
+  "version": "1.0.0",
+  "description": "Simulated MQTT device for APISIX plugin testing",
+  "main": "mqtt_device.js",
+  "scripts": {
+    "start": "node mqtt_device.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "mqtt": "^5.10.1"
+  }
+}
