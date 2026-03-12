@@ -122,8 +122,8 @@ public class MqttDeviceAdapter implements DeviceAdapter {
 
             boolean forwardToBackend = sub.optBoolean("forwardToBackend", false);
             subscriptions.add(new MqttSubscriptionConfig(topic, forwardToBackend));
-            logger.debug("Registered subscription — topic=" + topic
-                    + " forward=" + forwardToBackend);
+            //logger.debug("Registered subscription — topic=" + topic
+            //        + " forward=" + forwardToBackend);
         }
 
         logger.info("Loaded " + subscriptions.size()
@@ -145,9 +145,9 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             JSONObject commandJson = commands.getJSONObject(commandName);
             MqttCommandDefinition definition = new MqttCommandDefinition(commandName, commandJson);
             commandDefinitions.put(commandName, definition);
-            logger.debug("Added command: " + commandName
-                    + " → topic=" + definition.getTopic()
-                    + " responseTopic=" + definition.getResponseTopic());
+            //logger.debug("Added command: " + commandName
+            //        + " → topic=" + definition.getTopic()
+            //        + " responseTopic=" + definition.getResponseTopic());
         }
 
         logger.info("Loaded " + commandDefinitions.size()
@@ -215,9 +215,9 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         for (MqttSubscriptionConfig sub : subscriptions) {
             try {
                 mqttClient.subscribe(sub.topic, qos);
-                logger.info("Subscribed to " + sub.topic);
+                // logger.info("Subscribed to " + sub.topic);
             } catch (MqttException e) {
-                logger.error("Failed to subscribe to " + sub.topic + ": " + e.getMessage());
+                // logger.error("Failed to subscribe to " + sub.topic + ": " + e.getMessage());
             }
         }
     }
@@ -332,7 +332,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                         response.setStatusCode(200);
                         response.setBody(responsePayload);
                         response.setHeader("MODIFIED-BY", "EdgeControl/MQTT-Translation");
-                        logger.debug("Ack received for correlationId=" + correlationId);
+                        // logger.debug("Ack received for correlationId=" + correlationId);
                     } catch (Exception e) {
                         logger.error("Error setting MQTT response: " + e.getMessage());
                         response.setStatusCode(500);
@@ -376,7 +376,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                 .orElse(null);
 
         if (matched == null) {
-            logger.debug("Received message on undeclared topic: " + topic);
+            // logger.debug("Received message on undeclared topic: " + topic);
             return;
         }
 
@@ -404,8 +404,8 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             }
 
             // Unsolicited message
-            logger.info("Inbound message on " + sub.topic + " for device "
-                    + gatewayDeviceId + ": " + payload);
+            // logger.info("Inbound message on " + sub.topic + " for device "
+            //        + gatewayDeviceId + ": " + payload);
             // TODO: if sub.forwardToBackend, POST to backend endpoint
 
         } catch (Exception e) {
