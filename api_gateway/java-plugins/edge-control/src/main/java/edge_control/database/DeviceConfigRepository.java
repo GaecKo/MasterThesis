@@ -269,7 +269,7 @@ public class DeviceConfigRepository {
 
     /**
      * Validates an API key for a given device ID.
-     * Uses AuthRegistry cache first, falls back to DB lookup.
+     * Compares the hash of the provided API key with the stored hash.
      *
      * @param apiKey the plain text API key to validate
      * @return gatewayDeviceId if the API key hash matches
