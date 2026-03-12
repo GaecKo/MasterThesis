@@ -36,9 +36,9 @@ docker compose version   >/dev/null 2>&1 || err "docker compose plugin not found
 ### ── Write .env for the device container ────────────────────────────────────
 info "Writing ${MQTT_DIR}/.env ..."
 cat > "${MQTT_DIR}/.env" <<EOF
-DEVICE_ID=device_3714cba3-8be4-4097-b862-b06c73e75d5b
+DEVICE_ID=device_c69d27de-d8b0-48f6-a4b7-b2445b65ab69
 BROKER_URL=mqtt://127.0.0.1:1883
-INTERVAL_MS=20000
+INTERVAL_MS=60000
 EOF
 success ".env written"
 
