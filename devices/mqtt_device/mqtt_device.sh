@@ -15,79 +15,53 @@ warn()    { echo -e "${YELLOW}[WARN]${RESET} $*"; }
 err()     { echo -e "${RED}[ERROR]${RESET} $*"; exit 1; }
 
 ### ============================================================
-###   Paths — derived from the script's own location so it works
-###   regardless of where it is called from
+###   Paths — derived from the script's own location
 ### ============================================================
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-MQTT_DIR="${BASE_DIR}/mqtt_device"
-MOSQUITTO_DIR="${BASE_DIR}/mosquitto"
-COMPOSE_FILE="${BASE_DIR}/docker-compose.yml"
 
-info "=== MQTT Stack Setup ==="
+info "=== MQTT Device Setup ==="
 info "Base dir : ${BASE_DIR}"
 
 ### ── Sanity checks ──────────────────────────────────────────────────────────
-command -v docker        >/dev/null 2>&1 || err "docker not found"
-docker compose version   >/dev/null 2>&1 || err "docker compose plugin not found (need Docker >= 20.10)"
-[ -f "${COMPOSE_FILE}" ]                 || err "docker-compose.yml not found at ${COMPOSE_FILE}"
-[ -f "${MQTT_DIR}/Dockerfile" ]          || err "Dockerfile not found at ${MQTT_DIR}/Dockerfile"
-[ -f "${MOSQUITTO_DIR}/mosquitto.conf" ] || err "mosquitto.conf not found at ${MOSQUITTO_DIR}/mosquitto.conf"
+command -v docker     >/dev/null 2>&1 || err "docker not found"
+[ -f "Dockerfile" ]                   || err "Dockerfile not found at ./Dockerfile"
+[ -n "${APISIX_IP:-}" ]              || err "APISIX_IP env var is not set (e.g. export APISIX_IP=192.168.2.x)"
 
-### ── Write .env for the device container ────────────────────────────────────
-info "Writing ${MQTT_DIR}/.env ..."
-cat > "${MQTT_DIR}/.env" <<EOF
-DEVICE_ID=device_c69d27de-d8b0-48f6-a4b7-b2445b65ab69
-BROKER_URL=mqtt://127.0.0.1:1883
-INTERVAL_MS=60000
-EOF
-success ".env written"
+### ── Build image ─────────────────────────────────────────────────────────────
+info "Building mqtt-device-app image..."
+docker build -t mqtt-device-app ./
 
-### ── Tear down any previous stack ───────────────────────────────────────────
-info "Stopping any existing stack..."
-docker compose -f "${COMPOSE_FILE}" down --remove-orphans 2>/dev/null || true
+### ── Stop and remove existing container ─────────────────────────────────────
+info "Stopping any existing container..."
+docker rm -f mqtt-device-app 2>/dev/null || true
 
-### ── Build & start ───────────────────────────────────────────────────────────
-info "Building images..."
-docker compose -f "${COMPOSE_FILE}" build
-
-info "Starting stack (broker + device)..."
-docker compose -f "${COMPOSE_FILE}" up -d
-
-### ── Wait for broker to be ready ─────────────────────────────────────────────
-info "Waiting for Mosquitto to be ready..."
-for i in $(seq 1 15); do
-  if docker compose -f "${COMPOSE_FILE}" exec -T mosquitto \
-       mosquitto_pub -h localhost -t _healthcheck -m ping -q 0 2>/dev/null; then
-    success "Mosquitto is up"
-    break
-  fi
-  echo -n "."
-  sleep 1
-done
+### ── Run ─────────────────────────────────────────────────────────────────────
+info "Starting mqtt-device-app..."
+docker run -d \
+  --name mqtt-device-app \
+  --network host \
+  --restart unless-stopped \
+  -e DEVICE_ID=device_c69d27de-d8b0-48f6-a4b7-b2445b65ab69 \
+  -e BROKER_URL="mqtt://${APISIX_IP}:1883" \
+  -e INTERVAL_MS=20000 \
+  mqtt-device-app
 
 ### ── Status ──────────────────────────────────────────────────────────────────
 echo ""
-info "Stack status:"
-docker compose -f "${COMPOSE_FILE}" ps
+info "Container status:"
+docker ps --filter "name=mqtt-device-app" \
+  --format "table {{.Names}}\t{{.Status}}\t{{.Image}}"
 
 echo ""
-success "=== MQTT stack is running! ==="
+success "=== MQTT device is running! ==="
 echo ""
 info "Useful commands:"
 echo ""
-echo "  # Follow all logs"
-echo "  docker compose -f ${COMPOSE_FILE} logs -f"
+echo "  # Follow device logs"
+echo "  docker logs -f mqtt-device-app"
 echo ""
-echo "  # Device logs only"
-echo "  docker compose -f ${COMPOSE_FILE} logs -f mqtt-device"
+echo "  # Watch all MQTT traffic (from gateway VM)"
+echo "  docker run --rm eclipse-mosquitto:2 mosquitto_sub -h ${APISIX_IP} -t 'devices/#' -v"
 echo ""
-echo "  # Watch all MQTT traffic (runs a temporary subscriber)"
-echo "  docker run --rm --network host eclipse-mosquitto:2 mosquitto_sub -h localhost -t 'devices/#' -v"
-echo ""
-echo "  # Send a ping command to the device"
-echo "  docker run --rm --network host eclipse-mosquitto:2 \\"
-echo "    mosquitto_pub -h localhost -t 'devices/2/commands' \\"
-echo "    -m '{\"deviceId\":\"2\",\"timestamp\":\"\",\"type\":\"command\",\"payload\":{\"action\":\"ping\",\"params\":{}}}'"
-echo ""
-echo "  # Tear everything down"
-echo "  docker compose -f ${COMPOSE_FILE} down"
+echo "  # Stop the device"
+echo "  docker rm -f mqtt-device-app"

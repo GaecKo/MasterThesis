@@ -151,6 +151,7 @@ if [ -d "./devices/mqtt_device" ] && [ -f "./devices/mqtt_device/mqtt_device.sh"
     
     multipass exec devices-vm -- bash -c "
         echo '=== Starting MQTT Device setup ==='
+        export APISIX_IP='$APISIX_IP'
         export DEVICES_IP='$DEVICES_IP'
         cd /home/ubuntu/devices/mqtt_device
         $MQTT_DEVICE_SETUP_CONTENT

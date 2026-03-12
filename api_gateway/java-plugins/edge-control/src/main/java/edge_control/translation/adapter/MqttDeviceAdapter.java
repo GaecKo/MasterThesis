@@ -16,6 +16,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import java.net.NetworkInterface;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -84,12 +85,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         }
         JSONObject conn = root.getJSONObject("connection");
 
-        this.brokerUrl = conn.optString("brokerUrl", null);
-        if (brokerUrl == null || brokerUrl.isBlank()) {
-            throw new CorruptedConfiguration(
-                    "MQTT adapter for device " + gatewayDeviceId
-                            + ": 'connection.brokerUrl' is missing or empty");
-        }
+        this.brokerUrl = "tcp://mosquitto:1883";
 
         this.qos               = conn.optInt("qos",               1);
         this.keepAliveInterval = conn.optInt("keepAliveInterval", 30);
