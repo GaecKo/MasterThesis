@@ -111,7 +111,7 @@ public class HttpCommandDefinition implements CommandDefinition {
         }
 
         // ---- timeouts ----
-        JSONObject timeoutsJson = commandJson.optJSONObject("timeouts");
+        JSONObject timeoutsJson = commandJson.optJSONObject("timeouts", null);
         if (cleanupJson != null) {
             this.connectTimeout = Duration.ofSeconds(timeoutsJson.optInt("connect", 0));
             this.requestTimeout = Duration.ofSeconds(timeoutsJson.optInt("request", 0));
