@@ -25,6 +25,9 @@ public class AuthRegistry {
     // gatewayDeviceId → listOfAuthorizations
     private final Map<String, List<String>> deviceAuthCache = new ConcurrentHashMap<>();
 
+    // gatewayDeviceId → { gatewayBackendId → endpoint }
+    private final Map<String, Map<String, String>> deviceEndpointsCache = new ConcurrentHashMap<>();
+
     private final BackendConfigRepository backendConfig = new BackendConfigRepository();
     private final DeviceConfigRepository deviceConfig = new DeviceConfigRepository();
     private final BackendAuthorizationsRepository backendAuths = new BackendAuthorizationsRepository();
@@ -70,6 +73,25 @@ public class AuthRegistry {
                 if (id != null && auths != null) deviceAuthCache.put(id, auths);
         });
 
+        deviceEndpointsCache.clear();
+        deviceAuths.findAll().forEach(doc -> {
+            String deviceId = doc.getString("gatewayDeviceId");
+            List<String> auths = doc.getList("listOfAuthorizations", String.class);
+            if (deviceId != null && auths != null) {
+                Map<String, String> endpointsMap = new ConcurrentHashMap<>();
+                for (String backendId : auths) {
+                    Document backendDoc = backendConfig.findBackendById(backendId);
+                    if (backendDoc != null) {
+                        String endpoint = backendDoc.getString("infoEndpoint");
+                        if (endpoint != null) {
+                            endpointsMap.put(backendId, endpoint);
+                        }
+                    }
+                }
+                deviceEndpointsCache.put(deviceId, endpointsMap);
+            }
+        });
+
 //        logger.info("AuthRegistry refreshed: " + apiKeyCache.size() + " keys, "
 //                + backendAuthCache.size() + " backend auths, "
 //                + deviceAuthCache.size() + " device auths");
@@ -98,6 +120,14 @@ public class AuthRegistry {
 
     public void putDeviceAuth(String gatewayDeviceId, List<String> l){
         deviceAuthCache.put(gatewayDeviceId, l);
+    }
+
+    public Map<String, String> getDeviceEndpoints(String gatewayDeviceId) {
+        return deviceEndpointsCache.get(gatewayDeviceId);
+    }
+
+    public void putDeviceEndpoints(String gatewayDeviceId, Map<String, String> endpoints) {
+        deviceEndpointsCache.put(gatewayDeviceId, endpoints);
     }
 
 }

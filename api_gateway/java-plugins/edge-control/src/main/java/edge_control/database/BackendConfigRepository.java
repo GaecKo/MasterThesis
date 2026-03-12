@@ -67,6 +67,24 @@ public class BackendConfigRepository {
     }
 
     /**
+     * Finds a backend configuration by its gatewayBackendId.
+     *
+     * @param gatewayBackendId the ID of the backend to find
+     * @return the backend Document (without apiKeyHash), or null if not found
+     */
+    public Document findBackendById(String gatewayBackendId) {
+        if (gatewayBackendId == null) {
+            return null;
+        }
+        Document doc = backendConfigCollection.find(new Document("gatewayBackendId", gatewayBackendId)).first();
+        if (doc != null) {
+            doc.remove("apiKeyHash");
+            doc.remove("_id");
+        }
+        return doc;
+    }
+
+    /**
      * Create the backend configuration in the database.
      * Generates a unique gatewayBackendId and a secure API key.
      * The API key is hashed before storing in the database for security.
