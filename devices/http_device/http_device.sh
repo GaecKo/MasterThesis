@@ -18,6 +18,10 @@ command -v docker     >/dev/null 2>&1 || err "docker not found"
 [ -f "Dockerfile" ]                   || err "Dockerfile not found at ./Dockerfile"
 [ -n "${APISIX_IP:-}" ]               || err "APISIX_IP env var is not set (e.g. export APISIX_IP=192.168.2.x)"
 
+### ── Stop and remove existing container ─────────────────────────────────────
+info "Stopping any existing container..."
+docker rm -f http-device-app 2>/dev/null || true
+
 info "=== HTTP device Setup ==="
 info "Device VM IP: $DEVICES_IP"
 
