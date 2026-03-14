@@ -1,5 +1,3 @@
-'use strict';
-
 require('dotenv').config();
 const mqtt = require('mqtt');
 
@@ -7,6 +5,8 @@ const mqtt = require('mqtt');
 const DEVICE_ID   = process.env.DEVICE_ID  || 'device_c69d27de-d8b0-48f6-a4b7-b2445b65ab69';
 const BROKER_URL  = process.env.BROKER_URL || 'mqtt://127.0.0.1:1883';
 const INTERVAL_MS = parseInt(process.env.INTERVAL_MS || '5000', 10);
+const API_KEY     = process.env.API_KEY    || '';
+
 const TOPICS = {
   telemetry : `devices/${DEVICE_ID}/telemetry`,
   status    : `devices/${DEVICE_ID}/status`,
@@ -28,6 +28,7 @@ function publishTelemetry(client) {
     deviceId  : DEVICE_ID,
     timestamp : now(),
     type      : 'telemetry',
+    apikey    : API_KEY,       // used by the Java adapter to forward to backendForward
     payload   : {
       temperature : rand(18, 30),
       humidity    : rand(40, 80),

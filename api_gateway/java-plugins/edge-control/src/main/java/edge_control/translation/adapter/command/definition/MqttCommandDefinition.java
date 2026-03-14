@@ -141,7 +141,7 @@ public class MqttCommandDefinition implements CommandDefinition {
     /** Null means fire-and-forget — no response future will be registered. */
     public String getResponseTopic() { return responseTopic; }
 
-    public boolean hasResponseTopic() { return responseTopic == null; }
+    public boolean hasResponseTopic() { return responseTopic != null; }
 
     public Duration getResponseTimeout() { return responseTimeout; }
 

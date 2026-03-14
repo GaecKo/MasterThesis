@@ -18,7 +18,7 @@ public class HttpForgery {
     private static final ExecutorService httpExecutor;
 
     private static final Set<String> RESTRICTED_HEADERS =
-            Set.of("content-length", "host", "connection");
+            Set.of("accept-charset", "accept-encoding", "access-control-request-headers", "access-control-request-method", "connection", "content-length", "cookie", "cookie2", "date", "dnt", "expect", "host", "keep-alive", "origin", "referer", "te", "trailer", "transfer-encoding", "upgrade", "via");
 
     public record DeviceResponse(int statusCode, String body) {}
 

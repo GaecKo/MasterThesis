@@ -295,5 +295,5 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/9 -H 'X-API-KEY: admin' -X PUT
     }
 }'
 success "Route setup"
-info "Test it with: curl http://127.0.0.1:9080/backend/info"
+info "Test it with: curl http://127.0.0.1:9080/backendForward"
 

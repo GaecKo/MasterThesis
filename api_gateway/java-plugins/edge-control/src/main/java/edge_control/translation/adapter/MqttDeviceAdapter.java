@@ -16,18 +16,19 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import java.net.NetworkInterface;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.*;
 
 public class MqttDeviceAdapter implements DeviceAdapter {
 
-    private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final EdgeControlLogger logger   = EdgeControlLogger.getInstance();
+    private static final ObjectMapper MAPPER        = new ObjectMapper();
+    private static final String BACKEND_FORWARD_URL = "http://localhost:9080/backendForward";
 
     // ── Parsed config ─────────────────────────────────────────────────────────
 
@@ -85,13 +86,12 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         }
         JSONObject conn = root.getJSONObject("connection");
 
-        this.brokerUrl = "tcp://mosquitto:1883";
-
-        this.qos               = conn.optInt("qos",               1);
-        this.keepAliveInterval = conn.optInt("keepAliveInterval", 30);
-        this.connectionTimeout = conn.optInt("connectionTimeout", 10);
-        this.cleanSession      = conn.optBoolean("cleanSession",  true);
-        this.reconnectDelay    = conn.optInt("reconnectDelay",    5);
+        this.brokerUrl          = "tcp://mosquitto:1883";
+        this.qos                = conn.optInt("qos",               1);
+        this.keepAliveInterval  = conn.optInt("keepAliveInterval", 30);
+        this.connectionTimeout  = conn.optInt("connectionTimeout", 10);
+        this.cleanSession       = conn.optBoolean("cleanSession",  true);
+        this.reconnectDelay     = conn.optInt("reconnectDelay",    5);
 
         logger.debug("Connection config loaded — broker=" + brokerUrl
                 + " qos=" + qos + " keepAlive=" + keepAliveInterval + "s");
@@ -99,7 +99,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
 
     private void loadSubscriptions(JSONObject root) throws CorruptedConfiguration {
         if (!root.has("subscriptions")) {
-            // Subscriptions are optional — device may be command-only
             logger.debug("No 'subscriptions' section found for device " + gatewayDeviceId);
             return;
         }
@@ -118,8 +117,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
 
             boolean forwardToBackend = sub.optBoolean("forwardToBackend", false);
             subscriptions.add(new MqttSubscriptionConfig(topic, forwardToBackend));
-            //logger.debug("Registered subscription — topic=" + topic
-            //        + " forward=" + forwardToBackend);
         }
 
         logger.info("Loaded " + subscriptions.size()
@@ -141,9 +138,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             JSONObject commandJson = commands.getJSONObject(commandName);
             MqttCommandDefinition definition = new MqttCommandDefinition(commandName, commandJson);
             commandDefinitions.put(commandName, definition);
-            //logger.debug("Added command: " + commandName
-            //        + " → topic=" + definition.getTopic()
-            //        + " responseTopic=" + definition.getResponseTopic());
         }
 
         logger.info("Loaded " + commandDefinitions.size()
@@ -210,10 +204,10 @@ public class MqttDeviceAdapter implements DeviceAdapter {
     private void subscribeToAllTopics() {
         for (MqttSubscriptionConfig sub : subscriptions) {
             try {
-                mqttClient.subscribe(sub.topic, qos);
-                // logger.info("Subscribed to " + sub.topic);
+                mqttClient.subscribe(sub.topic(), qos);
+                logger.info("Subscribed to " + sub.topic());
             } catch (MqttException e) {
-                // logger.error("Failed to subscribe to " + sub.topic + ": " + e.getMessage());
+                logger.error("Failed to subscribe to " + sub.topic() + ": " + e.getMessage());
             }
         }
     }
@@ -281,14 +275,16 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         envelope.put("timestamp",     Instant.now().toString());
         envelope.put("type",          "command");
         envelope.put("correlationId", correlationId);
-        if (!commandDefinition.hasResponseTopic()) {
+        // responseTopic tells the device where to publish the ack — only set when a
+        // response is expected, so the device knows whether to ack at all
+        if (commandDefinition.hasResponseTopic()) {
             envelope.put("responseTopic", commandDefinition.getResponseTopic());
         }
-        envelope.put("payload",       new JSONObject(finalPayload.toString()));
+        envelope.put("payload", new JSONObject(finalPayload.toString()));
 
         // Register pending future BEFORE publishing to avoid a response race
         CompletableFuture<String> responseFuture = null;
-        if (!commandDefinition.hasResponseTopic()) {
+        if (commandDefinition.hasResponseTopic()) {
             responseFuture = new CompletableFuture<>();
             pendingResponses.put(correlationId, responseFuture);
         }
@@ -311,7 +307,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         }
 
         // Fire-and-forget: return 202 Accepted immediately
-        if (commandDefinition.hasResponseTopic()) {
+        if (!commandDefinition.hasResponseTopic()) {
             response.setStatusCode(202);
             response.setBody("{\"status\":\"sent\",\"correlationId\":\"" + correlationId + "\"}");
             response.setHeader("MODIFIED-BY", "EdgeControl/MQTT-Translation");
@@ -328,7 +324,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                         response.setStatusCode(200);
                         response.setBody(responsePayload);
                         response.setHeader("MODIFIED-BY", "EdgeControl/MQTT-Translation");
-                        // logger.debug("Ack received for correlationId=" + correlationId);
+                        logger.debug("Ack received for correlationId=" + correlationId);
                     } catch (Exception e) {
                         logger.error("Error setting MQTT response: " + e.getMessage());
                         response.setStatusCode(500);
@@ -367,12 +363,12 @@ public class MqttDeviceAdapter implements DeviceAdapter {
 
     private void onMessageArrived(String topic, String payload) {
         MqttSubscriptionConfig matched = subscriptions.stream()
-                .filter(s -> s.topic.equals(topic))
+                .filter(s -> s.topic().equals(topic))
                 .findFirst()
                 .orElse(null);
 
         if (matched == null) {
-            // logger.debug("Received message on undeclared topic: " + topic);
+            logger.debug("Received message on undeclared topic: " + topic);
             return;
         }
 
@@ -383,8 +379,8 @@ public class MqttDeviceAdapter implements DeviceAdapter {
      * Handles any inbound message regardless of topic semantics.
      * If the message carries a correlationId matching a pending request, that future
      * is resolved and the waiting handleRequest() unblocks.
-     * Otherwise it is unsolicited — logged and optionally forwarded to the backend.
-     * TODO: implement forwardToBackend when that flow is designed.
+     * Otherwise it is unsolicited — forwarded to backendForward if sub.forwardToBackend
+     * is true, using the apikey embedded in the MQTT envelope for authorization.
      */
     private void handleInboundMessage(String payload, MqttSubscriptionConfig sub) {
         try {
@@ -400,12 +396,44 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             }
 
             // Unsolicited message
-            // logger.info("Inbound message on " + sub.topic + " for device "
-            //        + gatewayDeviceId + ": " + payload);
-            // TODO: if sub.forwardToBackend, POST to backend endpoint
+            logger.info("Inbound message on " + sub.topic() + " for device "
+                    + gatewayDeviceId + ": " + payload);
+
+            if (!sub.forwardToBackend()) return;
+
+            String apiKey = json.optString("apikey", null);
+            if (apiKey == null || apiKey.isBlank()) {
+                logger.error("Cannot forward message from device " + gatewayDeviceId
+                        + " — missing 'apikey' field in MQTT envelope");
+                return;
+            }
+
+            // Strip apikey from the forwarded body — it belongs in the header only
+            JSONObject forwardBody = new JSONObject(payload);
+            forwardBody.remove("apikey");
+
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Content-Type", "application/json");
+            headers.put("apikey", apiKey);
+
+            HttpForgery.doRequestAsync(
+                            "POST",
+                            BACKEND_FORWARD_URL,
+                            forwardBody.toString(),
+                            headers,
+                            Duration.of(10, ChronoUnit.SECONDS),
+                            Duration.of(30, ChronoUnit.SECONDS))
+                    .thenAccept(result -> logger.debug(
+                            "Forwarded to backendForward — status=" + result.statusCode()))
+                    .exceptionally(throwable -> {
+                        Throwable cause = throwable.getCause() != null
+                                ? throwable.getCause() : throwable;
+                        logger.error("Failed to forward to backendForward: " + cause.getMessage());
+                        return null;
+                    });
 
         } catch (Exception e) {
-            logger.error("Failed to handle inbound message on " + sub.topic
+            logger.error("Failed to handle inbound message on " + sub.topic()
                     + ": " + e.getMessage());
         }
     }

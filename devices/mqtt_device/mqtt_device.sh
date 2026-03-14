@@ -42,8 +42,9 @@ docker run -d \
   --network host \
   --restart unless-stopped \
   -e DEVICE_ID=device_c69d27de-d8b0-48f6-a4b7-b2445b65ab69 \
+  -e API_KEY=y7i9eiS_4BZi35beWJaNCirMmHdzhK5tE-A9aXJlq6s \
   -e BROKER_URL="mqtt://${APISIX_IP}:1883" \
-  -e INTERVAL_MS=20000 \
+  -e INTERVAL_MS=60000 \
   mqtt-device-app
 
 ### ── Status ──────────────────────────────────────────────────────────────────
@@ -59,9 +60,6 @@ info "Useful commands:"
 echo ""
 echo "  # Follow device logs"
 echo "  docker logs -f mqtt-device-app"
-echo ""
-echo "  # Watch all MQTT traffic (from gateway VM)"
-echo "  docker run --rm eclipse-mosquitto:2 mosquitto_sub -h ${APISIX_IP} -t 'devices/#' -v"
 echo ""
 echo "  # Stop the device"
 echo "  docker rm -f mqtt-device-app"

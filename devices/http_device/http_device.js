@@ -4,6 +4,9 @@ const APISIX_IP = process.env.APISIX_IP;
 const HTTP_DEVICE_IP = process.env.HTTP_DEVICE_IP;
 const DEVICE_ID = process.env.DEVICE_ID || 1;
 const PORT = 8000;
+const INTERVAL = process.env.INTERVAL_MS || 60000
+
+
 const API_KEY = 'ST2ELyj3eMjwzCwnv2uHb8EODT3NuJ-f_-2VIBQiJU4'; 
 
 function randomTemp() {
@@ -75,5 +78,5 @@ app.listen(PORT, () => {
     if (APISIX_IP === "" || APISIX_IP == null) {
         console.error("ERROR! APISIX_IP is empty or null... Won't be able to send any telemitry")
     }
-    setInterval(sendTelemetry, 30000);
+    setInterval(sendTelemetry, INTERVAL);
 });

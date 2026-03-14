@@ -13,22 +13,13 @@ info()    { echo -e "${CYAN}[INFO]${RESET} $*"; }
 success() { echo -e "${GREEN}[OK]${RESET} $*"; }
 warn()    { echo -e "${YELLOW}[WARN]${RESET} $*"; }
 
+### ── Sanity checks ──────────────────────────────────────────────────────────
+command -v docker     >/dev/null 2>&1 || err "docker not found"
+[ -f "Dockerfile" ]                   || err "Dockerfile not found at ./Dockerfile"
+[ -n "${APISIX_IP:-}" ]               || err "APISIX_IP env var is not set (e.g. export APISIX_IP=192.168.2.x)"
+
 info "=== HTTP device Setup ==="
 info "Device VM IP: $DEVICES_IP"
-
-info "Setting up environment variables..."
-
-# Create .env file with APISIX_IP for Node.js app
-cat > /home/ubuntu/devices/http_device/.env <<EOF
-# API Gateway configuration
-HTTP_DEVICE_IP=$DEVICES_IP
-APISIX_IP=$APISIX_IP
-DEVICE_ID=1
-
-
-EOF
-
-success "Created .env file with env variable"
 
 info "Building and starting http device container..."
 cd /home/ubuntu/devices/http_device/
@@ -44,7 +35,10 @@ if [ -f "Dockerfile" ]; then
     sudo docker run -d \
         --name http-device-app \
         --network host \
-        --env-file .env \
+        -e HTTP_DEVICE_IP=$DEVICES_IP \
+        -e APISIX_IP=$APISIX_IP \
+        -e INTERVAL_MS=60000 \
+        -e DEVICE_ID=device_cada9a77-760c-47eb-8ef5-ff5392946c29 \
         http-device-app
     
     success "HTTP Device container started"

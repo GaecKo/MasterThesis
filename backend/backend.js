@@ -34,7 +34,7 @@ app.get('/info', (req, res) => {
 });
 
 app.post('/info', (req, res) => {
-    console.log("Received request: " + req.body)
+    console.log("Received request: " + JSON.stringify(req.body))
     res.json({
         service: 'backend-api',
         version: '1.0.0',

@@ -109,6 +109,7 @@ public class BackendForwarderFilter implements PluginFilter {
         }
 
         // Fire all forwards in parallel — do not block, do not wait for results
+        // this is because it is sent to multiple backends
         List<CompletableFuture<Void>> forwards = backendEndpoints.stream()
                 .map(endpoint -> HttpForgery.doRequestAsync(
                                 "POST",
@@ -119,7 +120,7 @@ public class BackendForwarderFilter implements PluginFilter {
                                 Duration.of(30, ChronoUnit.SECONDS))
                         .thenAccept(result -> {
                             logger.debug("Forwarded to " + endpoint
-                                    + " — status=" + result.statusCode());
+                                    + " — status=" + result.statusCode() + " / " + result.body());
                         })
                         .exceptionally(throwable -> {
                             Throwable cause = throwable.getCause() != null
