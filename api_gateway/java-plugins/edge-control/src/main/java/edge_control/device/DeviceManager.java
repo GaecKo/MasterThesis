@@ -141,14 +141,16 @@ public class DeviceManager {
      * @return true if update was successful, false otherwise
      */
     public Document updateDeviceAuthorizationConfig(String requestBody) {
-        boolean succes = deviceAuthorizations.updateDeviceAuthorization(Document.parse(requestBody));
+        boolean success = deviceAuthorizations.updateDeviceAuthorization(Document.parse(requestBody));
         Document responseDoc = new Document();
 
-        if (succes) {
+        if (success) {
             responseDoc.put("status", "success");
+            responseDoc.put("message", "Device authorization updated successfully.");
             logger.info("Updated device authorization");
         } else {
             responseDoc.put("status", "failure");
+            responseDoc.put("message", "Failed to update device authorization. Device may not exist or invalid request format.");
             logger.error("Failed to update device authorization");
         }
         return responseDoc;

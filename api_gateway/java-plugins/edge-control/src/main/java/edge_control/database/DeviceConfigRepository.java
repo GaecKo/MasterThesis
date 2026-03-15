@@ -2,6 +2,7 @@ package edge_control.database;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import edge_control.logger.EdgeControlLogger;
 import org.bson.Document;
 
 import java.security.MessageDigest;
@@ -19,6 +20,8 @@ import java.util.*;
 public class DeviceConfigRepository {
 
     private final MongoCollection<Document> deviceConfigCollection;
+
+    private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
     /**
      * Inner class to hold device creation response (ID and API key)
@@ -49,11 +52,13 @@ public class DeviceConfigRepository {
      */
     public boolean deviceExists(Document requestBody) {
         String gatewayDeviceId = requestBody.getString("gatewayDeviceId");
+        logger.info("Checking if device exists with gatewayDeviceId: " + gatewayDeviceId);
         if (gatewayDeviceId == null) {
             return false;
         }
 
         Document deviceDoc = deviceConfigCollection.find(new Document("gatewayDeviceId", gatewayDeviceId)).first();
+        logger.info("Device existence check result for gatewayDeviceId " + gatewayDeviceId + ": " + (deviceDoc));
         return deviceDoc != null;
     }
 

@@ -2,6 +2,7 @@ package edge_control.database;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.result.UpdateResult;
 import edge_control.logger.EdgeControlLogger;
 import org.bson.Document;
 
@@ -91,6 +92,8 @@ public class BackendAuthorizationsRepository {
         Document filter = new Document("gatewayBackendId", backendId);
 
         // Step 1: Remove authorizations first (if any)
+        UpdateResult updateDocRemoveResult = null;
+
         if (authsToRemove != null && !authsToRemove.isEmpty()) {
             Document pullDoc = new Document();
 
@@ -109,12 +112,14 @@ public class BackendAuthorizationsRepository {
 
             if (!pullDoc.isEmpty()) {
                 Document updateDocRemove = new Document("$pull", pullDoc);
-                backendAuthorizationCollection.updateOne(filter, updateDocRemove);
+                updateDocRemoveResult = backendAuthorizationCollection.updateOne(filter, updateDocRemove);
             }
         }
 
         // Step 2: Add authorizations after (if any)
         // Separated to avoid conflict when adding/removing from same field
+        UpdateResult updateDocAddResult = null;
+
         if (authsToAdd != null && !authsToAdd.isEmpty()) {
             Document addToSetDoc = new Document();
 
@@ -133,8 +138,13 @@ public class BackendAuthorizationsRepository {
 
             if (!addToSetDoc.isEmpty()) {
                 Document updateDocAdd = new Document("$addToSet", addToSetDoc);
-                backendAuthorizationCollection.updateOne(filter, updateDocAdd);
+                updateDocAddResult = backendAuthorizationCollection.updateOne(filter, updateDocAdd);
             }
+        }
+
+        if ((updateDocRemoveResult != null && updateDocRemoveResult.getMatchedCount() == 0) ||
+                (updateDocAddResult != null && updateDocAddResult.getMatchedCount() == 0)) {
+            return false; // No matching document found for update
         }
 
         return true;

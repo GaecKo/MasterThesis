@@ -2,6 +2,7 @@ package edge_control.database;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 
 import java.util.ArrayList;
@@ -42,6 +43,16 @@ public class DeviceAuthorizationsRepository {
             return false;
         }
 
+        // Check if backend authorization entry already exists
+        Document existingEntry = deviceAuthorizationCollection.find(
+                new Document("gatewayDeviceId", deviceId)
+        ).first();
+
+        if (existingEntry != null) {
+            // Entry already exists, use update instead
+            return false;
+        }
+
         // Create a MongoDB document with the gatewayBackendId, hashed API key, and the provided config
         Document finalDoc = new Document();
         finalDoc.put("gatewayDeviceId", deviceId);
@@ -76,24 +87,31 @@ public class DeviceAuthorizationsRepository {
         Document filter = new Document("gatewayDeviceId", deviceId);
 
         // Step 1: Remove authorizations first (if any)
+        UpdateResult updateDocRemoveResult = null;
         if (authsToRemove != null && !authsToRemove.isEmpty()) {
             Document updateDocRemove = new Document(
                 "$pull",
                 new Document("listOfAuthorizations", new Document("$in", authsToRemove))
             );
-            deviceAuthorizationCollection.updateOne(filter, updateDocRemove);
+            updateDocRemoveResult = deviceAuthorizationCollection.updateOne(filter, updateDocRemove);
         }
 
         // Step 2: Add authorizations after (if any)
         // Separated to avoid conflict when adding/removing from same field
+        UpdateResult updateDocAddResult = null;
+
         if (authsToAdd != null && !authsToAdd.isEmpty()) {
             Document updateDocAdd = new Document(
                 "$addToSet",
                 new Document("listOfAuthorizations", new Document("$each", authsToAdd))
             );
-            deviceAuthorizationCollection.updateOne(filter, updateDocAdd);
+            updateDocAddResult = deviceAuthorizationCollection.updateOne(filter, updateDocAdd);
         }
 
+        if ((updateDocRemoveResult != null && updateDocRemoveResult.getMatchedCount() == 0) ||
+                (updateDocAddResult != null && updateDocAddResult.getMatchedCount() == 0)) {
+            return false; // No matching document found for update
+        }
         return true;
     }
 
