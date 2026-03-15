@@ -52,13 +52,11 @@ public class DeviceConfigRepository {
      */
     public boolean deviceExists(Document requestBody) {
         String gatewayDeviceId = requestBody.getString("gatewayDeviceId");
-        logger.info("Checking if device exists with gatewayDeviceId: " + gatewayDeviceId);
         if (gatewayDeviceId == null) {
             return false;
         }
 
         Document deviceDoc = deviceConfigCollection.find(new Document("gatewayDeviceId", gatewayDeviceId)).first();
-        logger.info("Device existence check result for gatewayDeviceId " + gatewayDeviceId + ": " + (deviceDoc));
         return deviceDoc != null;
     }
 

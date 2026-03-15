@@ -79,6 +79,18 @@ public class AuthFilter implements PluginFilter {
             return;
         }
 
+        if (!request.getMethod().equals(HttpRequest.Method.POST)) {
+            ExceptionHandler.handleException(response, new IllegalOperation("Only POST method is allowed"));
+            requestHandler.skipChain(request);
+            chain.filter(request, response);
+            return;
+        } else if (!request.getPath().endsWith("/backendForward") && !request.getPath().endsWith("/command")) {
+            ExceptionHandler.handleException(response, new IllegalOperation("Invalid endpoint"));
+            requestHandler.skipChain(request);
+            chain.filter(request, response);
+            return;
+        }
+
         String gatewayId;
         try {
             gatewayId = authenticationManager.checkAuthentication(request.getHeader("apikey"));
