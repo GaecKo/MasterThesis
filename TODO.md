@@ -12,8 +12,8 @@
 
 > **deadline**: 23/03 (Arthur)
 * [ ] Queuing system
-* [ ] HTTP Communication from end devices
-* [ ] MQTT Communication from end devices
+* [X] HTTP Communication from end devices
+* [X] MQTT Communication from end devices
 * [ ] HTTPs for cmd onboarding 
 
 ## Performance Analysis
@@ -25,7 +25,7 @@
 
 ## Deployment
 > **deadline**: 06/04 (Arthur - Elie)
-* [ ] Deploy on Rasp PI
+* [ ] Deploy on NUC
 
 ## Rate limitation
 > **deadline**: 06/04 (Arthur)

@@ -7,6 +7,7 @@ import edge_control.translation.adapter.DeviceAdapter;
 import edge_control.translation.config.DeviceConfig;
 import edge_control.exceptions.EdgeControlException;
 import edge_control.logger.EdgeControlLogger;
+import edge_control.translation.queuing.QueueRegistry;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +34,8 @@ public class DeviceRegistry {
     private final Map<String, DeviceAdapter> adapters = new ConcurrentHashMap<>();
     private final Map<String, String> fingerprints = new ConcurrentHashMap<>();
     private final Map<String, DeviceConfig> deviceConfigs = new ConcurrentHashMap<>();
+
+    private final QueueRegistry queueRegistry = QueueRegistry.getInstance();
 
     private final AdapterFactory adapterFactory = new AdapterFactory();
     private final DevicesTranslationConfigRepository repository = new DevicesTranslationConfigRepository();
@@ -151,6 +154,10 @@ public class DeviceRegistry {
         adapters.put(deviceId, adapter);
         deviceConfigs.put(deviceId, config);
         fingerprints.put(deviceId, config.fingerprint());
+
+        // Onboard queuing settings
+        queueRegistry.upsert(config);
+
     }
 
     /**

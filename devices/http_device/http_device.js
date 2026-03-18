@@ -31,7 +31,7 @@ function sleep(ms) {
 
 // Handle all HTTP methods and all paths
 app.all('*', async (req, res) => {
-    console.log(".".repeat(Math.random() * (50 - 1) + 1));
+    console.log("[" + new Date().toISOString() + "] " + ".".repeat(Math.random() * (50 - 1) + 1));
     res.json({
         path: req.path,
         method: req.method,
@@ -78,5 +78,5 @@ app.listen(PORT, () => {
     if (APISIX_IP === "" || APISIX_IP == null) {
         console.error("ERROR! APISIX_IP is empty or null... Won't be able to send any telemitry")
     }
-    setInterval(sendTelemetry, INTERVAL);
+    // setInterval(sendTelemetry, INTERVAL);
 });
