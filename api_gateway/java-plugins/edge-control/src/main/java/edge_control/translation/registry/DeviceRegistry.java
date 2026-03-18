@@ -35,7 +35,7 @@ public class DeviceRegistry {
     private final Map<String, String> fingerprints = new ConcurrentHashMap<>();
     private final Map<String, DeviceConfig> deviceConfigs = new ConcurrentHashMap<>();
 
-    private final QueueRegistry queueRegistry = QueueRegistry.getInstance();
+    private static final QueueRegistry queueRegistry = QueueRegistry.getInstance();
 
     private final AdapterFactory adapterFactory = new AdapterFactory();
     private final DevicesTranslationConfigRepository repository = new DevicesTranslationConfigRepository();
@@ -53,23 +53,19 @@ public class DeviceRegistry {
         // TODO: change delay to something else
         scheduler.scheduleAtFixedRate(
                 this::refresh,
-                5,              // initial delay
-                5,                        // period
+                5,
+                5,
                 TimeUnit.SECONDS
         );
     }
 
-    /**
-     * Returns the singleton instance of the DeviceRegistry,
-     * triggering an initial refresh if necessary.
-     *
-     * @return DeviceRegistry singleton
-     */
     public static DeviceRegistry getInstance() {
         if (instance == null) {
-            instance = new DeviceRegistry();
+            instance = new DeviceRegistry();  // instance assigned BEFORE init() runs
+            queueRegistry.loadAll();          // load queue configs from DB
+            queueRegistry.init();             // wire QueueWorker — safe, instance not null
+            instance.refresh();              // initial device load
         }
-        instance.refresh();
         return instance;
     }
 
@@ -182,6 +178,10 @@ public class DeviceRegistry {
         remove(gatewayDeviceId);
 
         return db_del;
+    }
+
+    public DeviceAdapter getAdapter(String deviceId) {
+        return adapters.get(deviceId);
     }
 
     /**

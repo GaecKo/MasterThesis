@@ -7,6 +7,7 @@ import com.mongodb.client.result.DeleteResult;
 import edge_control.database.MongoClientProvider;
 import edge_control.exceptions.EdgeControlException;
 import edge_control.logger.EdgeControlLogger;
+import edge_control.translation.queuing.model.QueuedRequest;
 import org.bson.Document;
 
 import java.util.ArrayList;
@@ -15,8 +16,6 @@ import java.util.List;
 /**
  * Persists and retrieves queued requests awaiting delivery to a device.
  * Collection: EdgeControlQueuing.queuedRequests
- *
- * TODO: define QueuedRequest model when the queuing worker is implemented.
  */
 public class QueuedRequestRepository {
 
@@ -31,9 +30,30 @@ public class QueuedRequestRepository {
         this.collection = db.getCollection(COLLECTION_NAME);
     }
 
-    // TODO: implement save(QueuedRequest), findPendingByDeviceId(), delete() when
-    //       the queuing worker is built. Collection is created here so it exists
-    //       in MongoDB from the moment queuing is onboarded for a device.
+    public void save(QueuedRequest request) throws EdgeControlException {
+        if (request.getGatewayDeviceId() == null || request.getGatewayDeviceId().isBlank()) {
+            throw new EdgeControlException(
+                    "Cannot save queued request: gatewayDeviceId is null or blank");
+        }
+        collection.insertOne(request.toDocument());
+    }
+
+    public List<QueuedRequest> findAllForDevice(String gatewayDeviceId) {
+        List<QueuedRequest> result = new ArrayList<>();
+        for (Document doc : collection.find(Filters.eq("gatewayDeviceId", gatewayDeviceId))) {
+            result.add(new QueuedRequest(doc));
+        }
+        return result;
+    }
+
+    public boolean delete(String id) throws EdgeControlException {
+        if (id == null || id.isBlank()) {
+            throw new EdgeControlException(
+                    "Cannot delete queued request: id is null or blank");
+        }
+        DeleteResult result = collection.deleteOne(Filters.eq("id", id));
+        return result.getDeletedCount() > 0;
+    }
 
     public boolean deleteAllForDevice(String gatewayDeviceId) throws EdgeControlException {
         if (gatewayDeviceId == null || gatewayDeviceId.isBlank()) {
@@ -43,12 +63,5 @@ public class QueuedRequestRepository {
         DeleteResult result = collection.deleteMany(
                 Filters.eq("gatewayDeviceId", gatewayDeviceId));
         return result.getDeletedCount() > 0;
-    }
-
-    public List<Document> findAllForDevice(String gatewayDeviceId) {
-        List<Document> result = new ArrayList<>();
-        collection.find(Filters.eq("gatewayDeviceId", gatewayDeviceId))
-                .into(result);
-        return result;
     }
 }

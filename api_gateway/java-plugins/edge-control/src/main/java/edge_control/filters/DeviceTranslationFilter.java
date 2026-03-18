@@ -1,8 +1,7 @@
 package edge_control.filters;
 
 import edge_control.RequestHandler;
-import edge_control.translation.config.DeviceConfig;
-import io.netty.handler.codec.http.HttpMethod;
+import edge_control.translation.queuing.QueueRegistry;
 import org.apache.apisix.plugin.runner.HttpRequest;
 import org.apache.apisix.plugin.runner.HttpResponse;
 import org.apache.apisix.plugin.runner.filter.PluginFilter;
@@ -14,22 +13,10 @@ import org.springframework.stereotype.Component;
 
 import edge_control.translation.DeviceTranslationManager;
 import edge_control.logger.EdgeControlLogger;
+import edge_control.translation.adapter.AdapterCallback;
 import edge_control.translation.adapter.DeviceAdapter;
 import edge_control.exceptions.*;
 
-import java.util.Arrays;
-
-/**
- * APISIX plugin filter that handles protocol translation for devices.
- *
- * IMPORTANT: This filter NEVER blocks the event loop thread.
- * All slow operations are handled asynchronously with callbacks.
- * Responsibilities:
- * - Routes requests to the appropriate device adapters or management endpoints.
- * - Handles health checks and device management operations.
- * - Provides structured logging and error handling.
- * - Marks requests as processed and continues the APISIX filter chain.
- */
 @Component
 public class DeviceTranslationFilter implements PluginFilter {
 
@@ -45,35 +32,18 @@ public class DeviceTranslationFilter implements PluginFilter {
     private static final RequestHandler requestHandler =
             RequestHandler.getInstance();
 
+    private static final QueueRegistry queueRegistry = QueueRegistry.getInstance();
 
-    /**
-     * Initializes the plugin and logs startup messages.
-     */
     DeviceTranslationFilter() {
         logger.info("DeviceTranslation Filter initialized");
         API_LOGGER.warn("DeviceTranslation Filter is running");
     }
 
-    /**
-     * Returns the name of this plugin filter.
-     *
-     * @return plugin name
-     */
     @Override
     public String name() {
         return "DeviceTranslation";
     }
 
-    /**
-     * Main filter method invoked by APISIX on the event loop thread.
-     * NEVER BLOCK THIS THREAD - return immediately for slow paths.
-     * Main filter method invoked by APISIX.
-     * Routes requests to health check, device management, or device adapters.
-     *
-     * @param request the incoming HTTP request
-     * @param response the HTTP response to populate
-     * @param chain the APISIX plugin filter chain
-     */
     @Override
     public void filter(HttpRequest request,
                        HttpResponse response,
@@ -81,55 +51,35 @@ public class DeviceTranslationFilter implements PluginFilter {
 
         logger.debug("Incoming request in " + name() + ", index: " + chain.getIndex());
 
-        // Register request
         requestHandler.register(request);
 
-        // Check if this filter should skip request
         if (requestHandler.shouldSkipRequest(request, chain)) {
             chain.filter(request, response);
             return;
         }
 
         try {
-            if (request.getPath().startsWith("/command") && request.getMethod() == HttpRequest.Method.POST) {
-                // SLOW PATH - handle asynchronously with NO BLOCKING
-                // We pass the chain to the async handler which will call chain.filter() when done
+            if (request.getPath().startsWith("/command")
+                    && request.getMethod() == HttpRequest.Method.POST) {
                 handleDeviceRequestAsync(request, response, chain);
-                // IMPORTANT: Return immediately WITHOUT calling chain.filter()
-                // The async handler will call it later
-
             } else {
-                throw new IllegalOperation("DeviceTranslation filter is available for POST on /command route.");
+                throw new IllegalOperation(
+                        "DeviceTranslation filter is available for POST on /command route.");
             }
         } catch (Exception e) {
-            // Synchronous error handling
             ExceptionHandler.handleException(response, e);
             requestHandler.skipChain(request);
             chain.filter(request, response);
         }
     }
 
-    /**
-     * SLOW PATH - Fully asynchronous, non-blocking device request handling.
-     * This method returns immediately and the callback continues the chain.
-     * Routes incoming requests to the corresponding device adapter.
-     * Responds with errors if device ID is missing or unknown.
-     *
-     * @param request the incoming HTTP request
-     * @param response the HTTP response to populate
-     * @throws Exception if adapter processing fails
-     */
     private void handleDeviceRequestAsync(HttpRequest request,
                                           HttpResponse response,
                                           PluginFilterChain chain) {
-
         try {
-            // Parse request body (fast operation)
             JSONObject config = new JSONObject(request.getBody());
 
             if (!config.has("gatewayDeviceId")) {
-                // Fast error path - handle synchronously
-                logger.debug("No device ID...");
                 response.setStatusCode(400);
                 response.setHeader("X-Error", "Missing gatewayDeviceId in request body");
                 response.setBody("X-Error: Missing gatewayDeviceId in body");
@@ -141,7 +91,6 @@ public class DeviceTranslationFilter implements PluginFilter {
             DeviceAdapter adapter = deviceTranslationManager.get(gatewayDeviceId);
 
             if (adapter == null) {
-                // Fast error path - handle synchronously
                 response.setStatusCode(404);
                 response.setHeader("X-Error", "Unknown device - no adapter linked: " + gatewayDeviceId);
                 response.setBody("X-Error: Unknown device - no adapter linked: " + gatewayDeviceId);
@@ -150,44 +99,57 @@ public class DeviceTranslationFilter implements PluginFilter {
                 return;
             }
 
-            // Delegate to adapter - it will make async HTTP call and call the callback when done
-            // We pass a callback that continues the filter chain
-            adapter.handleRequest(request, response, () -> {
-                // This callback is executed after the async HTTP call completes
-                try {
-                    // Continue the filter chain now that response is modified
-                    chain.filter(request, response);
-                } catch (Exception e) {
-                    logger.error("Error in chain.filter callback: " + e.getMessage());
+            adapter.handleRequest(request, response, new AdapterCallback() {
+                @Override
+                public void onSuccess() {
+                    try {
+                        chain.filter(request, response);
+                    } catch (Exception e) {
+                        logger.error("Error in chain.filter callback: " + e.getMessage());
+                    }
+                }
+
+                @Override
+                public void onDeviceUnreachable(String reason) {
+                    try {
+                        if (queueRegistry.hasQueuing(gatewayDeviceId)) {
+                            queueRegistry.enqueue(gatewayDeviceId,
+                                    request.getBody(), request.getHeaders());
+                            response.setStatusCode(202);
+                            response.setBody("{\"status\":\"queued\","
+                                    + "\"message\":\"Device unreachable — request queued for retry\","
+                                    + "\"deviceId\":\"" + gatewayDeviceId + "\"}");
+                            response.setHeader("MODIFIED-BY", "EdgeControl/Queuing");
+                            logger.info("Request queued for device " + gatewayDeviceId
+                                    + ": " + reason);
+                        } else {
+                            response.setStatusCode(502);
+                            response.setBody("{\"error\":\"Device unreachable: " + reason + "\"}");
+                            logger.info("Device unreachable, no queuing configured: "
+                                    + gatewayDeviceId);
+                        }
+                    } catch (Exception e) {
+                        logger.error("Failed to enqueue request for device "
+                                + gatewayDeviceId + ": " + e.getMessage());
+                        response.setStatusCode(502);
+                        response.setBody("{\"error\":\"Device unreachable and queuing failed: "
+                                + reason + "\"}");
+                    } finally {
+                        chain.filter(request, response);
+                    }
                 }
             });
 
         } catch (Exception e) {
-            // Handle any synchronous errors in the setup phase
-            logger.error("Error in handleDeviceRequestAsync setup: " + e.getMessage());
+            logger.error("Error in handleDeviceRequestAsync: " + e.getMessage());
             ExceptionHandler.handleException(response, e);
             chain.filter(request, response);
         }
-        // Method returns immediately - NO WAITING, NO BLOCKING
     }
 
-    /**
-     * Indicates that the plugin requires the request body to function.
-     *
-     * @return true
-     */
     @Override
-    public Boolean requiredBody() {
-        return true;
-    }
+    public Boolean requiredBody() { return true; }
 
-    /**
-     * Indicates that the plugin requires the response body to function.
-     *
-     * @return true
-     */
     @Override
-    public Boolean requiredRespBody() {
-        return true;
-    }
+    public Boolean requiredRespBody() { return true; }
 }

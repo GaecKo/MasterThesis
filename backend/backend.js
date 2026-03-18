@@ -23,7 +23,7 @@ app.get('/health', (req, res) => {
 
 // API endpoint that shows gateway info
 app.get('/info', (req, res) => {
-    console.log("Received request: " + req.body)
+    console.log("Received request: " + JSON.stringify(req.body))
     res.json({
         service: 'backend-api',
         version: '1.0.0',

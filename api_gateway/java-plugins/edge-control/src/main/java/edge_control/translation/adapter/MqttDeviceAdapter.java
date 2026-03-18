@@ -34,7 +34,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
 
     private String gatewayDeviceId;
 
-    // Connection
     private String  brokerUrl;
     private int     qos;
     private int     keepAliveInterval;
@@ -42,7 +41,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
     private boolean cleanSession;
     private int     reconnectDelay;
 
-    // Commands and subscriptions
     private final Map<String, MqttCommandDefinition> commandDefinitions = new HashMap<>();
     private final List<MqttSubscriptionConfig>       subscriptions      = new ArrayList<>();
 
@@ -50,7 +48,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
 
     private MqttClient mqttClient;
 
-    // Pending response futures keyed by correlationId
     private final ConcurrentHashMap<String, CompletableFuture<String>> pendingResponses
             = new ConcurrentHashMap<>();
 
@@ -58,8 +55,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
 
     // ── Subscription config record ────────────────────────────────────────────
 
-    private record MqttSubscriptionConfig(String topic, boolean forwardToBackend) {
-    }
+    private record MqttSubscriptionConfig(String topic, boolean forwardToBackend) {}
 
     // ── Init ──────────────────────────────────────────────────────────────────
 
@@ -86,12 +82,12 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         }
         JSONObject conn = root.getJSONObject("connection");
 
-        this.brokerUrl          = "tcp://mosquitto:1883";
-        this.qos                = conn.optInt("qos",               1);
-        this.keepAliveInterval  = conn.optInt("keepAliveInterval", 30);
-        this.connectionTimeout  = conn.optInt("connectionTimeout", 10);
-        this.cleanSession       = conn.optBoolean("cleanSession",  true);
-        this.reconnectDelay     = conn.optInt("reconnectDelay",    5);
+        this.brokerUrl         = "tcp://mosquitto:1883";
+        this.qos               = conn.optInt("qos",               1);
+        this.keepAliveInterval = conn.optInt("keepAliveInterval", 30);
+        this.connectionTimeout = conn.optInt("connectionTimeout", 10);
+        this.cleanSession      = conn.optBoolean("cleanSession",  true);
+        this.reconnectDelay    = conn.optInt("reconnectDelay",    5);
 
         logger.debug("Connection config loaded — broker=" + brokerUrl
                 + " qos=" + qos + " keepAlive=" + keepAliveInterval + "s");
@@ -159,8 +155,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             options.setKeepAliveInterval(keepAliveInterval);
             options.setMaxReconnectDelay(reconnectDelay * 1000);
 
-            // MqttCallbackExtended fires connectComplete() on every connect/reconnect,
-            // which is essential to re-subscribe when cleanSession=true wipes them
             mqttClient.setCallback(new MqttCallbackExtended() {
                 @Override
                 public void connectComplete(boolean reconnect, String serverURI) {
@@ -182,13 +176,10 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                 }
 
                 @Override
-                public void deliveryComplete(IMqttDeliveryToken token) {
-                    // publish ACK — nothing to do
-                }
+                public void deliveryComplete(IMqttDeliveryToken token) {}
             });
 
             mqttClient.connect(options);
-            // connectComplete() fires immediately and calls subscribeToAllTopics()
 
         } catch (MqttException e) {
             throw new EdgeControlException(
@@ -197,10 +188,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         }
     }
 
-    /**
-     * Subscribe to all declared subscription topics.
-     * Called from connectComplete() so it runs on first connect AND every reconnect.
-     */
     private void subscribeToAllTopics() {
         for (MqttSubscriptionConfig sub : subscriptions) {
             try {
@@ -218,12 +205,8 @@ public class MqttDeviceAdapter implements DeviceAdapter {
     public void shutdown() {
         logger.info("Shutting down MQTT adapter for device: " + gatewayDeviceId);
         try {
-            if (mqttClient != null && mqttClient.isConnected()) {
-                mqttClient.disconnect();
-            }
-            if (mqttClient != null) {
-                mqttClient.close();
-            }
+            if (mqttClient != null && mqttClient.isConnected()) mqttClient.disconnect();
+            if (mqttClient != null) mqttClient.close();
         } catch (MqttException e) {
             logger.error("Error during MQTT shutdown: " + e.getMessage());
         }
@@ -236,19 +219,19 @@ public class MqttDeviceAdapter implements DeviceAdapter {
 
     @Override
     public void handleRequest(HttpRequest request, HttpResponse response,
-                              Runnable callback) throws Exception {
+                              AdapterCallback callback) throws Exception {
 
+        // Broker down — signal queuing layer immediately
         if (!mqttClient.isConnected()) {
-            response.setStatusCode(503);
-            response.setBody("{\"error\":\"MQTT broker not connected\"}");
-            callback.run();
+            logger.debug("MQTT broker not connected for device " + gatewayDeviceId);
+            callback.onDeviceUnreachable("MQTT broker not connected for device " + gatewayDeviceId);
             return;
         }
 
         if (request.getBody() == null || request.getBody().isEmpty()) {
             response.setStatusCode(400);
             response.setBody("{\"error\":\"Empty request body\"}");
-            callback.run();
+            callback.onSuccess();
             return;
         }
 
@@ -265,24 +248,19 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             throw new IllegalOperation("Unknown command: " + commandName);
         }
 
-        // Translate params into the device payload using the same engine as HTTP
         JsonNode finalPayload = translationEngine.translate(commandDefinition, backendRequest);
 
-        // Build the MQTT envelope
         String correlationId = UUID.randomUUID().toString();
         JSONObject envelope = new JSONObject();
         envelope.put("deviceId",      gatewayDeviceId);
         envelope.put("timestamp",     Instant.now().toString());
         envelope.put("type",          "command");
         envelope.put("correlationId", correlationId);
-        // responseTopic tells the device where to publish the ack — only set when a
-        // response is expected, so the device knows whether to ack at all
         if (commandDefinition.hasResponseTopic()) {
             envelope.put("responseTopic", commandDefinition.getResponseTopic());
         }
         envelope.put("payload", new JSONObject(finalPayload.toString()));
 
-        // Register pending future BEFORE publishing to avoid a response race
         CompletableFuture<String> responseFuture = null;
         if (commandDefinition.hasResponseTopic()) {
             responseFuture = new CompletableFuture<>();
@@ -302,20 +280,20 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             if (responseFuture != null) pendingResponses.remove(correlationId);
             response.setStatusCode(502);
             response.setBody("{\"error\":\"Failed to publish MQTT command: " + e.getMessage() + "\"}");
-            callback.run();
+            callback.onSuccess();
             return;
         }
 
-        // Fire-and-forget: return 202 Accepted immediately
+        // Fire-and-forget: return 202 immediately
         if (!commandDefinition.hasResponseTopic()) {
             response.setStatusCode(202);
             response.setBody("{\"status\":\"sent\",\"correlationId\":\"" + correlationId + "\"}");
             response.setHeader("MODIFIED-BY", "EdgeControl/MQTT-Translation");
-            callback.run();
+            callback.onSuccess();
             return;
         }
 
-        // Wait for the device ack asynchronously
+        // Wait for device ack asynchronously
         Duration timeout = commandDefinition.getResponseTimeout();
         responseFuture
                 .orTimeout(timeout.getSeconds(), TimeUnit.SECONDS)
@@ -331,29 +309,33 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                         response.setBody("{\"error\":\"Error processing MQTT response\"}");
                     } finally {
                         pendingResponses.remove(correlationId);
-                        callback.run();
+                        callback.onSuccess();
                     }
                 })
                 .exceptionally(throwable -> {
-                    pendingResponses.remove(correlationId);
                     Throwable cause = throwable.getCause() != null ? throwable.getCause() : throwable;
-                    try {
-                        if (cause instanceof TimeoutException) {
-                            logger.error("MQTT response timeout [correlationId=" + correlationId
-                                    + "] topic='" + commandTopic + "'");
-                            response.setStatusCode(504);
-                            response.setBody("{\"error\":\"Device did not respond within "
-                                    + timeout.getSeconds() + "s\"}");
-                        } else {
-                            logger.error("MQTT async error: " + cause.getMessage());
+                    pendingResponses.remove(correlationId);
+
+                    if (cause instanceof TimeoutException) {
+                        // Device didn't respond — signal queuing layer, do NOT set a response
+                        logger.debug("Device " + gatewayDeviceId + " did not respond within "
+                                + timeout.getSeconds() + "s [correlationId=" + correlationId + "]");
+                        callback.onDeviceUnreachable(
+                                "Device did not respond within " + timeout.getSeconds() + "s");
+                    } else {
+                        // All other async errors — set response and continue normally
+                        String msg = cause.getMessage() != null
+                                ? cause.getMessage() : cause.getClass().getSimpleName();
+                        logger.error("MQTT async error: " + msg);
+                        try {
                             response.setStatusCode(502);
-                            response.setBody("{\"error\":\"" + cause.getMessage() + "\"}");
+                            response.setBody("{\"error\":\"" + msg + "\"}");
+                            response.setHeader("MODIFIED-BY", "EdgeControl/MQTT-Translation");
+                        } catch (Exception e) {
+                            logger.error("Error setting error response: " + e.getMessage());
+                        } finally {
+                            callback.onSuccess();
                         }
-                        response.setHeader("MODIFIED-BY", "EdgeControl/MQTT-Translation");
-                    } catch (Exception e) {
-                        logger.error("Error setting error response: " + e.getMessage());
-                    } finally {
-                        callback.run();
                     }
                     return null;
                 });
@@ -375,13 +357,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         handleInboundMessage(payload, matched);
     }
 
-    /**
-     * Handles any inbound message regardless of topic semantics.
-     * If the message carries a correlationId matching a pending request, that future
-     * is resolved and the waiting handleRequest() unblocks.
-     * Otherwise it is unsolicited — forwarded to backendForward if sub.forwardToBackend
-     * is true, using the apikey embedded in the MQTT envelope for authorization.
-     */
     private void handleInboundMessage(String payload, MqttSubscriptionConfig sub) {
         try {
             JSONObject json = new JSONObject(payload);
@@ -395,7 +370,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                 }
             }
 
-            // Unsolicited message
             logger.info("Inbound message on " + sub.topic() + " for device "
                     + gatewayDeviceId + ": " + payload);
 
@@ -408,7 +382,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                 return;
             }
 
-            // Strip apikey from the forwarded body — it belongs in the header only
             JSONObject forwardBody = new JSONObject(payload);
             forwardBody.remove("apikey");
 

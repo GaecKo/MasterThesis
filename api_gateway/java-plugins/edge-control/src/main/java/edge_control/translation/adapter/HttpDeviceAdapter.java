@@ -34,9 +34,7 @@ public class HttpDeviceAdapter implements DeviceAdapter {
     @Override
     public void init(DeviceConfig config) throws EdgeControlException {
         this.gatewayDeviceId = config.getDeviceId();
-
         logger.info("Initialising HTTP adapter for device: " + gatewayDeviceId);
-
         loadCommands(config.getConfig());
     }
 
@@ -69,12 +67,12 @@ public class HttpDeviceAdapter implements DeviceAdapter {
 
     @Override
     public void handleRequest(HttpRequest request, HttpResponse response,
-                              Runnable callback) throws Exception {
+                              AdapterCallback callback) throws Exception {
 
         if (request.getBody() == null || request.getBody().isEmpty()) {
             response.setStatusCode(400);
             response.setBody("{\"error\":\"Empty request body\"}");
-            callback.run();
+            callback.onSuccess();
             return;
         }
 
@@ -111,20 +109,34 @@ public class HttpDeviceAdapter implements DeviceAdapter {
                         response.setStatusCode(500);
                         response.setBody("{\"error\":\"Error processing response\"}");
                     } finally {
-                        callback.run();
+                        callback.onSuccess();
                     }
                 })
                 .exceptionally(throwable -> {
                     Throwable cause = throwable.getCause() != null ? throwable.getCause() : throwable;
-                    try {
-                        logger.error("Async request failed: " + cause.getMessage());
-                        response.setStatusCode(502);
-                        response.setBody("{\"error\":\"" + cause.getMessage() + "\"}");
-                        response.setHeader("MODIFIED-BY", "EdgeControl/Protocol-Translation");
-                    } catch (Exception e) {
-                        logger.error("Error setting error response: " + e.getMessage());
-                    } finally {
-                        callback.run();
+
+                    if (cause instanceof java.io.IOException) {
+                        // Device is down — signal queuing layer, do NOT set a response
+                        logger.info("Device " + gatewayDeviceId + " unreachable: "
+                                + cause.getClass().getSimpleName()
+                                + (cause.getMessage() != null ? " — " + cause.getMessage() : ""));
+                        callback.onDeviceUnreachable(
+                                cause.getClass().getSimpleName()
+                                        + (cause.getMessage() != null ? " — " + cause.getMessage() : ""));
+                    } else {
+                        // All other errors — set response and continue chain normally
+                        String msg = cause.getMessage() != null
+                                ? cause.getMessage() : cause.getClass().getSimpleName();
+                        logger.error("Async request failed: " + msg);
+                        try {
+                            response.setStatusCode(502);
+                            response.setBody("{\"error\":\"" + msg + "\"}");
+                            response.setHeader("MODIFIED-BY", "EdgeControl/Protocol-Translation");
+                        } catch (Exception e) {
+                            logger.error("Error setting error response: " + e.getMessage());
+                        } finally {
+                            callback.onSuccess();
+                        }
                     }
                     return null;
                 });

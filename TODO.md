@@ -11,7 +11,7 @@
 * [X] Separate filter in two: cmd onboarding and device translation 
 
 > **deadline**: 23/03 (Arthur)
-* [ ] Queuing system
+* [X] Queuing system
 * [X] HTTP Communication from end devices
 * [X] MQTT Communication from end devices
 * [ ] HTTPs for cmd onboarding 
