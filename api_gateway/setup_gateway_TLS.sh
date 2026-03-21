@@ -1,17 +1,32 @@
 #!/bin/bash
-
-# Run on NUC4 (gateway): ./setup_gateway_TLS.sh
+# Run on NUC4 (gateway): ./setup_gateway.sh
 
 GATEWAY_IP="192.168.50.4"
 BACKEND_IP="192.168.50.1"
 DEVICE_IP="192.168.50.8"
-
 GATEWAY_HOSTNAME="nuc4-pc"
 GATEWAY_DOMAIN="${GATEWAY_HOSTNAME}.local"
 
 echo "=== Setting up Gateway NUC (NUC4 - ${GATEWAY_IP}) ==="
 
-echo "[1/3] Generating self-signed certificate for ${GATEWAY_DOMAIN}..."
+# ── SSH server on NUC4 itself ──────────────────────────────
+echo "[0/4] Ensuring SSH server is installed and running on NUC4..."
+if ! dpkg -l openssh-server &>/dev/null; then
+  sudo apt update && sudo apt install -y openssh-server
+fi
+sudo systemctl enable --now ssh
+echo "SSH server ready."
+
+# ── Copy existing SSH key to NUC1 and NUC8 ────────────────
+echo "[1/4] Copying SSH key to NUC1 and NUC8..."
+echo "Copying to NUC1 (you may be prompted for nuc1's password)..."
+ssh-copy-id -o StrictHostKeyChecking=no nuc1@${BACKEND_IP}
+echo "Copying to NUC8 (you may be prompted for nuc8's password)..."
+ssh-copy-id -o StrictHostKeyChecking=no nuc8@${DEVICE_IP}
+
+# ── TLS certificate ────────────────────────────────────────
+echo "[2/4] Generating self-signed certificate for ${GATEWAY_DOMAIN}..."
+mkdir -p conf
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout conf/server.key \
   -out conf/server.crt \
@@ -19,7 +34,8 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -addext "subjectAltName=DNS:${GATEWAY_DOMAIN},IP:${GATEWAY_IP}"
 echo "Certificate generated."
 
-echo "[2/3] Registering certificate in APISIX..."
+# ── Register cert in APISIX ───────────────────────────────
+echo "[3/4] Registering certificate in APISIX..."
 server_cert=$(cat conf/server.crt)
 server_key=$(cat conf/server.key)
 
@@ -33,9 +49,10 @@ curl http://127.0.0.1:9180/apisix/admin/ssls/1 \
 echo ""
 echo "Certificate registered in APISIX."
 
-echo "[3/3] Copying certificate to NUC1 and NUC8..."
-scp conf/server.crt ubuntu@${BACKEND_IP}:~/server.crt
-scp conf/server.crt ubuntu@${DEVICE_IP}:~/server.crt
+# ── Distribute cert to NUC1 and NUC8 ─────────────────────
+echo "[4/4] Copying certificate to NUC1 and NUC8..."
+scp conf/server.crt nuc1@${BACKEND_IP}:~/server.crt || { echo "Error: scp to NUC1 failed."; exit 1; }
+scp conf/server.crt nuc8@${DEVICE_IP}:~/server.crt  || { echo "Error: scp to NUC8 failed."; exit 1; }
 echo "Certificate distributed."
 
 echo "=== Gateway setup complete ==="
