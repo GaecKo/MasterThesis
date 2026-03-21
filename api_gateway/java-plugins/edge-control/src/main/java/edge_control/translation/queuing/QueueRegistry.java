@@ -51,7 +51,7 @@ public class QueueRegistry {
      */
     public void init() {
         this.queueWorker = new QueueWorker(requestRepo, this,
-                edge_control.translation.registry.DeviceRegistry.getInstance());
+                DeviceRegistry.getInstance());
 
         // Reschedule retries for devices that had pending requests before shutdown
         for (Map.Entry<String, DeviceQueueConfig> entry : queueConfigs.entrySet()) {

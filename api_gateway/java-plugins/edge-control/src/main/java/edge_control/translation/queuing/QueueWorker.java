@@ -82,7 +82,7 @@ public class QueueWorker {
         ScheduledFuture<?> future = activeSchedules.remove(deviceId);
         if (future != null) {
             future.cancel(false);
-            logger.info("Cancelled retry schedule for device " + deviceId);
+            logger.info("Retry schedule cancelled (off) for device " + deviceId);
         }
     }
 

@@ -61,10 +61,16 @@ public class DeviceRegistry {
 
     public static DeviceRegistry getInstance() {
         if (instance == null) {
-            instance = new DeviceRegistry();  // instance assigned BEFORE init() runs
-            queueRegistry.loadAll();          // load queue configs from DB
-            queueRegistry.init();             // wire QueueWorker — safe, instance not null
-            instance.refresh();              // initial device load
+            instance = new DeviceRegistry();
+
+            // load queue configs from DB
+            queueRegistry.loadAll();
+
+            // wire QueueWorker
+            queueRegistry.init();
+
+            // initial device load
+            instance.refresh();
         }
         return instance;
     }
@@ -139,11 +145,9 @@ public class DeviceRegistry {
         remove(deviceId);
 
         DeviceAdapter adapter = adapterFactory.create(config);
-        try {
-            adapter.init(config);
-        } catch (EdgeControlException e) {
-            throw e;
-        }
+
+        // adapter init: may fail, catched at upper layer (either refresh or upsert)
+        adapter.init(config);
 
         // logger.debug("Rebuilding device: " + deviceId + "\n" + config);
 
@@ -176,6 +180,9 @@ public class DeviceRegistry {
 
         // remove from deviceRegistry - optional, will be updated by refresh anyway
         remove(gatewayDeviceId);
+
+        // remove queuing config
+        queueRegistry.remove(gatewayDeviceId);
 
         return db_del;
     }
