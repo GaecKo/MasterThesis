@@ -3,7 +3,7 @@ const mqtt = require('mqtt');
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const DEVICE_ID   = process.env.DEVICE_ID  || 'device_c69d27de-d8b0-48f6-a4b7-b2445b65ab69';
-const BROKER_URL  = process.env.BROKER_URL || 'mqtt://127.0.0.1:1883';
+const BROKER_URL  = process.env.BROKER_URL || 'mqtts://127.0.0.1:8883';
 const INTERVAL_MS = parseInt(process.env.INTERVAL_MS || '5000', 10);
 const API_KEY     = process.env.API_KEY    || '';
 
