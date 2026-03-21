@@ -50,9 +50,22 @@ echo ""
 echo "Certificate registered in APISIX."
 
 # ── Distribute cert to NUC1 and NUC8 ─────────────────────
-echo "[4/4] Copying certificate to NUC1 and NUC8..."
+echo "[4/5] Copying certificate to NUC1 and NUC8..."
 scp conf/server.crt nuc1@${BACKEND_IP}:~/server.crt || { echo "Error: scp to NUC1 failed."; exit 1; }
 scp conf/server.crt nuc8@${DEVICE_IP}:~/server.crt  || { echo "Error: scp to NUC8 failed."; exit 1; }
 echo "Certificate distributed."
+
+
+# ── Configure Mosquitto for MQTTS ─────────────────────────
+echo "[5/5] Configuring Mosquitto for MQTTS on port 8883..."
+
+# Fix permissions for mosquitto container user (UID 1883)
+MOSQUITTO_UID=$(docker exec mosquitto id -u mosquitto)
+sudo chown ${MOSQUITTO_UID}:${MOSQUITTO_UID} conf/server.key
+sudo chown ${MOSQUITTO_UID}:${MOSQUITTO_UID} conf/server.crt
+sudo chmod 600 conf/server.key
+sudo chmod 644 conf/server.crt
+
+docker restart mosquitto
 
 echo "=== Gateway setup complete ==="

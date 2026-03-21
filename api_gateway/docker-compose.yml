@@ -84,8 +84,11 @@ services:
     ports:
       - "1883:1883"   # external — device VM connects here
       - "9001:9001"   # WebSocket — useful for debugging
+      - "8883:8883"   # MQTTS
     volumes:
       - ./brokers/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./conf/server.crt:/mosquitto/certs/server.crt:ro
+      - ./conf/server.key:/mosquitto/certs/server.key:ro
       - mosquitto_data:/mosquitto/data
       - mosquitto_logs:/mosquitto/log
     networks:
