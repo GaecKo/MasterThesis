@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -19,20 +20,20 @@ public class HttpForgery {
 
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
-    // Path to the device's self-signed certificate.
-    // TODO: make configurable per device once POC is validated
-    private static final String DEVICE_CERT_PATH = "/usr/local/apisix/conf/device.crt";
+    private static final String DEVICE_CERT_PATH  = "/usr/local/share/ca-certificates/nuc8.crt";
+    private static final String BACKEND_CERT_PATH = "/usr/local/share/ca-certificates/nuc1.crt";
 
     private static final ExecutorService httpExecutor =
             Executors.newVirtualThreadPerTaskExecutor();
 
-    // Plain HTTP client — shared, no TLS
+    // Plain HTTP shared client
     private static final HttpClient sharedHttpClient = HttpClient.newBuilder()
             .executor(httpExecutor)
             .build();
 
-    // HTTPS client — built once from the APISIX cert, shared for all TLS requests
-    private static final HttpClient sharedTlsHttpClient = buildTlsClient(null);
+    // TLS clients cached by cert path — built once per cert, reused across all requests
+    private static final ConcurrentHashMap<String, HttpClient> tlsClientCache =
+            new ConcurrentHashMap<>();
 
     private static final Set<String> RESTRICTED_HEADERS =
             Set.of("accept-charset", "accept-encoding", "access-control-request-headers",
@@ -79,33 +80,52 @@ public class HttpForgery {
 
     // ── Client resolution ─────────────────────────────────────────────────────
 
-    /**
-     * Picks the right HttpClient based on the endpoint scheme and timeout.
-     * - https:// → TLS client (shared or per-request with connectTimeout)
-     * - http://  → plain client (shared or per-request with connectTimeout)
-     * Per-request clients are only built when a connectTimeout is specified,
-     * but they always share the thread pool.
-     */
     private static HttpClient resolveClient(String endpoint, Duration connectTimeout) {
-        boolean isTls = endpoint.toLowerCase().startsWith("https://");
+        boolean isTls     = endpoint.toLowerCase().startsWith("https://");
         boolean hasTimeout = connectTimeout != null && connectTimeout.toSeconds() > 0;
 
-        if (!hasTimeout) {
-            // No timeout — use the appropriate shared client
-            return isTls ? sharedTlsHttpClient : sharedHttpClient;
+        if (!isTls) {
+            // Plain HTTP — shared client, or per-request if connectTimeout is set
+            if (!hasTimeout) return sharedHttpClient;
+            return HttpClient.newBuilder()
+                    .executor(httpExecutor)
+                    .connectTimeout(connectTimeout)
+                    .build();
         }
 
-        // connectTimeout specified — build a per-request client
-        return buildTlsClient(isTls ? connectTimeout : null);
+        // HTTPS — resolve which cert to trust based on the endpoint
+        String certPath = resolveCertPath(endpoint);
+
+        if (!hasTimeout) {
+            // No timeout — use the cached TLS client for this cert
+            return tlsClientCache.computeIfAbsent(certPath, HttpForgery::buildTlsClient);
+        }
+
+        // connectTimeout specified — build a per-request TLS client
+        // (can't cache these since the timeout varies)
+        return buildTlsClient(certPath, connectTimeout);
     }
 
     /**
-     * Builds an HttpClient.
-     * If connectTimeout is non-null, applies it.
-     * Always applies the APISIX SSLContext (used even for plain HTTP clients
-     * that happen to need a connectTimeout, but SSLContext only activates on https:// URLs).
+     * Resolves which certificate to trust based on the endpoint URL.
+     * TODO: make this configurable per device once POC is validated.
      */
-    private static HttpClient buildTlsClient(Duration connectTimeout) {
+    private static String resolveCertPath(String endpoint) {
+        if (endpoint.contains("nuc8")) return DEVICE_CERT_PATH;
+        if (endpoint.contains("nuc1")) return BACKEND_CERT_PATH;
+        // Default — fall through to JVM trust store (returns null → no custom SSLContext)
+        return null;
+    }
+
+    // ── TLS client builders ───────────────────────────────────────────────────
+
+    /** Builds a cached TLS client (no connectTimeout). */
+    private static HttpClient buildTlsClient(String certPath) {
+        return buildTlsClient(certPath, null);
+    }
+
+    /** Builds a TLS client with optional connectTimeout. */
+    private static HttpClient buildTlsClient(String certPath, Duration connectTimeout) {
         HttpClient.Builder builder = HttpClient.newBuilder()
                 .executor(httpExecutor);
 
@@ -113,14 +133,14 @@ public class HttpForgery {
             builder.connectTimeout(connectTimeout);
         }
 
-        // Load the APISIX cert — if the file isn't present (e.g. local dev without
-        // the volume mount), fall back gracefully and log a warning
-        try {
-            SSLContext sslContext = TlsHelper.buildSslContext(DEVICE_CERT_PATH);
-            builder.sslContext(sslContext);
-        } catch (Exception e) {
-            logger.warn("Could not load device cert from " + DEVICE_CERT_PATH
-                    + " — HTTPS requests will use JVM default trust store: " + e.getMessage());
+        if (certPath != null) {
+            try {
+                SSLContext sslContext = TlsHelper.buildSslContext(certPath);
+                builder.sslContext(sslContext);
+            } catch (Exception e) {
+                logger.log("Could not load cert from " + certPath
+                        + " — falling back to JVM default trust store: " + e.getMessage());
+            }
         }
 
         return builder.build();
