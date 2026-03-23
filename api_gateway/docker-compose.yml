@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # ── APISIX and etcd ─────────────────────────────────────────────────────────────
   etcd:
     image: bitnamilegacy/etcd:3.5.11
     container_name: apisix-etcd
@@ -28,12 +27,15 @@ services:
       - etcd
       - mongodb
       - mosquitto
+    extra_hosts:
+      - "nuc1-pc.local:192.168.50.1"
+      - "nuc8-pc.local:192.168.50.8"
     volumes:
       - ./conf/config.yaml:/usr/local/apisix/conf/config.yaml
       - ./java-plugins/edge-control/target/edge-control-0.0.1-SNAPSHOT.jar:/usr/local/apisix/java-plugins/edge-control/target/edge-control-0.0.1-SNAPSHOT.jar
       - ./java-plugins/edge-control/logs:/usr/local/apisix/java-plugins/edge-control/logs
-      - ./conf/server.crt:/usr/local/apisix/conf/server.crt:ro 
-      - ./conf/server.key:/usr/local/apisix/conf/server.key:ro 
+      - ./conf/server.crt:/usr/local/apisix/conf/server.crt:ro
+      - ./conf/server.key:/usr/local/apisix/conf/server.key:ro
     ulimits:
       nofile:
         soft: 65536
@@ -46,7 +48,6 @@ services:
     networks:
       - apisix
 
-# ── MongoDB ─────────────────────────────────────────────────────────────
   mongodb:
     image: mongo:7
     container_name: mongodb
@@ -78,7 +79,6 @@ services:
     networks:
       - apisix
 
-  # ── MQTT broker ─────────────────────────────────────────────────────────────
   mosquitto:
     image: eclipse-mosquitto:2
     container_name: mosquitto
@@ -96,7 +96,6 @@ services:
     networks:
       - apisix
 
-  # ── Networks and volumes ─────────────────────────────────────────────────────────────
 networks:
   apisix:
     driver: bridge

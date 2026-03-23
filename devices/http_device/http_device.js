@@ -61,14 +61,14 @@ async function sendTelemetry() {
     },
   };
   try {
-    const res = await fetch(`http://${APISIX_IP}:9080/backendForward`, {
+    const res = await fetch(`https://${APISIX_IP}:9443/backendForward`, {
       method  : 'POST',
       headers : { 'Content-Type': 'application/json', 'apikey': API_KEY },
       body    : JSON.stringify(body),
     });
-    console.log(`[telemetry] → sent to ${APISIX_IP}:9080/backendForward — status=${res.status}`);
+    console.log(`[telemetry] → sent to ${APISIX_IP}:9443/backendForward — status=${res.status}`);
   } catch (err) {
-    console.error(`[telemetry] → failed to reach ${APISIX_IP}:9080/backendForward: ${err.message}`);
+    console.error(`[telemetry] → failed to reach ${APISIX_IP}:9443/backendForward: ${err.message}`);
   }
 }
 

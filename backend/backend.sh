@@ -22,7 +22,7 @@ info "Setting up environment variables..."
 # Create .env file with APISIX_IP for Node.js app
 cat > /home/ubuntu/backend/.env <<EOF
 # API Gateway configuration
-APISIX_GATEWAY_URL=http://$APISIX_IP:9080
+APISIX_GATEWAY_URL=https://$APISIX_IP:9443
 APISIX_GATEWAY_IP=$APISIX_IP
 BACKEND_IP=$BACKEND_IP
 BACKEND_PORT=8000
@@ -49,6 +49,8 @@ if [ -f "Dockerfile" ]; then
         --name backend-app \
         --network host \
         --env-file .env \
+        -v ~/certs/server.crt:/certs/server.crt:ro \
+        -v ~/certs/server.key:/certs/server.key:ro \
         backend-app
     
     success "Backend container started"

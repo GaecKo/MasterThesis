@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run on NUC4 (gateway): ./setup_gateway.sh
+# Run on NUC4 (gateway): ./setup_gateway_TLS.sh
 
 GATEWAY_IP="192.168.50.4"
 BACKEND_IP="192.168.50.1"
@@ -9,23 +9,21 @@ GATEWAY_DOMAIN="${GATEWAY_HOSTNAME}.local"
 
 echo "=== Setting up Gateway NUC (NUC4 - ${GATEWAY_IP}) ==="
 
-# ── SSH server on NUC4 itself ──────────────────────────────
-echo "[0/4] Ensuring SSH server is installed and running on NUC4..."
+# ── SSH server on NUC4 ────────────────────────────────────
+echo "[0/7] Ensuring SSH server is installed and running on NUC4..."
 if ! dpkg -l openssh-server &>/dev/null; then
   sudo apt update && sudo apt install -y openssh-server
 fi
 sudo systemctl enable --now ssh
 echo "SSH server ready."
 
-# ── Copy existing SSH key to NUC1 and NUC8 ────────────────
-echo "[1/4] Copying SSH key to NUC1 and NUC8..."
-echo "Copying to NUC1 (you may be prompted for nuc1's password)..."
+# ── Copy SSH key to NUC1 and NUC8 ────────────────────────
+echo "[1/7] Copying SSH key to NUC1 and NUC8..."
 ssh-copy-id -o StrictHostKeyChecking=no nuc1@${BACKEND_IP}
-echo "Copying to NUC8 (you may be prompted for nuc8's password)..."
 ssh-copy-id -o StrictHostKeyChecking=no nuc8@${DEVICE_IP}
 
-# ── TLS certificate ────────────────────────────────────────
-echo "[2/4] Generating self-signed certificate for ${GATEWAY_DOMAIN}..."
+# ── TLS certificate for APISIX ───────────────────────────
+echo "[2/7] Generating self-signed certificate for ${GATEWAY_DOMAIN}..."
 mkdir -p conf
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout conf/server.key \
@@ -35,7 +33,7 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 echo "Certificate generated."
 
 # ── Register cert in APISIX ───────────────────────────────
-echo "[3/4] Registering certificate in APISIX..."
+echo "[3/7] Registering certificate in APISIX..."
 server_cert=$(cat conf/server.crt)
 server_key=$(cat conf/server.key)
 
@@ -49,23 +47,40 @@ curl http://127.0.0.1:9180/apisix/admin/ssls/1 \
 echo ""
 echo "Certificate registered in APISIX."
 
-# ── Distribute cert to NUC1 and NUC8 ─────────────────────
-echo "[4/5] Copying certificate to NUC1 and NUC8..."
+# ── Distribute gateway cert to NUC1 and NUC8 ─────────────
+echo "[4/7] Copying gateway certificate to NUC1 and NUC8..."
 scp conf/server.crt nuc1@${BACKEND_IP}:~/server.crt || { echo "Error: scp to NUC1 failed."; exit 1; }
 scp conf/server.crt nuc8@${DEVICE_IP}:~/server.crt  || { echo "Error: scp to NUC8 failed."; exit 1; }
 echo "Certificate distributed."
 
-
 # ── Configure Mosquitto for MQTTS ─────────────────────────
-echo "[5/5] Configuring Mosquitto for MQTTS on port 8883..."
-
-# Fix permissions for mosquitto container user (UID 1883)
+echo "[5/7] Configuring Mosquitto for MQTTS on port 8883..."
 MOSQUITTO_UID=$(docker exec mosquitto id -u mosquitto)
 sudo chown ${MOSQUITTO_UID}:${MOSQUITTO_UID} conf/server.key
 sudo chown ${MOSQUITTO_UID}:${MOSQUITTO_UID} conf/server.crt
 sudo chmod 600 conf/server.key
 sudo chmod 644 conf/server.crt
-
 docker restart mosquitto
+echo "Mosquitto configured."
 
+# ── Wait for NUC1 and NUC8 certs ─────────────────────────
+echo "[6/7] Waiting for NUC1 and NUC8 certificates..."
+for NUC in nuc1 nuc8; do
+  echo "Waiting for ~/${NUC}.crt..."
+  while [ ! -f ~/${NUC}.crt ]; do
+    echo "  ~/${NUC}.crt not found yet, retrying in 5s..."
+    sleep 5
+  done
+  echo "${NUC} cert received."
+done
+
+# ── Copy NUC1/NUC8 certs into APISIX config folder ───────
+echo "[7/7] Trusting NUC1 and NUC8 certificates in APISIX..."
+cp ~/nuc1.crt conf/nuc1.crt
+cp ~/nuc8.crt conf/nuc8.crt
+docker compose build apisix
+docker compose up -d apisix
+echo "APISIX restarted with NUC1 and NUC8 certs trusted."
+
+echo ""
 echo "=== Gateway setup complete ==="
