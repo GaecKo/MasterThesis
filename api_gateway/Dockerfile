@@ -21,6 +21,7 @@ ENV PATH="$JAVA_HOME/bin:$PATH"
 # Trust NUC1 and NUC8 certificates
 COPY conf/nuc1.crt /usr/local/share/ca-certificates/nuc1.crt
 COPY conf/nuc8.crt /usr/local/share/ca-certificates/nuc8.crt
+COPY conf/server.crt /usr/local/share/ca-certificates/server.crt
 RUN update-ca-certificates
 
 USER apisix

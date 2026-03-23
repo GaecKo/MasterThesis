@@ -30,7 +30,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
     private static final ObjectMapper MAPPER        = new ObjectMapper();
     private static final String BACKEND_FORWARD_URL = "http://localhost:9080/backendForward";
 
-    // Path fixed by Docker volume mount in the APISIX container — same cert as HTTP
+    // Path fixed by Docker volume mount in the APISIX container
     private static final String APISIX_CERT_PATH = "/usr/local/apisix/conf/server.crt";
 
     // ── Parsed config ─────────────────────────────────────────────────────────
@@ -86,10 +86,10 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         }
         JSONObject conn = root.getJSONObject("connection");
 
-        this.brokerUrl = conn.optString("brokerUrl", "mqtts://mosquitto:1883");
+        this.brokerUrl = conn.optString("brokerUrl", "ssl://mosquitto:8883");
 
         // Detect TLS from scheme — mqtts:// triggers TLS, mqtt:// does not
-        this.useTls = brokerUrl.toLowerCase().startsWith("mqtts://");
+        this.useTls = brokerUrl.toLowerCase().startsWith("mqtts://") || brokerUrl.toLowerCase().startsWith("ssl://");
 
         // Paho requires ssl:// prefix internally — normalise mqtts:// → ssl://
         if (brokerUrl.toLowerCase().startsWith("mqtts://")) {
