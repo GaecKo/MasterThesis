@@ -86,7 +86,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         }
         JSONObject conn = root.getJSONObject("connection");
 
-        this.brokerUrl = conn.optString("brokerUrl", "mqtt://mosquitto:1883");
+        this.brokerUrl = conn.optString("brokerUrl", "mqtts://mosquitto:1883");
 
         // Detect TLS from scheme — mqtts:// triggers TLS, mqtt:// does not
         this.useTls = brokerUrl.toLowerCase().startsWith("mqtts://");
@@ -94,6 +94,8 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         // Paho requires ssl:// prefix internally — normalise mqtts:// → ssl://
         if (brokerUrl.toLowerCase().startsWith("mqtts://")) {
             this.brokerUrl = "ssl://" + brokerUrl.substring("mqtts://".length());
+        } else if (brokerUrl.toLowerCase().startsWith("mqtt://")) {
+            this.brokerUrl = "tcp://" + brokerUrl.substring("mqtt://".length());
         }
 
         this.qos               = conn.optInt("qos",               1);
