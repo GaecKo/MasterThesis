@@ -19,8 +19,9 @@ public class HttpForgery {
 
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
-    // Path is fixed by the Docker volume mount in the APISIX container
-    private static final String APISIX_CERT_PATH = "/usr/local/apisix/conf/server.crt";
+    // Path to the device's self-signed certificate.
+    // TODO: make configurable per device once POC is validated
+    private static final String DEVICE_CERT_PATH = "/usr/local/apisix/conf/device.crt";
 
     private static final ExecutorService httpExecutor =
             Executors.newVirtualThreadPerTaskExecutor();
@@ -115,10 +116,10 @@ public class HttpForgery {
         // Load the APISIX cert — if the file isn't present (e.g. local dev without
         // the volume mount), fall back gracefully and log a warning
         try {
-            SSLContext sslContext = TlsHelper.buildSslContext(APISIX_CERT_PATH);
+            SSLContext sslContext = TlsHelper.buildSslContext(DEVICE_CERT_PATH);
             builder.sslContext(sslContext);
         } catch (Exception e) {
-            logger.info("Could not load APISIX cert from " + APISIX_CERT_PATH
+            logger.warn("Could not load device cert from " + DEVICE_CERT_PATH
                     + " — HTTPS requests will use JVM default trust store: " + e.getMessage());
         }
 
