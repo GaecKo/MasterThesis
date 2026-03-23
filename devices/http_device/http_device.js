@@ -13,8 +13,8 @@ const HTTPS_PORT    = 8443;
 const INTERVAL      = process.env.INTERVAL_MS || 60000;
 const API_KEY       = 'c6ZiV6EYWNMZe--2eiU6NX22OxQVVhR_ks0-jSwllvM';
 
-const CERT_PATH = process.env.CERT_PATH || '/usr/local/share/ca-certificates/apisix.crt';
-const KEY_PATH  = process.env.KEY_PATH  || '/usr/local/share/ca-certificates/apisix.key';
+const CERT_PATH = process.env.CERT_PATH || '/certs/device.crt';
+const KEY_PATH  = process.env.KEY_PATH  || '/certs/device.key';
 
 function randomTemp() {
   return Math.floor(Math.random() * 10) + 20;
