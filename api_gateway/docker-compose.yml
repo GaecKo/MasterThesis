@@ -32,6 +32,8 @@ services:
       - ./conf/config.yaml:/usr/local/apisix/conf/config.yaml
       - ./java-plugins/edge-control/target/edge-control-0.0.1-SNAPSHOT.jar:/usr/local/apisix/java-plugins/edge-control/target/edge-control-0.0.1-SNAPSHOT.jar
       - ./java-plugins/edge-control/logs:/usr/local/apisix/java-plugins/edge-control/logs
+      - ./conf/server.crt:/usr/local/apisix/conf/server.crt:ro 
+      - ./conf/server.key:/usr/local/apisix/conf/server.key:ro 
     ulimits:
       nofile:
         soft: 65536
