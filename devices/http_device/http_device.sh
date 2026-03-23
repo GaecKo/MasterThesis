@@ -25,6 +25,16 @@ docker rm -f http-device-app 2>/dev/null || true
 info "=== HTTP device Setup ==="
 info "Device VM IP: $DEVICES_IP"
 
+### ── Copy certs into build context ──────────────────────────────────────────
+info "Copying certificates into build context..."
+[ -f /usr/local/share/ca-certificates/apisix.crt ] \
+  || err "apisix.crt not found. Run setup_device_TLS.sh first."
+[ -f ~/certs/server.crt ] \
+  || err "device.crt not found. Run setup_device_TLS.sh first."
+cp /usr/local/share/ca-certificates/apisix.crt ./apisix.crt
+cp ~/certs/server.crt ./device.crt
+cp ~/certs/server.key ./device.key
+
 info "Building and starting http device container..."
 
 # Build the Docker image
