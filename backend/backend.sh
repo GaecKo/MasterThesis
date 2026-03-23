@@ -54,5 +54,3 @@ else
 fi
 
 info "Backend setup complete!"
-info "Backend API is accessible at: http://$BACKEND_IP:8000"
-info "Will be proxied through APISIX at: http://$APISIX_IP:9080/api/v1/*"
