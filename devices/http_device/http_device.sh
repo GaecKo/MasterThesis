@@ -42,9 +42,11 @@ if [ -f "Dockerfile" ]; then
         -e APISIX_IP=$APISIX_IP \
         -e INTERVAL_MS=60000 \
         -e DEVICE_ID=device_382109bd-7428-4cb9-b075-9a0ef2041560 \
+        -e CERT_PATH=/certs/server.crt \
+        -e KEY_PATH=/certs/server.key \
+        -e NODE_EXTRA_CA_CERTS=/certs/apisix.crt \
         -v ~/certs/server.crt:/certs/server.crt:ro \
         -v ~/certs/server.key:/certs/server.key:ro \
-        -e NODE_EXTRA_CA_CERTS=/certs/apisix.crt \
         -v /usr/local/share/ca-certificates/apisix.crt:/certs/apisix.crt:ro \
         http-device-app
     
