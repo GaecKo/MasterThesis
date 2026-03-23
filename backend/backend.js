@@ -42,8 +42,8 @@ app.post('/info', (req, res) => {
 });
 
 const tlsOptions = {
-  key:  fs.readFileSync('/certs/server.key'),
-  cert: fs.readFileSync('/certs/server.crt'),
+  key:  fs.readFileSync('/certs/backend.key'),
+  cert: fs.readFileSync('/certs/backend.crt'),
 };
 
 https.createServer(tlsOptions, app).listen(PORT, () => {

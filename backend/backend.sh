@@ -43,14 +43,22 @@ if [ -f "Dockerfile" ]; then
     
     # Stop and remove existing container
     sudo docker rm -f backend-app 2>/dev/null || true
+
+    ### ── Copy certs into build context ──────────────────────────────────────────
+    info "Copying certificates into build context..."
+    [ -f /usr/local/share/ca-certificates/apisix.crt ] \
+    || err "apisix.crt not found. Run setup_backend_TLS.sh first."
+    [ -f ~/certs/server.crt ] \
+    || err "backend.crt not found. Run setup_backend_TLS.sh first."
+    cp /usr/local/share/ca-certificates/apisix.crt ./apisix.crt
+    cp ~/certs/server.crt ./backend.crt
+    cp ~/certs/server.key ./backend.key
     
     # Run with environment variables
     sudo docker run -d \
         --name backend-app \
         --network host \
         --env-file .env \
-        -v ~/certs/server.crt:/certs/server.crt:ro \
-        -v ~/certs/server.key:/certs/server.key:ro \
         backend-app
     
     success "Backend container started"
