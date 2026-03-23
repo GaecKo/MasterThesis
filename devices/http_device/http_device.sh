@@ -26,7 +26,6 @@ info "=== HTTP device Setup ==="
 info "Device VM IP: $DEVICES_IP"
 
 info "Building and starting http device container..."
-cd /home/ubuntu/devices/http_device/
 
 # Build the Docker image
 if [ -f "Dockerfile" ]; then
@@ -42,7 +41,7 @@ if [ -f "Dockerfile" ]; then
         -e HTTP_DEVICE_IP=$DEVICES_IP \
         -e APISIX_IP=$APISIX_IP \
         -e INTERVAL_MS=60000 \
-        -e DEVICE_ID=device_cada9a77-760c-47eb-8ef5-ff5392946c29 \
+        -e DEVICE_ID=device_382109bd-7428-4cb9-b075-9a0ef2041560 \
         http-device-app
     
     success "HTTP Device container started"

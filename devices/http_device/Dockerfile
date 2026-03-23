@@ -4,4 +4,5 @@ COPY package.json .
 RUN npm install
 COPY http_device.js .
 EXPOSE 8000
+EXPOSE 8443
 CMD ["node", "http_device.js"]
