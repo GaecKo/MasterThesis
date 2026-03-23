@@ -17,25 +17,9 @@ info "=== Backend Setup ==="
 info "Backend VM IP: $BACKEND_IP"
 info "APISIX Gateway IP: $APISIX_IP"
 
-info "Setting up environment variables..."
-
-# Create .env file with APISIX_IP for Node.js app
-cat > /home/ubuntu/backend/.env <<EOF
-# API Gateway configuration
-APISIX_GATEWAY_URL=https://$APISIX_IP:9443
-APISIX_GATEWAY_IP=$APISIX_IP
-BACKEND_IP=$BACKEND_IP
-BACKEND_PORT=8000
-
-# Application settings
-NODE_ENV=production
-PORT=8000
-EOF
-
-success "Created .env file with gateway configuration and env variable"
 
 info "Building and starting backend container..."
-cd /home/ubuntu/backend
+# cd /home/ubuntu/backend
 
 # Build the Docker image
 if [ -f "Dockerfile" ]; then
@@ -48,7 +32,7 @@ if [ -f "Dockerfile" ]; then
     sudo docker run -d \
         --name backend-app \
         --network host \
-        --env-file .env \
+        -e BACKEND_IP="192.168.50.1" \ 
         -v ~/certs/server.crt:/certs/server.crt:ro \
         -v ~/certs/server.key:/certs/server.key:ro \
         backend-app
