@@ -47,8 +47,8 @@ docker run -d \
   --name mqtt-device-app \
   --network host \
   --restart unless-stopped \
-  -e DEVICE_ID=device_c69d27de-d8b0-48f6-a4b7-b2445b65ab69 \
-  -e API_KEY=y7i9eiS_4BZi35beWJaNCirMmHdzhK5tE-A9aXJlq6s \
+  -e DEVICE_ID=device_ce66dadb-8ba5-4989-aeaa-b4f2bb8d15c8 \
+  -e API_KEY=Rgh5Cwca_UHVak_12BCedSIv0C_chETTZy_WqftZrbE \
   -e BROKER_URL="mqtts://${APISIX_IP}:8883" \
   -e INTERVAL_MS=10000 \
   mqtt-device-app
