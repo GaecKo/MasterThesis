@@ -9,7 +9,7 @@ GATEWAY_DOMAIN="${GATEWAY_HOSTNAME}.local"
 echo "=== Setting up Backend NUC (NUC1 - ${BACKEND_IP}) ==="
 
 # ── SSH server ────────────────────────────────────────────
-echo "[1/6] Ensuring SSH server is installed and running..."
+echo "[1/5] Ensuring SSH server is installed and running..."
 if ! dpkg -l openssh-server &>/dev/null; then
   sudo apt update && sudo apt install -y openssh-server
 fi
@@ -17,7 +17,7 @@ sudo systemctl enable --now ssh
 echo "SSH server ready."
 
 # ── /etc/hosts ────────────────────────────────────────────
-echo "[2/6] Adding ${GATEWAY_DOMAIN} → ${GATEWAY_IP} to /etc/hosts..."
+echo "[2/5] Adding ${GATEWAY_DOMAIN} → ${GATEWAY_IP} to /etc/hosts..."
 if grep -q "${GATEWAY_DOMAIN}" /etc/hosts; then
   echo "Entry already exists, skipping."
 else
@@ -26,7 +26,7 @@ else
 fi
 
 # ── Trust gateway certificate ─────────────────────────────
-echo "[3/6] Trusting the gateway certificate..."
+echo "[3/5] Trusting the gateway certificate..."
 if [ ! -f ~/server.crt ]; then
   echo "Error: ~/server.crt not found. Run ./setup_gateway_TLS.sh on NUC4 first."
   exit 1
@@ -37,7 +37,7 @@ sudo update-ca-certificates
 echo "Certificate trusted."
 
 # ── Generate NUC1 cert ────────────────────────────────────
-echo "[4/6] Generating certificate for NUC1..."
+echo "[4/5] Generating certificate for NUC1..."
 mkdir -p ~/certs
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout ~/certs/server.key \
@@ -46,13 +46,9 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -addext "subjectAltName=DNS:nuc1-pc.local,IP:${BACKEND_IP}"
 echo "Certificate generated."
 
-# ── Send cert to NUC4 ─────────────────────────────────────
-echo "[5/6] Sending NUC1 certificate to NUC4..."
-scp ~/certs/server.crt nuc4@${GATEWAY_IP}:~/nuc1.crt || { echo "Error: scp to NUC4 failed."; exit 1; }
-echo "Certificate sent to NUC4."
 
 # ── Test HTTPS connection to gateway ──────────────────────
-echo "[6/6] Testing HTTPS connection to gateway..."
+echo "[5/5] Testing HTTPS connection to gateway..."
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
   https://${GATEWAY_DOMAIN}:9443/health || true)
 echo "Response code: ${HTTP_CODE}"

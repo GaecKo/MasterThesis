@@ -63,16 +63,11 @@ sudo chmod 644 conf/server.crt
 docker restart mosquitto
 echo "Mosquitto configured."
 
-# ── Wait for NUC1 and NUC8 certs ─────────────────────────
-echo "[6/7] Waiting for NUC1 and NUC8 certificates..."
-for NUC in nuc1 nuc8; do
-  echo "Waiting for ~/${NUC}.crt..."
-  while [ ! -f ~/${NUC}.crt ]; do
-    echo "  ~/${NUC}.crt not found yet, retrying in 5s..."
-    sleep 5
-  done
-  echo "${NUC} cert received."
-done
+# ── Pull certs FROM NUC1 and NUC8 instead of waiting for push ────
+echo "[6/7] Pulling certificates from NUC1 and NUC8..."
+scp nuc1@${BACKEND_IP}:~/certs/server.crt ~/nuc1.crt || { echo "Error: scp from NUC1 failed."; exit 1; }
+scp nuc8@${DEVICE_IP}:~/certs/server.crt ~/nuc8.crt  || { echo "Error: scp from NUC8 failed."; exit 1; }
+echo "Certificates pulled."
 
 # ── Copy NUC1/NUC8 certs into APISIX config folder ───────
 echo "[7/7] Trusting NUC1 and NUC8 certificates in APISIX..."
