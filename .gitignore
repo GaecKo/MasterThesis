@@ -4,3 +4,4 @@ api_gateway/java-plugins/edge-control/logs
 **/**.env
 api_gateway/conf/server.*
 **/**.crt
+**/**.key

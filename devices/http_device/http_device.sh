@@ -50,7 +50,7 @@ if [ -f "Dockerfile" ]; then
         --network host \
         -e HTTP_DEVICE_IP=$DEVICES_IP \
         -e APISIX_IP=$APISIX_IP \
-        -e INTERVAL_MS=60000 \
+        -e INTERVAL_MS=5000 \
         -e DEVICE_ID=device_382109bd-7428-4cb9-b075-9a0ef2041560 \
         http-device-app
     

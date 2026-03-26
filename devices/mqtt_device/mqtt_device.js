@@ -62,7 +62,7 @@ client.on('connect', () => {
     else     ok(`Subscribed to ${TOPICS.commands}`);
   });
 
-  // setInterval(() => publishTelemetry(client), INTERVAL_MS);
+  setInterval(() => publishTelemetry(client), INTERVAL_MS);
 });
 
 client.on('message', (topic, message) => {
@@ -97,7 +97,7 @@ client.on('message', (topic, message) => {
 
 client.on('reconnect', () => warn('Reconnecting to broker...'));
 client.on('offline',   () => warn('Client offline'));
-client.on('error',     (err) => error('MQTT error:', err.message));
+client.on('error',     (err) => error('MQTT error:', err));
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
 process.on('SIGTERM', () => client.end(true, () => process.exit(0)));

@@ -61,14 +61,14 @@ async function sendTelemetry() {
     },
   };
   try {
-    const res = await fetch(`https://${APISIX_IP}:9443/backendForward`, {
+    const res = await fetch(`https://nuc4-pc.local:9443/backendForward`, {
       method  : 'POST',
       headers : { 'Content-Type': 'application/json', 'apikey': API_KEY },
       body    : JSON.stringify(body),
     });
-    console.log(`[telemetry] → sent to ${APISIX_IP}:9443/backendForward — status=${res.status}`);
+    console.log(`[telemetry] → sent to nuc4-pc.local:9443/backendForward — status=${res.status}`);
   } catch (err) {
-    console.error(`[telemetry] → failed to reach ${APISIX_IP}:9443/backendForward: ${err.message}`);
+    console.error(`[telemetry] → failed to reach nuc4-pc.local:9443/backendForward: ${err}`);
   }
 }
 
@@ -96,4 +96,4 @@ console.log("= = = = = = = = = = = = = = = = = = = = = = = = = = =");
 if (!APISIX_IP) {
   console.error("ERROR! APISIX_IP is empty or null... Won't be able to send any telemetry");
 }
-// setInterval(sendTelemetry, INTERVAL);
+setInterval(sendTelemetry, INTERVAL);

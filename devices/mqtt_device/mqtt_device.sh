@@ -31,7 +31,11 @@ command -v docker     >/dev/null 2>&1 || err "docker not found"
 info "Copying certificate into build context..."
 [ -f /usr/local/share/ca-certificates/apisix.crt ] \
   || err "Certificate not found. Run setup_device.sh first."
+[ -f ~/certs/server.crt ] \
+  || err "device.crt not found. Run setup_device_TLS.sh first."
 cp /usr/local/share/ca-certificates/apisix.crt ./apisix.crt
+cp ~/certs/server.crt ./device.crt
+cp ~/certs/server.key ./device.key
 
 ### ── Build image ─────────────────────────────────────────────────────────────
 info "Building mqtt-device-app image..."
@@ -49,7 +53,7 @@ docker run -d \
   --restart unless-stopped \
   -e DEVICE_ID=device_ce66dadb-8ba5-4989-aeaa-b4f2bb8d15c8 \
   -e API_KEY=Rgh5Cwca_UHVak_12BCedSIv0C_chETTZy_WqftZrbE \
-  -e BROKER_URL="mqtts://${APISIX_IP}:8883" \
+  -e BROKER_URL="mqtts://nuc4-pc.local:8883" \
   -e INTERVAL_MS=10000 \
   mqtt-device-app
 
