@@ -86,7 +86,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         }
         JSONObject conn = root.getJSONObject("connection");
 
-        this.brokerUrl = conn.optString("brokerUrl", "ssl://mosquitto:8883");
+        this.brokerUrl = conn.optString("brokerUrl", "tcp://mosquitto:1883");
 
         // Detect TLS from scheme — mqtts:// triggers TLS, mqtt:// does not
         this.useTls = brokerUrl.toLowerCase().startsWith("mqtts://") || brokerUrl.toLowerCase().startsWith("ssl://");

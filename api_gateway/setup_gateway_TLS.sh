@@ -25,6 +25,13 @@ ssh-copy-id -o StrictHostKeyChecking=no nuc8@${DEVICE_IP}
 # ── TLS certificate for APISIX ───────────────────────────
 echo "[2/7] Generating self-signed certificate for ${GATEWAY_DOMAIN}..."
 mkdir -p conf
+
+# Fix ownership if a previous sudo run left root-owned files
+if [ -f conf/server.key ] && [ ! -w conf/server.key ]; then
+    echo "  Fixing ownership of existing conf/server.key..."
+    sudo chown "$(id -u):$(id -g)" conf/server.key conf/server.crt 2>/dev/null || true
+fi
+
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout conf/server.key \
   -out conf/server.crt \
@@ -56,13 +63,13 @@ echo "Certificate distributed."
 
 # ── Configure Mosquitto for MQTTS ─────────────────────────
 echo "[5/7] Configuring Mosquitto for MQTTS on port 8883..."
-MOSQUITTO_UID=$(docker exec mosquitto id -u mosquitto)
-sudo chown ${MOSQUITTO_UID}:${MOSQUITTO_UID} conf/server.key
-sudo chown ${MOSQUITTO_UID}:${MOSQUITTO_UID} conf/server.crt
+
+sudo chown 1883:1883 conf/server.key
+sudo chown 1883:1883 conf/server.crt
 sudo chmod 600 conf/server.key
 sudo chmod 644 conf/server.crt
-docker restart mosquitto
-echo "Mosquitto configured."
+sudo chmod 755 conf
+echo "Mosquitto certs configured."
 
 # ── Pull certs FROM NUC1 and NUC8 instead of waiting for push ────
 echo "[6/7] Pulling certificates from NUC1 and NUC8..."
@@ -74,9 +81,7 @@ echo "Certificates pulled."
 echo "[7/7] Trusting NUC1 and NUC8 certificates in APISIX..."
 cp ~/nuc1.crt conf/nuc1.crt
 cp ~/nuc8.crt conf/nuc8.crt
-docker compose build apisix
-docker compose up -d apisix
-echo "APISIX restarted with NUC1 and NUC8 certs trusted."
+echo "APISIX NUC1 and NUC8 certs trusted."
 
 echo ""
 echo "=== Gateway setup complete ==="
