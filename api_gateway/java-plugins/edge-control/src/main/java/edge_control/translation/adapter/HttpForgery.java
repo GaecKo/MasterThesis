@@ -81,7 +81,7 @@ public class HttpForgery {
     // ── Client resolution ─────────────────────────────────────────────────────
 
     private static HttpClient resolveClient(String endpoint, Duration connectTimeout) {
-        boolean isTls     = endpoint.toLowerCase().startsWith("https://");
+        boolean isTls      = endpoint.toLowerCase().startsWith("https://");
         boolean hasTimeout = connectTimeout != null && connectTimeout.toSeconds() > 0;
 
         if (!isTls) {
