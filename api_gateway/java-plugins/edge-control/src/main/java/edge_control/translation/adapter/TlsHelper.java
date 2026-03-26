@@ -21,26 +21,8 @@ public class TlsHelper {
      * @param certPath absolute path to the .crt (PEM or DER) file
      */
     public static SSLContext buildSslContext(String certPath) throws Exception {
-        // Load the certificate
-        CertificateFactory cf = CertificateFactory.getInstance("X.509");
-        X509Certificate cert;
-        try (FileInputStream fis = new FileInputStream(certPath)) {
-            cert = (X509Certificate) cf.generateCertificate(fis);
-        }
-
-        // Create a KeyStore containing our trusted cert
-        KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
-        trustStore.load(null, null);
-        trustStore.setCertificateEntry("self-signed", cert);
-
-        // Build a TrustManagerFactory from that KeyStore
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance(
-                TrustManagerFactory.getDefaultAlgorithm());
-        tmf.init(trustStore);
-
-        // Build and init the SSLContext
-        SSLContext sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(null, tmf.getTrustManagers(), null);
+        SSLContext sslContext = SSLContext.getInstance("TLSv1.3");
+        sslContext.init(null, buildTrustManagers(certPath), null);
         return sslContext;
     }
 
@@ -50,5 +32,25 @@ public class TlsHelper {
      */
     public static SSLSocketFactory buildSslSocketFactory(String certPath) throws Exception {
         return buildSslContext(certPath).getSocketFactory();
+    }
+
+    // ── Internal ──────────────────────────────────────────────────────────────
+
+    private static TrustManager[] buildTrustManagers(String certPath) throws Exception {
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        X509Certificate cert;
+        try (FileInputStream fis = new FileInputStream(certPath)) {
+            cert = (X509Certificate) cf.generateCertificate(fis);
+        }
+
+        KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        trustStore.load(null, null);
+        trustStore.setCertificateEntry("trusted-cert", cert);
+
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(
+                TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(trustStore);
+
+        return tmf.getTrustManagers();
     }
 }

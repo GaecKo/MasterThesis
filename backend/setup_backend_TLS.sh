@@ -43,7 +43,8 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout ~/certs/server.key \
   -out ~/certs/server.crt \
   -subj "/CN=nuc1-pc.local" \
-  -addext "subjectAltName=DNS:nuc1-pc.local,IP:${BACKEND_IP}"
+  -addext "subjectAltName=DNS:nuc1-pc.local,IP:${BACKEND_IP}" \
+  -addext "basicConstraints=critical,CA:TRUE"
 echo "Certificate generated."
 
 

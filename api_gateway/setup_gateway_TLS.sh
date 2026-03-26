@@ -29,7 +29,8 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout conf/server.key \
   -out conf/server.crt \
   -subj "/CN=${GATEWAY_DOMAIN}" \
-  -addext "subjectAltName=DNS:${GATEWAY_DOMAIN},IP:${GATEWAY_IP}"
+  -addext "subjectAltName=DNS:${GATEWAY_DOMAIN},IP:${GATEWAY_IP}" \
+  -addext "basicConstraints=critical,CA:TRUE"
 echo "Certificate generated."
 
 # ── Register cert in APISIX ───────────────────────────────
