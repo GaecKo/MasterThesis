@@ -97,7 +97,7 @@ client.on('message', (topic, message) => {
 
 client.on('reconnect', () => warn('Reconnecting to broker...'));
 client.on('offline',   () => warn('Client offline'));
-client.on('error',     (err) => error('MQTT error:', err));
+client.on('error',     (err) => error('MQTT error:', err.message));
 
 // ── Graceful shutdown ─────────────────────────────────────────────────────────
 process.on('SIGTERM', () => client.end(true, () => process.exit(0)));

@@ -25,17 +25,8 @@ docker rm -f http-device-app 2>/dev/null || true
 info "=== HTTP device Setup ==="
 info "Device VM IP: $DEVICES_IP"
 
-### ── Copy certs into build context ──────────────────────────────────────────
-info "Copying certificates into build context..."
-[ -f /usr/local/share/ca-certificates/apisix.crt ] \
-  || err "apisix.crt not found. Run setup_device_TLS.sh first."
-[ -f ~/certs/server.crt ] \
-  || err "device.crt not found. Run setup_device_TLS.sh first."
-cp /usr/local/share/ca-certificates/apisix.crt ./apisix.crt
-cp ~/certs/server.crt ./device.crt
-cp ~/certs/server.key ./device.key
-
 info "Building and starting http device container..."
+cd /home/ubuntu/devices/http_device/
 
 # Build the Docker image
 if [ -f "Dockerfile" ]; then
@@ -50,8 +41,8 @@ if [ -f "Dockerfile" ]; then
         --network host \
         -e HTTP_DEVICE_IP=$DEVICES_IP \
         -e APISIX_IP=$APISIX_IP \
-        -e INTERVAL_MS=5000 \
-        -e DEVICE_ID=device_382109bd-7428-4cb9-b075-9a0ef2041560 \
+        -e INTERVAL_MS=60000 \
+        -e DEVICE_ID=device_cada9a77-760c-47eb-8ef5-ff5392946c29 \
         http-device-app
     
     success "HTTP Device container started"
@@ -64,4 +55,4 @@ else
 fi
 
 info "HTTP Device setup complete!"
-info "HTTP Device API is accessible at: https://$DEVICES_IP:8000"
+info "HTTP Device API is accessible at: http://$DEVICES_IP:8000"

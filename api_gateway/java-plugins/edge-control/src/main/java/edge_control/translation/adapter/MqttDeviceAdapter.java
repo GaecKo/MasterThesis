@@ -30,15 +30,11 @@ public class MqttDeviceAdapter implements DeviceAdapter {
     private static final ObjectMapper MAPPER        = new ObjectMapper();
     private static final String BACKEND_FORWARD_URL = "http://localhost:9080/backendForward";
 
-    // Path fixed by Docker volume mount in the APISIX container
-    private static final String APISIX_CERT_PATH = "/usr/local/apisix/conf/server.crt";
-
     // ── Parsed config ─────────────────────────────────────────────────────────
 
     private String gatewayDeviceId;
 
     private String  brokerUrl;
-    private boolean useTls;
     private int     qos;
     private int     keepAliveInterval;
     private int     connectionTimeout;
@@ -86,18 +82,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         }
         JSONObject conn = root.getJSONObject("connection");
 
-        this.brokerUrl = conn.optString("brokerUrl", "tcp://mosquitto:1883");
-
-        // Detect TLS from scheme — mqtts:// triggers TLS, mqtt:// does not
-        this.useTls = brokerUrl.toLowerCase().startsWith("mqtts://") || brokerUrl.toLowerCase().startsWith("ssl://");
-
-        // Paho requires ssl:// prefix internally — normalise mqtts:// → ssl://
-        if (brokerUrl.toLowerCase().startsWith("mqtts://")) {
-            this.brokerUrl = "ssl://" + brokerUrl.substring("mqtts://".length());
-        } else if (brokerUrl.toLowerCase().startsWith("mqtt://")) {
-            this.brokerUrl = "tcp://" + brokerUrl.substring("mqtt://".length());
-        }
-
+        this.brokerUrl         = "tcp://mosquitto:1883";
         this.qos               = conn.optInt("qos",               1);
         this.keepAliveInterval = conn.optInt("keepAliveInterval", 30);
         this.connectionTimeout = conn.optInt("connectionTimeout", 10);
@@ -105,9 +90,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         this.reconnectDelay    = conn.optInt("reconnectDelay",    5);
 
         logger.debug("Connection config loaded — broker=" + brokerUrl
-                + " tls=" + useTls
-                + " qos=" + qos
-                + " keepAlive=" + keepAliveInterval + "s");
+                + " qos=" + qos + " keepAlive=" + keepAliveInterval + "s");
     }
 
     private void loadSubscriptions(JSONObject root) throws CorruptedConfiguration {
@@ -171,19 +154,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             options.setConnectionTimeout(connectionTimeout);
             options.setKeepAliveInterval(keepAliveInterval);
             options.setMaxReconnectDelay(reconnectDelay * 1000);
-
-            // Apply TLS if mqtts:// was specified — uses the same APISIX cert as HTTP
-            if (useTls) {
-                try {
-                    options.setSocketFactory(TlsHelper.buildSslSocketFactory(APISIX_CERT_PATH));
-                    logger.info("MQTTS enabled for device " + gatewayDeviceId
-                            + " using cert: " + APISIX_CERT_PATH);
-                } catch (Exception e) {
-                    throw new EdgeControlException(
-                            "Failed to build SSL socket factory for device " + gatewayDeviceId
-                                    + ": " + e.getMessage());
-                }
-            }
 
             mqttClient.setCallback(new MqttCallbackExtended() {
                 @Override
@@ -251,6 +221,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
     public void handleRequest(HttpRequest request, HttpResponse response,
                               AdapterCallback callback) throws Exception {
 
+        // Broker down — signal queuing layer immediately
         if (!mqttClient.isConnected()) {
             logger.debug("MQTT broker not connected for device " + gatewayDeviceId);
             callback.onDeviceUnreachable("MQTT broker not connected for device " + gatewayDeviceId);
@@ -313,6 +284,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             return;
         }
 
+        // Fire-and-forget: return 202 immediately
         if (!commandDefinition.hasResponseTopic()) {
             response.setStatusCode(202);
             response.setBody("{\"status\":\"sent\",\"correlationId\":\"" + correlationId + "\"}");
@@ -321,6 +293,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             return;
         }
 
+        // Wait for device ack asynchronously
         Duration timeout = commandDefinition.getResponseTimeout();
         responseFuture
                 .orTimeout(timeout.getSeconds(), TimeUnit.SECONDS)
@@ -344,11 +317,13 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                     pendingResponses.remove(correlationId);
 
                     if (cause instanceof TimeoutException) {
+                        // Device didn't respond — signal queuing layer, do NOT set a response
                         logger.debug("Device " + gatewayDeviceId + " did not respond within "
                                 + timeout.getSeconds() + "s [correlationId=" + correlationId + "]");
                         callback.onDeviceUnreachable(
                                 "Device did not respond within " + timeout.getSeconds() + "s");
                     } else {
+                        // All other async errors — set response and continue normally
                         String msg = cause.getMessage() != null
                                 ? cause.getMessage() : cause.getClass().getSimpleName();
                         logger.error("MQTT async error: " + msg);

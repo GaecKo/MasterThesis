@@ -17,9 +17,25 @@ info "=== Backend Setup ==="
 info "Backend VM IP: $BACKEND_IP"
 info "APISIX Gateway IP: $APISIX_IP"
 
+info "Setting up environment variables..."
+
+# Create .env file with APISIX_IP for Node.js app
+cat > /home/ubuntu/backend/.env <<EOF
+# API Gateway configuration
+APISIX_GATEWAY_URL=http://$APISIX_IP:9080
+APISIX_GATEWAY_IP=$APISIX_IP
+BACKEND_IP=$BACKEND_IP
+BACKEND_PORT=8000
+
+# Application settings
+NODE_ENV=production
+PORT=8000
+EOF
+
+success "Created .env file with gateway configuration and env variable"
 
 info "Building and starting backend container..."
-# cd /home/ubuntu/backend
+cd /home/ubuntu/backend
 
 # Build the Docker image
 if [ -f "Dockerfile" ]; then
@@ -27,21 +43,12 @@ if [ -f "Dockerfile" ]; then
     
     # Stop and remove existing container
     sudo docker rm -f backend-app 2>/dev/null || true
-
-    ### ── Copy certs into build context ──────────────────────────────────────────
-    info "Copying certificates into build context..."
-    [ -f /usr/local/share/ca-certificates/apisix.crt ] \
-    || err "apisix.crt not found. Run setup_backend_TLS.sh first."
-    [ -f ~/certs/server.crt ] \
-    || err "backend.crt not found. Run setup_backend_TLS.sh first."
-    cp /usr/local/share/ca-certificates/apisix.crt ./apisix.crt
-    cp ~/certs/server.crt ./backend.crt
-    cp ~/certs/server.key ./backend.key
     
     # Run with environment variables
     sudo docker run -d \
         --name backend-app \
         --network host \
+        --env-file .env \
         backend-app
     
     success "Backend container started"
@@ -54,3 +61,5 @@ else
 fi
 
 info "Backend setup complete!"
+info "Backend API is accessible at: http://$BACKEND_IP:8000"
+info "Will be proxied through APISIX at: http://$APISIX_IP:9080/api/v1/*"
