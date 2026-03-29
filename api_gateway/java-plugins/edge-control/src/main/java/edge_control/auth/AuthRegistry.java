@@ -28,6 +28,9 @@ public class AuthRegistry {
     // gatewayDeviceId → { gatewayBackendId → endpoint }
     private final Map<String, Map<String, String>> deviceEndpointsCache = new ConcurrentHashMap<>();
 
+    // gatewayBackendId → callbackEndpoint
+    private final Map<String, String> backendCallbackEndpointsCache = new ConcurrentHashMap<>();
+
     private final BackendConfigRepository backendConfig = new BackendConfigRepository();
     private final DeviceConfigRepository deviceConfig = new DeviceConfigRepository();
     private final BackendAuthorizationsRepository backendAuths = new BackendAuthorizationsRepository();
@@ -92,9 +95,16 @@ public class AuthRegistry {
             }
         });
 
-//        logger.info("AuthRegistry refreshed: " + apiKeyCache.size() + " keys, "
-//                + backendAuthCache.size() + " backend auths, "
-//                + deviceAuthCache.size() + " device auths");
+        backendCallbackEndpointsCache.clear();
+        backendConfig.findAll().forEach(doc -> {
+            String backendId = doc.getString("gatewayBackendId");
+            String callbackEndpoint = doc.getString("callbackEndpoint");
+            if (backendId != null && callbackEndpoint != null) {
+                backendCallbackEndpointsCache.put(backendId, callbackEndpoint);
+            }
+        });
+
+        logger.info(this.getCallbackEndpoint("backend_c89f031b-3971-49fd-8640-dad58af970f4"));
     }
 
 
@@ -121,6 +131,8 @@ public class AuthRegistry {
     public void putDeviceAuth(String gatewayDeviceId, List<String> l){
         deviceAuthCache.put(gatewayDeviceId, l);
     }
+
+    public String getCallbackEndpoint(String gatewayBackendId) {return backendCallbackEndpointsCache.get(gatewayBackendId); }
 
     public Map<String, String> getDeviceEndpoints(String gatewayDeviceId) {
         return deviceEndpointsCache.get(gatewayDeviceId);
