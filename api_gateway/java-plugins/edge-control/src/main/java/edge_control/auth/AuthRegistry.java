@@ -104,7 +104,6 @@ public class AuthRegistry {
             }
         });
 
-        logger.info(this.getCallbackEndpoint("backend_c89f031b-3971-49fd-8640-dad58af970f4"));
     }
 
 
