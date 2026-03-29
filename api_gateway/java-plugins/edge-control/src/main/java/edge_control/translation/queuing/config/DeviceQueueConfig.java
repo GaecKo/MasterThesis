@@ -14,7 +14,6 @@ public class DeviceQueueConfig {
     private final String gatewayDeviceId;
     private final Duration retryInterval;
     private final Duration maxTimeToLive;
-    private final String callbackUrl;
 
     public DeviceQueueConfig(String gatewayDeviceId, JSONObject queuingJson)
             throws CorruptedConfiguration {
@@ -36,13 +35,6 @@ public class DeviceQueueConfig {
                             + ": 'maxTimeToLiveSeconds' must be a positive integer");
         }
         this.maxTimeToLive = Duration.ofSeconds(maxTtlSeconds);
-
-        this.callbackUrl = queuingJson.optString("callbackUrl", null);
-        if (callbackUrl == null || callbackUrl.isBlank()) {
-            throw new CorruptedConfiguration(
-                    "Queuing config for device " + gatewayDeviceId
-                            + ": 'callbackUrl' is missing or empty");
-        }
     }
 
     /**
@@ -70,13 +62,6 @@ public class DeviceQueueConfig {
                             + ": 'maxTimeToLiveSeconds' must be a positive integer");
         }
         this.maxTimeToLive = Duration.ofSeconds(maxTtlSeconds);
-
-        this.callbackUrl = doc.optString("callbackUrl", null);
-        if (callbackUrl == null || callbackUrl.isBlank()) {
-            throw new CorruptedConfiguration(
-                    "Queuing config for device " + gatewayDeviceId
-                            + ": 'callbackUrl' is missing or empty");
-        }
     }
 
     public JSONObject toDocument() {
@@ -84,12 +69,10 @@ public class DeviceQueueConfig {
         doc.put("gatewayDeviceId",      gatewayDeviceId);
         doc.put("retryIntervalSeconds", (int) retryInterval.getSeconds());
         doc.put("maxTimeToLiveSeconds", (int) maxTimeToLive.getSeconds());
-        doc.put("callbackUrl",          callbackUrl);
         return doc;
     }
 
     public String getGatewayDeviceId()  { return gatewayDeviceId; }
     public Duration getRetryInterval()  { return retryInterval; }
     public Duration getMaxTimeToLive()  { return maxTimeToLive; }
-    public String getCallbackUrl()      { return callbackUrl; }
 }

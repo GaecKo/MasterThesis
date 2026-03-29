@@ -1,6 +1,7 @@
 package edge_control.filters;
 
 import edge_control.RequestHandler;
+import edge_control.auth.AuthRegistry;
 import edge_control.translation.queuing.QueueRegistry;
 import org.apache.apisix.plugin.runner.HttpRequest;
 import org.apache.apisix.plugin.runner.HttpResponse;
@@ -87,7 +88,11 @@ public class DeviceTranslationFilter implements PluginFilter {
                 return;
             }
 
-            String gatewayDeviceId = config.getString("gatewayDeviceId");
+            String gatewayDeviceId  = config.getString("gatewayDeviceId");
+            String gatewayBackendId = config.getString("gatewayBackendId");
+            String callbackEndpoint = AuthRegistry.getInstance().getCallbackEndpoint(gatewayBackendId);
+            config.remove("gatewayBackendId");
+            request.setBody(config.toString());
             DeviceAdapter adapter = deviceTranslationManager.get(gatewayDeviceId);
 
             if (adapter == null) {
@@ -113,18 +118,19 @@ public class DeviceTranslationFilter implements PluginFilter {
                 public void onDeviceUnreachable(String reason) {
                     try {
                         if (queueRegistry.hasQueuing(gatewayDeviceId)) {
-                            queueRegistry.enqueue(gatewayDeviceId,
+                            String queuedRequestId = queueRegistry.enqueue(gatewayDeviceId, callbackEndpoint,
                                     request.getBody(), request.getHeaders());
                             response.setStatusCode(202);
                             response.setBody("{\"status\":\"queued\","
                                     + "\"message\":\"Device unreachable — request queued for retry\","
-                                    + "\"deviceId\":\"" + gatewayDeviceId + "\"}");
+                                    + "\"deviceId\":\"" + gatewayDeviceId + ", \"deviceId\":\"" + queuedRequestId + "\"\"}");
                             response.setHeader("MODIFIED-BY", "EdgeControl/Queuing");
                             logger.info("Request queued for device " + gatewayDeviceId
                                     + ": " + reason);
                         } else {
                             response.setStatusCode(502);
-                            response.setBody("{\"error\":\"Device unreachable: " + reason + "\"}");
+                            response.setBody("{\"error\":\"Device unreachable: " + reason
+                                    + ", + device has no queuing mechanism setup"  + "\"}");
                             logger.info("Device unreachable, no queuing configured: "
                                     + gatewayDeviceId);
                         }

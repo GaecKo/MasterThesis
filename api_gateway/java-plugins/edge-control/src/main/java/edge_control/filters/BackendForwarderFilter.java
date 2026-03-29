@@ -98,6 +98,7 @@ public class BackendForwarderFilter implements PluginFilter {
             }
             Map<String, Object> endpoints = requestJson.getJSONObject("listOfEndpoints").toMap();
             requestJson.remove("listOfEndpoints");
+            requestJson.remove("gatewayBackendId");
             endpoints.forEach((key, value) -> backendEndpoints.add((String) value));
             forwardBody = requestJson.toString();
 

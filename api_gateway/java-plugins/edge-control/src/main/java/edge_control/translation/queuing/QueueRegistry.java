@@ -105,8 +105,7 @@ public class QueueRegistry {
 
         logger.info("Queuing config upserted for device " + deviceId
                 + " — retryInterval=" + queueConfig.getRetryInterval().getSeconds() + "s"
-                + " maxTTL=" + queueConfig.getMaxTimeToLive().getSeconds() + "s"
-                + " callbackUrl=" + queueConfig.getCallbackUrl());
+                + " maxTTL=" + queueConfig.getMaxTimeToLive().getSeconds() + "s");
     }
 
     // ── Remove ────────────────────────────────────────────────────────────────
@@ -133,15 +132,15 @@ public class QueueRegistry {
      * Saves a failed request to the queue and schedules retries if not already running.
      * Called by the filter when AdapterCallback.onDeviceUnreachable() fires.
      */
-    public void enqueue(String deviceId, String body, Map<String, String> headers)
+    public String enqueue(String deviceId, String callbackEndpoint, String body, Map<String, String> headers)
             throws EdgeControlException {
         if (!hasQueuing(deviceId)) {
             logger.log("Enqueue requested for device " + deviceId
                     + " but no queuing config found — request dropped");
-            return;
+            return null;
         }
 
-        QueuedRequest request = new QueuedRequest(deviceId, body, headers);
+        QueuedRequest request = new QueuedRequest(deviceId, callbackEndpoint, body, headers);
         requestRepo.save(request);
         logger.info("Request enqueued for device " + deviceId
                 + " [id=" + request.getId() + "]");
@@ -153,6 +152,7 @@ public class QueueRegistry {
         } else {
             logger.log("QueueWorker not yet initialised — retry will be scheduled on next init()");
         }
+        return request.getId();
     }
 
     // ── Lookup ────────────────────────────────────────────────────────────────

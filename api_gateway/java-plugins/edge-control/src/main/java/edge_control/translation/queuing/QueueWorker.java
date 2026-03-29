@@ -131,9 +131,9 @@ public class QueueWorker {
         if (Instant.now().isAfter(expiresAt)) {
             logger.log("Queued request " + queuedRequest.getId()
                     + " for device " + deviceId + " exceeded TTL — dropping");
-            notifyBackend(queueConfig.getCallbackUrl(), queuedRequest.getId(), 504,
-                    "{\"error\":\"Request expired in queue — device unreachable within TTL\"}");
             silentDelete(queuedRequest.getId());
+            notifyBackend(queuedRequest.getCallbackEndpoint(), queuedRequest.getId(), 504,
+                    "{\"error\":\"Request expired in queue — device unreachable within TTL\"}");
             return;
         }
 
@@ -154,7 +154,7 @@ public class QueueWorker {
                     if (syntheticResp.isSuccess()) {
                         logger.info("Queued request " + queuedRequest.getId()
                                 + " successfully delivered to device " + deviceId);
-                        notifyBackend(queueConfig.getCallbackUrl(), queuedRequest.getId(),
+                        notifyBackend(queuedRequest.getCallbackEndpoint(), queuedRequest.getId(),
                                 syntheticResp.getStatusCode(), syntheticResp.getBody());
                         silentDelete(queuedRequest.getId());
                     } else {
@@ -180,6 +180,10 @@ public class QueueWorker {
 
     private void notifyBackend(String callbackUrl, String requestId,
                                int statusCode, String body) {
+        if (callbackUrl == null || callbackUrl.isEmpty()) {
+            return;
+        }
+
         JSONObject notification = new JSONObject();
         notification.put("queuedRequestId", requestId);
         notification.put("statusCode",      statusCode);

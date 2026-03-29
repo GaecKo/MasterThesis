@@ -16,15 +16,17 @@ public class QueuedRequest {
 
     private final String              id;
     private final String              gatewayDeviceId;
+    private final String              callbackEndpoint;
     private final String              body;
     private final Map<String, String> headers;
     private final Instant             enqueuedAt;
 
     // ── Construct from an incoming failed request ─────────────────────────────
 
-    public QueuedRequest(String gatewayDeviceId, String body, Map<String, String> headers) {
+    public QueuedRequest(String gatewayDeviceId, String callbackEndpoint, String body, Map<String, String> headers) {
         this.id              = UUID.randomUUID().toString();
         this.gatewayDeviceId = gatewayDeviceId;
+        this.callbackEndpoint     = callbackEndpoint;
         this.body            = body;
         this.headers         = headers != null ? new HashMap<>(headers) : new HashMap<>();
         this.enqueuedAt      = Instant.now();
@@ -35,6 +37,7 @@ public class QueuedRequest {
     public QueuedRequest(Document doc) {
         this.id              = doc.getString("id");
         this.gatewayDeviceId = doc.getString("gatewayDeviceId");
+        this.callbackEndpoint     = doc.getString("callbackEndpoint");
         this.body            = doc.getString("body");
         this.enqueuedAt      = Instant.parse(doc.getString("enqueuedAt"));
 
@@ -51,6 +54,7 @@ public class QueuedRequest {
         Document doc = new Document();
         doc.put("id",              id);
         doc.put("gatewayDeviceId", gatewayDeviceId);
+        doc.put("callbackEndpoint", callbackEndpoint);
         doc.put("body",            body);
         doc.put("headers",         new Document(headers));
         doc.put("enqueuedAt",      enqueuedAt.toString());
@@ -61,6 +65,7 @@ public class QueuedRequest {
 
     public String              getId()               { return id; }
     public String              getGatewayDeviceId()  { return gatewayDeviceId; }
+    public String              getCallbackEndpoint()  { return callbackEndpoint; }
     public String              getBody()             { return body; }
     public Map<String, String> getHeaders()          { return headers; }
     public Instant             getEnqueuedAt()       { return enqueuedAt; }
