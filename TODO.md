@@ -59,7 +59,7 @@
 > **deadline**: 30/03
 * [X] Analysis of TOP mechanism
 * [X] Choose which one could be applied
-* [ ] Implement 
+* [X] Implement 
 
 # Report
 
@@ -70,7 +70,7 @@
 > **deadline**: 06/03 (Arthur)
 
 ## State of the art: verify 
-> **deadline**: 06/03 (Arthur)
-* [ ] API gateway section, check references
-* [ ] Remove bad article citation
+> **deadline**: 06/03 (Arthur - Elie)
+* [ ] API gateway section, check references (Elie)
+* [ ] Remove bad article citation (Elie)
 
