@@ -32,7 +32,7 @@
 > **deadline**: 06/04 (Elie)
 * [ ] Check how plugin works
 * [ ] Check what policies to use
-* [ ] ... 
+* [ ] Implement
 
 ## Onboarding
 > **deadline**: 16/03 (Elie)
@@ -71,6 +71,6 @@
 
 ## State of the art: verify 
 > **deadline**: 06/03 (Arthur)
-
-## Elie add here what you'll do in the report :) 
+* [ ] API gateway section, check references
+* [ ] Remove bad article citation
 
