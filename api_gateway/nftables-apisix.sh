@@ -38,7 +38,7 @@ if nft add set ip apisix_guard _init_flag \
     # HTTPS flood (capture new connections to API port 9443)
     nft add rule ip apisix_guard forward \
         ip protocol tcp tcp dport 9443 ct state new \
-        meter tcp_flood { ip saddr limit rate over 50/second} \
+        meter tcp_flood_tls { ip saddr limit rate over 50/second} \
         add @blacklist { ip saddr } counter drop
 
     # MQTT plain (capture new + established publishes)
