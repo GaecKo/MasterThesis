@@ -40,11 +40,7 @@ app.all('*', async (req, res) => {
   res.json({
     path: req.path,
     method: req.method,
-    body: req.body,
-    query: req.query,
-    params: req.params,
-    url: req.url,
-    originalUrl: req.originalUrl,
+    body: "Command received and processed",
     timestamp: new Date().toISOString()
   });
 });

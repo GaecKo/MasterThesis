@@ -19,8 +19,10 @@ error()   { echo -e "${RED}[ERROR]${RESET} $*"; }
 ###   Configuration
 ### ============================================================
 
-# Setup the device route:
+# Setup the device route: 
 info "Setting route /command with DeviceTranslation plugin enabled..."
+# {"name": "AuthFilter", "value": "{\"enable\":\"feature\"}"},
+# {"name": "DeviceTranslation", "value": "{\"enable\":\"feature\"}"}
 curl -i http://127.0.0.1:9180/apisix/admin/routes/1 -H 'X-API-KEY: admin' -X PUT -d '
 {
     "uri": "/command",

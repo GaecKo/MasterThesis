@@ -155,13 +155,4 @@ public class BackendForwarderFilter implements PluginFilter {
         return true;
     }
 
-    /**
-     * Indicates that the plugin requires the response body to function.
-     *
-     * @return true
-     */
-    @Override
-    public Boolean requiredRespBody() {
-        return true;
-    }
 }

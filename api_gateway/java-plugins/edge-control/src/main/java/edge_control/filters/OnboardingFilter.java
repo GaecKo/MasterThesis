@@ -352,14 +352,4 @@ public class OnboardingFilter implements PluginFilter {
     public Boolean requiredBody() {
         return true;
     }
-
-    /**
-     * Indicates that the plugin requires the response body to function.
-     *
-     * @return true
-     */
-    @Override
-    public Boolean requiredRespBody() {
-        return true;
-    }
 }

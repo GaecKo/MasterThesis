@@ -13,8 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-
 /**
  * APISIX plugin filter that handles protocol translation for devices.
  *
@@ -154,16 +152,6 @@ public class TranslationOnboardingFilter implements PluginFilter {
      */
     @Override
     public Boolean requiredBody() {
-        return true;
-    }
-
-    /**
-     * Indicates that the plugin requires the response body to function.
-     *
-     * @return true
-     */
-    @Override
-    public Boolean requiredRespBody() {
         return true;
     }
 }

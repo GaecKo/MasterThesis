@@ -40,7 +40,7 @@ public class AuthenticationManager {
         // 1. Check registry cache first
         String cached = authRegistry.getGatewayId(hash);
         if (cached != null) {
-            logger.info("AuthRegistry cache hit");
+            // logger.info("AuthRegistry cache hit");
             return cached;
         }
 

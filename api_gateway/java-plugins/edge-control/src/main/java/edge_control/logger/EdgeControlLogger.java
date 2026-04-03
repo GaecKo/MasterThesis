@@ -75,15 +75,17 @@ public final class EdgeControlLogger {
         });
     }
 
+    public void time(String message) {log(message); }
+
     public void info(String message) {
-        log("[INFO] " + message);
+        // log("[INFO] " + message);
     }
 
     public void debug(String message) {
-        log("[DEBUG] " + message);
+        // log("[DEBUG] " + message);
     }
 
     public void error(String message) {
-        log("[ERROR] " + message);
+        // log("[ERROR] " + message);
     }
 }
