@@ -14,21 +14,22 @@
 * [X] Queuing system
 * [X] HTTP Communication from end devices
 * [X] MQTT Communication from end devices
-* [ ] HTTPs for cmd onboarding 
+* [X] HTTPs for cmd onboarding 
 
 ## Performance Analysis
 > **deadline (scripting)**: 06/04 (Arthur - Elie)
-* [ ] Start creating jupyter notebooks for perf testing 
+* [X] Basic scenario
+* [ ] Review scenario 
 
 > **deadline (tests)**: fin avril (Arthur - Elie)
 * [ ] test whole situation 
 
 ## Deployment
 > **deadline**: 06/04 (Arthur - Elie)
-* [ ] Deploy on NUC
+* [X] Deploy on NUC
 
 ## Rate limitation
-> **deadline**: 06/04 (Arthur)
+> **deadline**: 06/04 (Elie)
 * [ ] Check how plugin works
 * [ ] Check what policies to use
 * [ ] ... 
@@ -50,14 +51,14 @@
 
 ## Protocol Security 
 > **deadline**: 16/03 (Elie)
-* [ ] end device: HTTPs - TLS
-* [ ] end device: MQTTs - TLS
-* [ ] backend: HTTPs 
+* [X] end device: HTTPs - TLS
+* [X] end device: MQTTs - TLS
+* [X] backend: HTTPs 
 
 ## Traffic Overload Protection
 > **deadline**: 30/03
-* [ ] Analysis of TOP mechanism
-* [ ] Choose which one could be applied
+* [X] Analysis of TOP mechanism
+* [X] Choose which one could be applied
 * [ ] Implement 
 
 # Report
@@ -65,5 +66,11 @@
 ## State of the art 
 > **deadline**: 30/03 (Arthur - Elie)
 
+## APISIX: how it works
+> **deadline**: 06/03 (Arthur)
 
+## State of the art: verify 
+> **deadline**: 06/03 (Arthur)
+
+## Elie add here what you'll do in the report :) 
 
