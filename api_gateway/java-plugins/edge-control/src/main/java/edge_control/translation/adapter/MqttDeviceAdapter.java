@@ -20,6 +20,8 @@ import tools.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.*;
@@ -32,6 +34,9 @@ public class MqttDeviceAdapter implements DeviceAdapter {
 
     // Path fixed by Docker volume mount in the APISIX container
     private static final String APISIX_CERT_PATH = "/usr/local/apisix/conf/server.crt";
+
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm:ss.SSSS")
+            .withZone(ZoneId.systemDefault());
 
     // ── Parsed config ─────────────────────────────────────────────────────────
 
@@ -277,7 +282,13 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             throw new IllegalOperation("Unknown command: " + commandName);
         }
 
+        int reqHash = request.hashCode();
+        Instant now = Instant.now();
+        logger.time("[" + formatter.format(now) + "] Mqtt Adapter: request to be translated (" + reqHash + ")");
         JsonNode finalPayload = translationEngine.translate(commandDefinition, backendRequest);
+        Instant after = Instant.now();
+        logger.time("[" + formatter.format(after) + "] Mqtt Adapter: request translated - time took:" + (after.toEpochMilli() - now.toEpochMilli()) + "ms (" + reqHash + ")");
+        logger.time("[" + formatter.format(after) + "] Mqtt Adapter: request to be sent (" + reqHash + ")");
 
         String correlationId = UUID.randomUUID().toString();
         JSONObject envelope = new JSONObject();
@@ -336,6 +347,8 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                         response.setBody("{\"error\":\"Error processing MQTT response\"}");
                     } finally {
                         pendingResponses.remove(correlationId);
+                        Instant end = Instant.now();
+                        logger.time("[" + formatter.format(end) + "] Mqtt Adapter: request transmitted and res received - time took:" + (end.toEpochMilli() - after.toEpochMilli()) + "ms (" + reqHash + ")");
                         callback.onSuccess();
                     }
                 })

@@ -18,6 +18,10 @@ import edge_control.translation.adapter.AdapterCallback;
 import edge_control.translation.adapter.DeviceAdapter;
 import edge_control.exceptions.*;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+
 @Component
 public class DeviceTranslationFilter implements PluginFilter {
 
@@ -34,6 +38,9 @@ public class DeviceTranslationFilter implements PluginFilter {
             RequestHandler.getInstance();
 
     private static final QueueRegistry queueRegistry = QueueRegistry.getInstance();
+
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm:ss.SSSS")
+            .withZone(ZoneId.systemDefault());
 
     DeviceTranslationFilter() {
         logger.info("DeviceTranslation Filter initialized");
@@ -55,14 +62,19 @@ public class DeviceTranslationFilter implements PluginFilter {
         requestHandler.register(request);
 
         if (requestHandler.shouldSkipRequest(request, chain)) {
+            logger.debug("Skipping request in " + name() + ", index: " + chain.getIndex());
             chain.filter(request, response);
             return;
         }
 
+        int reqHash = request.hashCode();
+        Instant start = Instant.now();
+
+        logger.time("[" + formatter.format(start) + "] Trans Filter: request arrived, wasn't skipped (" + reqHash + ")");
         try {
             if (request.getPath().startsWith("/command")
                     && request.getMethod() == HttpRequest.Method.POST) {
-                handleDeviceRequestAsync(request, response, chain);
+                handleDeviceRequestAsync(request, response, chain, start);
             } else {
                 throw new IllegalOperation(
                         "DeviceTranslation filter is available for POST on /command route.");
@@ -76,7 +88,7 @@ public class DeviceTranslationFilter implements PluginFilter {
 
     private void handleDeviceRequestAsync(HttpRequest request,
                                           HttpResponse response,
-                                          PluginFilterChain chain) {
+                                          PluginFilterChain chain, Instant start) {
         try {
             JSONObject config = new JSONObject(request.getBody());
 
@@ -108,7 +120,11 @@ public class DeviceTranslationFilter implements PluginFilter {
                 @Override
                 public void onSuccess() {
                     try {
+                        int reqHash = request.hashCode();
+                        Instant end = Instant.now();
+                        logger.time("[" + formatter.format(end) + "] Trans Filter: request processed - time took:" + (end.toEpochMilli() - start.toEpochMilli()) + "ms (" + reqHash + ")");
                         chain.filter(request, response);
+
                     } catch (Exception e) {
                         logger.error("Error in chain.filter callback: " + e.getMessage());
                     }
@@ -155,7 +171,4 @@ public class DeviceTranslationFilter implements PluginFilter {
 
     @Override
     public Boolean requiredBody() { return true; }
-
-    @Override
-    public Boolean requiredRespBody() { return true; }
 }

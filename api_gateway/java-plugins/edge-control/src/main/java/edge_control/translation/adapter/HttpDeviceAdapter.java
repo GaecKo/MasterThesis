@@ -15,11 +15,16 @@ import org.json.JSONObject;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
 public class HttpDeviceAdapter implements DeviceAdapter {
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm:ss.SSSS")
+            .withZone(ZoneId.systemDefault());
 
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -88,9 +93,13 @@ public class HttpDeviceAdapter implements DeviceAdapter {
         if (commandDefinition == null) {
             throw new IllegalOperation("Unknown command: " + commandName);
         }
-
+        int reqHash = request.hashCode();
+        Instant now = Instant.now();
+        logger.time("[" + formatter.format(now) + "] Http Adapter: request to be translated (" + reqHash + ")");
         JsonNode finalPayload = translationEngine.translate(commandDefinition, backendRequest);
-
+        Instant after = Instant.now();
+        logger.time("[" + formatter.format(after) + "] Http Adapter: request translated - time took:" + (after.toEpochMilli() - now.toEpochMilli()) + "ms (" + reqHash + ")");
+        logger.time("[" + formatter.format(after) + "] Http Adapter: request to be sent (" + reqHash + ")");
         HttpForgery.doRequestAsync(
                         commandDefinition.getMethod(),
                         commandDefinition.getEndpoint(),
@@ -109,6 +118,8 @@ public class HttpDeviceAdapter implements DeviceAdapter {
                         response.setStatusCode(500);
                         response.setBody("{\"error\":\"Error processing response\"}");
                     } finally {
+                        Instant end = Instant.now();
+                        logger.time("[" + formatter.format(end) + "] Http Adapter: request transmitted and res received - time took:" + (end.toEpochMilli() - after.toEpochMilli()) + "ms (" + reqHash + ")");
                         callback.onSuccess();
                     }
                 })

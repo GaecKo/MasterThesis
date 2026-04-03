@@ -16,6 +16,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalField;
 import java.util.Map;
 
 @Component
@@ -34,6 +38,9 @@ public class AuthFilter implements PluginFilter {
 
     private static final RequestHandler requestHandler =
             RequestHandler.getInstance();
+
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm:ss.SSSS")
+            .withZone(ZoneId.systemDefault());
 
     /**
      * Initializes the plugin and logs startup messages.
@@ -65,6 +72,11 @@ public class AuthFilter implements PluginFilter {
     public void filter(HttpRequest request,
                        HttpResponse response,
                        PluginFilterChain chain) {
+
+        int reqHash = request.hashCode();
+
+        Instant start = Instant.now();
+        logger.time("[" + formatter.format(start) + "] Auth Filter: request arrived (" + reqHash + ")");
 
         // notice about reached filter / route
         logger.debug("Incoming request in " + name() + ", index: " + chain.getIndex() + " | Path: " + request.getPath());
@@ -104,17 +116,23 @@ public class AuthFilter implements PluginFilter {
         logger.info("Authentication successful for API key: " + request.getHeader("apikey") + " | Result: " + gatewayId);
 
         JSONObject body = new JSONObject(request.getBody());
+
         if (gatewayId.startsWith("backend_")) {
             // Backend requests require authorization check
             if (authorizationManager.checkAuthorization(gatewayId, Document.parse(request.getBody()))) {
                 body.put("gatewayBackendId", gatewayId);
                 request.setBody(body.toString());
                 logger.info(gatewayId + " is authorized to perform the operation.");
+
+                Instant end = Instant.now();
+                logger.time("[" + formatter.format(end) + "] Auth Filter: request chained - time took:" + (end.toEpochMilli() - start.toEpochMilli()) + "ms (" + reqHash + ")");
+                // Continue APISIX chain
+                chain.filter(request, response);
             } else {
                 ExceptionHandler.handleException(response, new IllegalOperation("Unauthorized access"));
                 requestHandler.skipChain(request);
                 chain.filter(request, response);
-                return;
+
             }
         } else if (gatewayId.startsWith("device_")) {
             // Device requests are automatically forwarded to all available endpoints — no authorization check needed
@@ -128,10 +146,11 @@ public class AuthFilter implements PluginFilter {
             request.setBody(body.toString());
             logger.info(gatewayId + " is authorized to perform the operation.");
             logger.info(body.toString());
+            // Continue APISIX chain
+            chain.filter(request, response);
         }
 
-        // Continue APISIX chain
-        chain.filter(request, response);
+
     }
 
     /**
@@ -144,13 +163,4 @@ public class AuthFilter implements PluginFilter {
         return true;
     }
 
-    /**
-     * Indicates that the plugin requires the response body to function.
-     *
-     * @return true
-     */
-    @Override
-    public Boolean requiredRespBody() {
-        return true;
-    }
 }
