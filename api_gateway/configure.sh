@@ -27,6 +27,12 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/1 -H 'X-API-KEY: admin' -X PUT
 {
     "uri": "/command",
     "plugins": {
+        "client-control": { 
+            "_meta": {
+                "priority": 13500
+            },
+            "max_body_size" : 1000
+        },
         "ext-plugin-pre-req": {
             "conf" : [
                 {"name": "AuthFilter", "value": "{\"enable\":\"feature\"}"},
@@ -47,6 +53,12 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/2 -H 'X-API-KEY: admin' -X PUT
 {
     "uri": "/onboarding/translation",
     "plugins": {
+        "client-control": {
+            "_meta": {
+                "priority": 13500
+            },
+            "max_body_size" : 5000
+        },
         "jwt-auth": {
             "_meta": {
                 "priority": 13000
@@ -138,6 +150,12 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/4 -H 'X-API-KEY: admin' -X PUT
     "uri": "/onboarding/backend",
     "methods": ["POST", "PATCH", "DELETE"],
     "plugins": {
+        "client-control": {
+            "_meta": {
+                "priority": 13500
+            },
+            "max_body_size" : 1000
+        },
         "jwt-auth": {
             "_meta": {
                 "priority": 13000
@@ -171,6 +189,12 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/5 -H 'X-API-KEY: admin' -X PUT
     "uri": "/onboarding/backendAuthZ",
     "methods": ["POST", "PATCH", "DELETE"],
     "plugins": {
+        "client-control": {
+            "_meta": {
+                "priority": 13500
+            },
+            "max_body_size" : 2000
+        },
         "jwt-auth": {
             "_meta": {
                 "priority": 13000
@@ -204,6 +228,12 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/6 -H 'X-API-KEY: admin' -X PUT
     "uri": "/onboarding/device",
     "methods": ["POST", "PATCH", "DELETE"],
     "plugins": {
+        "client-control": {
+            "_meta": {
+                "priority": 13500
+            },
+            "max_body_size" : 4000
+        },
         "jwt-auth": {
             "_meta": {
                 "priority": 13000
@@ -237,6 +267,12 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/7 -H 'X-API-KEY: admin' -X PUT
     "uri": "/onboarding/deviceAuthZ",
     "methods": ["POST", "PATCH", "DELETE"],
     "plugins": {
+        "client-control": {
+            "_meta": {
+                "priority": 13500
+            },
+            "max_body_size" : 1000
+        },
         "jwt-auth": {
             "_meta": {
                 "priority": 13000
