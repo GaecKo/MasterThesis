@@ -30,9 +30,9 @@
 
 ## Rate limitation
 > **deadline**: 06/04 (Elie)
-* [ ] Check how plugin works
-* [ ] Check what policies to use
-* [ ] Implement
+* [X] Check how plugin works
+* [X] Check what policies to use
+* [X] Implement
 
 ## Onboarding
 > **deadline**: 16/03 (Elie)
