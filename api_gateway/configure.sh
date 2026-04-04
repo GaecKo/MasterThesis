@@ -58,7 +58,7 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/1 -H 'X-API-KEY: admin' -X PUT
             },
             "max_body_size" : 1000
         },
-        "ext-plugin-pre-req": {
+        "ext-plugin-post-req": {
             "_meta": {
                 "priority": 12000
             },
@@ -99,7 +99,7 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/2 -H 'X-API-KEY: admin' -X PUT
                 "return function(conf, ctx)\n  local consumer = ctx.consumer\n  if not consumer then ngx.status = 401 ngx.say(\"401\") ngx.exit(401) end\n  local allowed = {[\"gateway-admin\"]=true,[\"device-admin\"]=true}\n  if not allowed[consumer.username] then ngx.status = 403 ngx.say(\"{\\\"message\\\":\\\"Forbidden\\\"}\") ngx.exit(403) end\nend"
             ]
         },
-        "ext-plugin-pre-req": {
+        "ext-plugin-post-req": {
             "_meta": {
                 "priority": 12000
             },
@@ -196,7 +196,7 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/4 -H 'X-API-KEY: admin' -X PUT
                 "return function(conf, ctx)\n  local consumer = ctx.consumer\n  if not consumer then ngx.status = 401 ngx.say(\"401\") ngx.exit(401) end\n  local allowed = {[\"gateway-admin\"]=true,[\"backend-admin\"]=true}\n  if not allowed[consumer.username] then ngx.status = 403 ngx.say(\"{\\\"message\\\":\\\"Forbidden\\\"}\") ngx.exit(403) end\nend"
             ]
         },
-        "ext-plugin-pre-req": {
+        "ext-plugin-post-req": {
             "_meta": {
                 "priority": 12000
             },
@@ -235,7 +235,7 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/5 -H 'X-API-KEY: admin' -X PUT
                 "return function(conf, ctx)\n  local consumer = ctx.consumer\n  if not consumer then ngx.status = 401 ngx.say(\"401\") ngx.exit(401) end\n  local allowed = {[\"gateway-admin\"]=true,[\"backend-admin\"]=true,[\"device-admin\"]=true}\n  if not allowed[consumer.username] then ngx.status = 403 ngx.say(\"{\\\"message\\\":\\\"Forbidden\\\"}\") ngx.exit(403) end\nend"
             ]
         },
-        "ext-plugin-pre-req": {
+        "ext-plugin-post-req": {
             "_meta": {
                 "priority": 12000
             },
@@ -274,7 +274,7 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/6 -H 'X-API-KEY: admin' -X PUT
                 "return function(conf, ctx)\n  local consumer = ctx.consumer\n  if not consumer then ngx.status = 401 ngx.say(\"401\") ngx.exit(401) end\n  local allowed = {[\"gateway-admin\"]=true,[\"device-admin\"]=true}\n  if not allowed[consumer.username] then ngx.status = 403 ngx.say(\"{\\\"message\\\":\\\"Forbidden\\\"}\") ngx.exit(403) end\nend"
             ]
         },
-        "ext-plugin-pre-req": {
+        "ext-plugin-post-req": {
             "_meta": {
                 "priority": 12000
             },
@@ -313,7 +313,7 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/7 -H 'X-API-KEY: admin' -X PUT
                 "return function(conf, ctx)\n  local consumer = ctx.consumer\n  if not consumer then ngx.status = 401 ngx.say(\"401\") ngx.exit(401) end\n  local allowed = {[\"gateway-admin\"]=true,[\"device-admin\"]=true,[\"backend-admin\"]=true}\n  if not allowed[consumer.username] then ngx.status = 403 ngx.say(\"{\\\"message\\\":\\\"Forbidden\\\"}\") ngx.exit(403) end\nend"
             ]
         },
-        "ext-plugin-pre-req": {
+        "ext-plugin-post-req": {
             "_meta": {
                 "priority": 12000
             },
@@ -334,7 +334,7 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/8 -H 'X-API-KEY: admin' -X PUT
     "uri": "/commands",
     "methods": ["GET"],
     "plugins": {
-        "ext-plugin-pre-req": {
+        "ext-plugin-post-req": {
             "conf" : [
                 {"name": "Onboarding", "value": "{\"enable\":\"feature\"}"}
             ]
@@ -352,7 +352,7 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/9 -H 'X-API-KEY: admin' -X PUT
     "uri": "/backendForward",
     "methods": ["POST"],
     "plugins": {
-        "ext-plugin-pre-req": {
+        "ext-plugin-post-req": {
             "conf" : [
                 {"name": "AuthFilter", "value": "{\"enable\":\"feature\"}"},
                 {"name": "BackendForwarder", "value": "{\"enable\":\"feature\"}"}
