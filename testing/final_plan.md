@@ -101,7 +101,7 @@ The API Gateway forwards request to the plugin, which verifies AuthN/AuthZ, then
 | :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | :--------------: |
 | T           | T              | T                   | T               | T                   | T                |
 
-### Extra scenario: per APISIX component time analysis
+### Extra scenario 1: per APISIX component time analysis
 Indicate the time taken per each component
 > Extra metric: Component timing: ms per component 
 | API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Security Enabled |
@@ -143,3 +143,7 @@ To remove the overhead of end device performances, we don't actually do the fina
 | Device Mockup |
 | :-----------: |
 | T             |
+
+## Extra context: Translation complexity analysis
+Test temporal and spatial complexity of translation 
+
