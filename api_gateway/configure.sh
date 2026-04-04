@@ -52,6 +52,20 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/1 -H 'X-API-KEY: admin' -X PUT
 {
     "uri": "/command",
     "plugins": {
+        "request-validation": {
+            "_meta": {
+                "priority": 14000
+            },
+            "body_schema": {
+                "type": "object",
+                "required": ["gatewayDeviceId", "command", "params"],
+                "properties": {
+                    "gatewayDeviceId": { "type": "string" },
+                    "command": { "type": "string" },
+                    "params": { "type": "object" }
+                }
+            }
+        },
         "client-control": { 
             "_meta": {
                 "priority": 13500
