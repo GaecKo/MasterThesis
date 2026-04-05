@@ -34,6 +34,7 @@ The metrics to observe, **can depend on the context / scenario**:
 * Throughput (req/s): Achieved request per second
 * Component timing: ms per component 
 * System metrics: RAM usage, CPU usage 
+* KB sent, KB received (devices)
 
 ## Contexts
 
@@ -50,6 +51,7 @@ In this context, we want to measure the effect of each architecture component on
 * Latency (ms): mean, pX with X = {50, 90, 95, 99, 99.9}, std dev (standard deviation) / Variance
 * Throughput (req/s): Achieved request per second
 * System metrics: RAM usage, CPU usage 
+* KB sent, KB received (devices)
 
 #### Scenario A: No API Gateway 
 Direct communication between a backend and a device (will basically show the forgery and network latency)
@@ -136,6 +138,8 @@ We test the full Gateway with real communication to 1 or more devices running on
 | Device Mockup |
 | :-----------: |
 | F             |
+
+> additional metric for this scenario: KB sent, KB received
 
 ### Scenario 2: Full Gateway with mocked devices
 To remove the overhead of end device performances, we don't actually do the final request to the device, rather we mock a 200 / success result 
