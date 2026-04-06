@@ -51,6 +51,7 @@ info "Setting route /command with DeviceTranslation plugin enabled..."
 curl -i http://127.0.0.1:9180/apisix/admin/routes/1 -H 'X-API-KEY: admin' -X PUT -d '
 {
     "uri": "/command",
+    "methods": ["POST"],
     "plugins": {
        "client-control": { 
             "_meta": {
@@ -94,6 +95,7 @@ info "Setting route /onboarding/translation with DeviceConfig plugin enabled..."
 curl -i http://127.0.0.1:9180/apisix/admin/routes/2 -H 'X-API-KEY: admin' -X PUT -d '
 {
     "uri": "/onboarding/translation",
+    "methods": ["POST", "GET", "DELETE"],
     "plugins": {
         "client-control": {
             "_meta": {
