@@ -366,7 +366,16 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/9 -H 'X-API-KEY: admin' -X PUT
     "uri": "/backendForward",
     "methods": ["POST"],
     "plugins": {
+        "client-control": { 
+            "_meta": {
+                "priority": 14000
+            },
+            "max_body_size" : 1000
+        },
         "ext-plugin-post-req": {
+            "_meta": {
+                "priority": 13500
+            },
             "conf" : [
                 {"name": "AuthFilter", "value": "{\"enable\":\"feature\"}"},
                 {"name": "BackendForwarder", "value": "{\"enable\":\"feature\"}"}
