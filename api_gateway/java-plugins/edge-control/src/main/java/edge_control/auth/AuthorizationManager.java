@@ -109,4 +109,12 @@ public class AuthorizationManager {
         return endpointsMap;
     }
 
+    /**
+     * Returns the callback endpoint for a given backend gateway ID.
+     * This keeps AuthRegistry usage encapsulated within the auth layer.
+     */
+    public String getCallbackEndpoint(String gatewayBackendId) {
+        return authRegistry.getCallbackEndpoint(gatewayBackendId);
+    }
+
 }

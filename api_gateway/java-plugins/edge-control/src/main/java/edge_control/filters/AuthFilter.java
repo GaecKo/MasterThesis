@@ -19,7 +19,6 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalField;
 import java.util.Map;
 
 @Component
@@ -120,7 +119,10 @@ public class AuthFilter implements PluginFilter {
         if (gatewayId.startsWith("backend_")) {
             // Backend requests require authorization check
             if (authorizationManager.checkAuthorization(gatewayId, Document.parse(request.getBody()))) {
-                body.put("gatewayBackendId", gatewayId);
+                String callback = authorizationManager.getCallbackEndpoint(gatewayId);
+                if (callback != null) {
+                    body.put("callbackEndpoint", callback);
+                }
                 request.setBody(body.toString());
                 logger.info(gatewayId + " is authorized to perform the operation.");
 
