@@ -101,9 +101,9 @@ public class DeviceTranslationFilter implements PluginFilter {
             }
 
             String gatewayDeviceId  = config.getString("gatewayDeviceId");
-            String gatewayBackendId = config.getString("gatewayBackendId");
-            String callbackEndpoint = AuthRegistry.getInstance().getCallbackEndpoint(gatewayBackendId);
-            config.remove("gatewayBackendId");
+            String callbackEndpoint = config.getString("callbackEndpoint");
+            config.remove("callbackEndpoint");
+
             request.setBody(config.toString());
             DeviceAdapter adapter = deviceTranslationManager.get(gatewayDeviceId);
 
@@ -139,7 +139,7 @@ public class DeviceTranslationFilter implements PluginFilter {
                             response.setStatusCode(202);
                             response.setBody("{\"status\":\"queued\","
                                     + "\"message\":\"Device unreachable — request queued for retry\","
-                                    + "\"deviceId\":\"" + gatewayDeviceId + ", \"deviceId\":\"" + queuedRequestId + "\"\"}");
+                                    + "\"deviceId\":\"" + gatewayDeviceId + "\", \"queuedRequestId\":\"" + queuedRequestId + "\"}");
                             response.setHeader("MODIFIED-BY", "EdgeControl/Queuing");
                             logger.info("Request queued for device " + gatewayDeviceId
                                     + ": " + reason);
