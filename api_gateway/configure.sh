@@ -354,7 +354,7 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/8 -H 'X-API-KEY: admin' -X PUT
             "_meta": {
                 "priority": 14000
             },
-            "max_body_size" : 0
+            "max_body_size" : 1
         },
         "ext-plugin-post-req": {
             "_meta": {
