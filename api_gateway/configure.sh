@@ -350,7 +350,16 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/8 -H 'X-API-KEY: admin' -X PUT
     "uri": "/commands",
     "methods": ["GET"],
     "plugins": {
+        "client-control": { 
+            "_meta": {
+                "priority": 14000
+            },
+            "max_body_size" : 0
+        },
         "ext-plugin-post-req": {
+            "_meta": {
+                "priority": 13500
+            },
             "conf" : [
                 {"name": "Onboarding", "value": "{\"enable\":\"feature\"}"}
             ]
