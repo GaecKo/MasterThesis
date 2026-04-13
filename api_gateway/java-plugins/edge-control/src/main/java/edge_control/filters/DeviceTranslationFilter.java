@@ -101,8 +101,15 @@ public class DeviceTranslationFilter implements PluginFilter {
             }
 
             String gatewayDeviceId  = config.getString("gatewayDeviceId");
-            String callbackEndpoint = config.getString("callbackEndpoint");
-            config.remove("callbackEndpoint");
+
+            String callbackEndpoint;
+            if (config.has("callbackEndpoint")) {
+                callbackEndpoint = config.getString("callbackEndpoint");
+                config.remove("callbackEndpoint");
+            } else {
+                callbackEndpoint = null;
+            }
+
 
             request.setBody(config.toString());
             DeviceAdapter adapter = deviceTranslationManager.get(gatewayDeviceId);
