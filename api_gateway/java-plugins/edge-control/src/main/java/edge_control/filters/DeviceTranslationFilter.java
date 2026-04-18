@@ -81,7 +81,7 @@ public class DeviceTranslationFilter implements PluginFilter {
 
         int reqHash = request.hashCode();
         Instant start = Instant.now();
-        logger.time("[" + TIMING_FORMATTER.format(start) + "] Trans Filter: request arrived, wasn't skipped (" + reqHash + ")");
+        logger.time("Trans Filter: request arrived, wasn't skipped (" + reqHash + ")");
 
         try {
             if (request.getPath().startsWith("/command")
@@ -156,7 +156,7 @@ public class DeviceTranslationFilter implements PluginFilter {
                 public void onSuccess() {
                     try {
                         Instant end = Instant.now();
-                        logger.time("[" + TIMING_FORMATTER.format(end) + "] Trans Filter: request processed - time took:"
+                        logger.time("Trans Filter: request processed - time took:"
                                 + (end.toEpochMilli() - start.toEpochMilli()) + "ms (" + request.hashCode() + ")");
                         // Response already set by the adapter — continue the chain
                         chain.filter(request, response);

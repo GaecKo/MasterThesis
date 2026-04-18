@@ -4,6 +4,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -12,6 +15,9 @@ import java.util.random.RandomGenerator;
 public final class EdgeControlLogger {
 
     private static EdgeControlLogger instance;
+
+    private static final DateTimeFormatter TIMING_FORMATTER =
+            DateTimeFormatter.ofPattern("hh:mm:ss.SSSS").withZone(ZoneId.systemDefault());
 
     private static final String LOG_DIR =
             "/usr/local/apisix/java-plugins/edge-control/";
@@ -73,7 +79,8 @@ public final class EdgeControlLogger {
     }
 
     public void time(String message) {
-        log(message);
+        Instant now = Instant.now();
+        log("[" + TIMING_FORMATTER.format(now) + "] " + message);
     }
 
     public void info(String message) {

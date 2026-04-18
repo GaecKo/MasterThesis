@@ -364,14 +364,14 @@ public class MqttDeviceAdapter implements DeviceAdapter {
 
         int reqHash = request.hashCode();
         Instant translateStart = Instant.now();
-        logger.time("[" + TIMING_FORMATTER.format(translateStart) + "] Mqtt Adapter: request to be translated (" + reqHash + ")");
+        logger.time("Mqtt Adapter: request to be translated (" + reqHash + ")");
 
         JsonNode finalPayload = translationEngine.translate(commandDefinition, backendRequest);
 
         Instant translateEnd = Instant.now();
-        logger.time("[" + TIMING_FORMATTER.format(translateEnd) + "] Mqtt Adapter: request translated - time took:"
+        logger.time("Mqtt Adapter: request translated - time took:"
                 + (translateEnd.toEpochMilli() - translateStart.toEpochMilli()) + "ms (" + reqHash + ")");
-        logger.time("[" + TIMING_FORMATTER.format(translateEnd) + "] Mqtt Adapter: request to be sent (" + reqHash + ")");
+        logger.time("Mqtt Adapter: request to be sent (" + reqHash + ")");
 
         // Build the MQTT envelope with a correlationId so the device can echo it back in its ack
         String correlationId = UUID.randomUUID().toString();
@@ -437,7 +437,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                     } finally {
                         pendingResponses.remove(correlationId);
                         Instant end = Instant.now();
-                        logger.time("[" + TIMING_FORMATTER.format(end) + "] Mqtt Adapter: request transmitted and res received - time took:"
+                        logger.time("Mqtt Adapter: request transmitted and res received - time took:"
                                 + (end.toEpochMilli() - translateEnd.toEpochMilli()) + "ms (" + reqHash + ")");
                         callback.onSuccess();
                     }

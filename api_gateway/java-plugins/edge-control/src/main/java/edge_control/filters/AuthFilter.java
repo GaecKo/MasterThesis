@@ -74,7 +74,7 @@ public class AuthFilter implements PluginFilter {
 
         int reqHash = request.hashCode();
         Instant start = Instant.now();
-        logger.time("[" + TIMING_FORMATTER.format(start) + "] Auth Filter: request arrived (" + reqHash + ")");
+        logger.time("Auth Filter: request arrived (" + reqHash + ")");
         logger.debug("Incoming request in " + name() + ", index: " + chain.getIndex() + " | Path: " + request.getPath());
 
         requestHandler.register(request);
@@ -128,7 +128,7 @@ public class AuthFilter implements PluginFilter {
                 logger.info(gatewayId + " is authorized to perform the operation.");
 
                 Instant end = Instant.now();
-                logger.time("[" + TIMING_FORMATTER.format(end) + "] Auth Filter: request chained - time took:"
+                logger.time("Auth Filter: request chained - time took:"
                         + (end.toEpochMilli() - start.toEpochMilli()) + "ms (" + reqHash + ")");
                 chain.filter(request, response);
             } else {

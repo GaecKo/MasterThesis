@@ -142,14 +142,14 @@ public class HttpDeviceAdapter implements DeviceAdapter {
 
         int reqHash = request.hashCode();
         Instant translateStart = Instant.now();
-        logger.time("[" + TIMING_FORMATTER.format(translateStart) + "] Http Adapter: request to be translated (" + reqHash + ")");
+        logger.time("Http Adapter: request to be translated (" + reqHash + ")");
 
         JsonNode finalPayload = translationEngine.translate(commandDefinition, backendRequest);
 
         Instant translateEnd = Instant.now();
-        logger.time("[" + TIMING_FORMATTER.format(translateEnd) + "] Http Adapter: request translated - time took:"
+        logger.time("Http Adapter: request translated - time took:"
                 + (translateEnd.toEpochMilli() - translateStart.toEpochMilli()) + "ms (" + reqHash + ")");
-        logger.time("[" + TIMING_FORMATTER.format(translateEnd) + "] Http Adapter: request to be sent (" + reqHash + ")");
+        logger.time("Http Adapter: request to be sent (" + reqHash + ")");
 
         HttpForgery.doRequestAsync(
                         commandDefinition.getMethod(),
@@ -170,7 +170,7 @@ public class HttpDeviceAdapter implements DeviceAdapter {
                         response.setBody("{\"error\":\"Error processing response\"}");
                     } finally {
                         Instant end = Instant.now();
-                        logger.time("[" + TIMING_FORMATTER.format(end) + "] Http Adapter: request transmitted and res received - time took:"
+                        logger.time("Http Adapter: request transmitted and res received - time took:"
                                 + (end.toEpochMilli() - translateEnd.toEpochMilli()) + "ms (" + reqHash + ")");
                         callback.onSuccess();
                     }
