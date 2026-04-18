@@ -2,32 +2,23 @@ package edge_control.filters;
 
 import edge_control.RequestHandler;
 import edge_control.auth.AuthenticationManager;
-import edge_control.auth.AuthorizationManager;
-import edge_control.backend.BackendManager;
-import edge_control.device.DeviceManager;
-import edge_control.exceptions.CorruptedConfiguration;
+import edge_control.auth.backend.BackendManager;
+import edge_control.auth.device.DeviceManager;
 import edge_control.exceptions.ExceptionHandler;
 import edge_control.exceptions.IllegalOperation;
-import edge_control.exceptions.OperationNotSupported;
 import edge_control.logger.EdgeControlLogger;
 import org.apache.apisix.plugin.runner.HttpRequest;
 import org.apache.apisix.plugin.runner.HttpResponse;
 import org.apache.apisix.plugin.runner.filter.PluginFilter;
 import org.apache.apisix.plugin.runner.filter.PluginFilterChain;
 import org.bson.Document;
-import org.bson.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * APISIX plugin filter that handles protocol translation for devices.
- *
- * Responsibilities:
- * - Routes requests to the appropriate device adapters or management endpoints.
- * - Handles health checks and device management operations.
- * - Provides structured logging and error handling.
- * - Marks requests as processed and continues the APISIX filter chain.
+ * APISIX plugin filter for onboarding backends, devices, and authorization configs.
+ * Routes POST/PATCH/DELETE to the appropriate manager based on the request path suffix.
  */
 @Component
 public class OnboardingFilter implements PluginFilter {
@@ -35,158 +26,113 @@ public class OnboardingFilter implements PluginFilter {
     private static final Logger API_LOGGER =
             LoggerFactory.getLogger(OnboardingFilter.class);
 
-    private final EdgeControlLogger logger =
-            EdgeControlLogger.getInstance();
+    private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
-    private final BackendManager backendManager =
-            BackendManager.getInstance();
+    private static final BackendManager backendManager = BackendManager.getInstance();
 
-    private final DeviceManager deviceManager =
-            DeviceManager.getInstance();
+    private static final DeviceManager deviceManager = DeviceManager.getInstance();
 
-    private final AuthenticationManager authenticationManager =
+    private static final AuthenticationManager authenticationManager =
             AuthenticationManager.getInstance();
 
-    private static final RequestHandler requestHandler =
-            RequestHandler.getInstance();
+    private static final RequestHandler requestHandler = RequestHandler.getInstance();
 
-    /**
-     * Initializes the plugin and logs startup messages.
-     */
     OnboardingFilter() {
         logger.info("Onboarding Filter initialized");
         API_LOGGER.warn("Onboarding Filter is running");
     }
 
-    /**
-     * Returns the name of this plugin filter.
-     *
-     * @return plugin name
-     */
     @Override
     public String name() {
         return "Onboarding";
     }
 
     /**
-     * Main filter method invoked by APISIX.
-     * Routes requests to onboarding for adding a backend or a device, but also for configuring the authorizations.
+     * Routes inbound requests to the appropriate handler based on HTTP method and path suffix.
+     * All exceptions from handlers are caught centrally and mapped to HTTP error responses.
      *
-     * @param request the incoming HTTP request
-     * @param response the HTTP response to populate
-     * @param chain the APISIX plugin filter chain
+     * @param request  Inbound HTTP request
+     * @param response HTTP response to populate
+     * @param chain    APISIX filter chain
      */
     @Override
     public void filter(HttpRequest request,
                        HttpResponse response,
                        PluginFilterChain chain) {
+
         logger.debug("Incoming request in " + name() + ", index: " + chain.getIndex());
-        // register request
+
         requestHandler.register(request);
 
-        // check if this filter should skip request
+        // A previous filter may have marked this request to be skipped
         if (requestHandler.shouldSkipRequest(request, chain)) {
             chain.filter(request, response);
             return;
         }
 
-        switch (request.getMethod()){
-            case POST -> {
-                try {
+        try {
+            // Route based on method first, then path suffix
+            switch (request.getMethod()) {
+                case POST -> {
                     if (request.getPath().endsWith("/backend")) {
-                        logger.debug("addBackend reached");
-                        this.handleBackendCommunicationConfig(request,response, "POST");
-
+                        handleBackendCommunicationConfig(request, response, "POST");
                     } else if (request.getPath().endsWith("/backendAuthZ")) {
-                        logger.debug("authorization backend reached");
-                        this.handleBackendAuthorizationConfig(request,response, "POST");
-
+                        handleBackendAuthorizationConfig(request, response, "POST");
                     } else if (request.getPath().endsWith("/device")) {
-                        logger.debug("addDevice reached");
-                        this.handleDeviceCommunicationConfig(request,response, "POST");
-
+                        handleDeviceCommunicationConfig(request, response, "POST");
                     } else if (request.getPath().endsWith("/deviceAuthZ")) {
-                        logger.debug("authorization device reached");
-                        this.handleDeviceAuthorizationConfig(request,response, "POST");
-
+                        handleDeviceAuthorizationConfig(request, response, "POST");
                     }
-                } catch (Exception e) {
-                    ExceptionHandler.handleException(response, e);
                 }
-            } case PATCH -> {
-                try {
+                case PATCH -> {
                     if (request.getPath().endsWith("/backend")) {
-                        logger.debug("patchBackend reached");
-                        this.handleBackendCommunicationConfig(request, response, "PATCH");
-
+                        handleBackendCommunicationConfig(request, response, "PATCH");
                     } else if (request.getPath().endsWith("/backendAuthZ")) {
-                        logger.debug("patch authorization backend reached");
-                        this.handleBackendAuthorizationConfig(request,response, "PATCH");
-
-                    } else if (request.getPath().endsWith("/device")){
-                        logger.debug("patchDevice reached");
-                        this.handleDeviceCommunicationConfig(request,response, "PATCH");
-
-                    } else if (request.getPath().endsWith("/deviceAuthZ")) {
-                        logger.debug("patch authorization device reached");
-                        this.handleDeviceAuthorizationConfig(request,response, "PATCH");
-
-                    }
-                } catch (Exception e) {
-                    ExceptionHandler.handleException(response, e);
-                }
-            } case DELETE -> {
-                try {
-                    if (request.getPath().endsWith("/backend")) {
-                        logger.debug("deleteBackend reached");
-                        this.handleBackendCommunicationConfig(request,response, "DELETE");
-
-                    } else if (request.getPath().endsWith("/backendAuthZ")) {
-                        logger.debug("delete authorization backend reached");
-                        this.handleBackendAuthorizationConfig(request,response, "DELETE");
-
-                    } else if (request.getPath().endsWith("/deviceAuthZ")) {
-                        logger.debug("delete authorization device reached");
-                        this.handleDeviceAuthorizationConfig(request,response, "DELETE");
-
+                        handleBackendAuthorizationConfig(request, response, "PATCH");
                     } else if (request.getPath().endsWith("/device")) {
-                        logger.debug("deleteDevice reached");
-                        this.handleDeviceCommunicationConfig(request,response, "DELETE");
-
+                        handleDeviceCommunicationConfig(request, response, "PATCH");
+                    } else if (request.getPath().endsWith("/deviceAuthZ")) {
+                        handleDeviceAuthorizationConfig(request, response, "PATCH");
                     }
-                } catch (Exception e) {
-                    ExceptionHandler.handleException(response, e);
                 }
-
-            } case GET -> {
-                try {
+                case DELETE -> {
+                    if (request.getPath().endsWith("/backend")) {
+                        handleBackendCommunicationConfig(request, response, "DELETE");
+                    } else if (request.getPath().endsWith("/backendAuthZ")) {
+                        handleBackendAuthorizationConfig(request, response, "DELETE");
+                    } else if (request.getPath().endsWith("/device")) {
+                        handleDeviceCommunicationConfig(request, response, "DELETE");
+                    } else if (request.getPath().endsWith("/deviceAuthZ")) {
+                        handleDeviceAuthorizationConfig(request, response, "DELETE");
+                    }
+                }
+                case GET -> {
                     if (request.getPath().endsWith("/commands")) {
-                        logger.debug("getCommands reached");
-                        this.handleBackendAuthorizedCommands(request, response);
+                        handleBackendAuthorizedCommands(request, response);
                     }
-                } catch (Exception e) {
-                    ExceptionHandler.handleException(response, e);
                 }
+                default -> logger.debug("Received unsupported HTTP method: " + request.getMethod());
             }
-            default -> {
-                logger.debug("Received unsupported HTTP method: " + request.getMethod());
-            }
+        } catch (Exception e) {
+            // Central catch — all handler exceptions are mapped to HTTP error responses here
+            ExceptionHandler.handleException(response, e);
         }
 
-
-        // Continue APISIX chain
         chain.filter(request, response);
     }
 
+    // | ================= Communication config handlers ================= |
+
     /**
-     * Handles the creation of a new backend based on the request body.
+     * Handles POST/PATCH/DELETE for backend communication config.
+     * On DELETE, also removes the backend from all device authorization configs.
      *
-     * @param request the incoming HTTP request containing the backend configuration
-     * @param response the HTTP response to populate
-     * @throws CorruptedConfiguration if the configuration is invalid
+     * @param method "POST", "PATCH", or "DELETE"
      */
-    private void handleBackendCommunicationConfig(HttpRequest request, HttpResponse response, String method) throws Exception {
-        Document gatewayBackendInfo = new Document();
+    private void handleBackendCommunicationConfig(HttpRequest request,
+                                                  HttpResponse response,
+                                                  String method) throws Exception {
+        Document gatewayBackendInfo  = new Document();
         Document gatewayDeviceAuthzInfo = new Document();
 
         if (method.equals("POST")) {
@@ -195,14 +141,19 @@ public class OnboardingFilter implements PluginFilter {
             gatewayBackendInfo = backendManager.updateBackend(request.getBody());
         } else if (method.equals("DELETE")) {
             gatewayBackendInfo = backendManager.deleteBackend(request.getBody());
+            // Also clean up any device authorization entries referencing this backend
             gatewayDeviceAuthzInfo = deviceManager.removeAllBackendsFromAuthorization(request.getBody());
         }
 
         Document resp = new Document();
-        if (gatewayDeviceAuthzInfo.isEmpty() && !gatewayBackendInfo.isEmpty()){
+        if (gatewayDeviceAuthzInfo.isEmpty() && !gatewayBackendInfo.isEmpty()) {
+            // Simple operation (no cascading authz cleanup) — return backend result directly
             response.setBody(gatewayBackendInfo.toJson());
             response.setStatusCode(200);
-        } else if (!gatewayBackendInfo.isEmpty() && (gatewayBackendInfo.getString("status").equals("failure") || gatewayBackendInfo.getString("status").equals("partial_failure")  || gatewayDeviceAuthzInfo.getString("status").equals("failure"))) {
+        } else if (!gatewayBackendInfo.isEmpty()
+                && (gatewayBackendInfo.getString("status").equals("failure")
+                || gatewayBackendInfo.getString("status").equals("partial_failure")
+                || gatewayDeviceAuthzInfo.getString("status").equals("failure"))) {
             resp.put("status", "failure");
             resp.put("message", gatewayBackendInfo.getString("message"));
             response.setStatusCode(400);
@@ -219,56 +170,58 @@ public class OnboardingFilter implements PluginFilter {
     }
 
     /**
-     * Handles the configuration of backend authorization based on the request body.
+     * Handles POST/PATCH/DELETE for backend authorization config.
      *
-     * @param request the incoming HTTP request containing the authorization configuration
-     * @param response the HTTP response to populate
-     * @throws CorruptedConfiguration if the configuration is invalid
+     * @param method "POST", "PATCH", or "DELETE"
      */
-    private void handleBackendAuthorizationConfig(HttpRequest request, HttpResponse response, String method) throws Exception {
+    private void handleBackendAuthorizationConfig(HttpRequest request,
+                                                  HttpResponse response,
+                                                  String method) throws Exception {
         Document resp = new Document();
-        if (method.equals("POST")){
+        if (method.equals("POST")) {
             resp = backendManager.addBackendAuthorizationConfig(request.getBody());
-        } else if (method.equals("PATCH")){
+        } else if (method.equals("PATCH")) {
             resp = backendManager.updateBackendAuthorizationConfig(request.getBody());
-        } else if (method.equals("DELETE")){
+        } else if (method.equals("DELETE")) {
             resp = backendManager.deleteBackendAuthorizationConfig(request.getBody());
         }
 
-        if (resp.get("status").equals("success")){
-            response.setStatusCode(200);
-        } else {
-            response.setStatusCode(400);
-        }
+        response.setStatusCode(resp.get("status").equals("success") ? 200 : 400);
         response.setBody(resp.toJson());
         requestHandler.skipChain(request);
     }
 
     /**
-     * Handles the creation of a new device based on the request body.
+     * Handles POST/PATCH/DELETE for device communication config.
+     * On DELETE, also removes the device from all backend authorization configs.
      *
-     * @param request the incoming HTTP request containing the device configuration
-     * @param response the HTTP response to populate
-     * @throws CorruptedConfiguration if the configuration is invalid
+     * @param method "POST", "PATCH", or "DELETE"
      */
-    private void handleDeviceCommunicationConfig(HttpRequest request, HttpResponse response, String method) throws Exception {
-        Document gatewayDeviceInfo = new Document();
+    private void handleDeviceCommunicationConfig(HttpRequest request,
+                                                 HttpResponse response,
+                                                 String method) throws Exception {
+        Document gatewayDeviceInfo      = new Document();
         Document gatewayBackendAuthzInfo = new Document();
 
-        if (method.equals("POST")){
+        if (method.equals("POST")) {
             gatewayDeviceInfo = deviceManager.createDevice(request.getBody());
-        } else if (method.equals("PATCH")){
+        } else if (method.equals("PATCH")) {
             gatewayDeviceInfo = deviceManager.updateDevice(request.getBody());
-        } else if (method.equals("DELETE")){
+        } else if (method.equals("DELETE")) {
             gatewayDeviceInfo = deviceManager.deleteDevice(request.getBody());
+            // Also clean up any backend authorization entries referencing this device
             gatewayBackendAuthzInfo = backendManager.removeAllDevicesFromAuthorization(request.getBody());
         }
 
         Document resp = new Document();
-        if (gatewayBackendAuthzInfo.isEmpty() && !gatewayDeviceInfo.isEmpty()){
+        if (gatewayBackendAuthzInfo.isEmpty() && !gatewayDeviceInfo.isEmpty()) {
+            // Simple operation (no cascading authz cleanup) — return device result directly
             response.setBody(gatewayDeviceInfo.toJson());
             response.setStatusCode(200);
-        } else if (!gatewayDeviceInfo.isEmpty() && (gatewayDeviceInfo.getString("status").equals("failure") || gatewayDeviceInfo.getString("status").equals("partial_failure")  || gatewayBackendAuthzInfo.getString("status").equals("failure"))) {
+        } else if (!gatewayDeviceInfo.isEmpty()
+                && (gatewayDeviceInfo.getString("status").equals("failure")
+                || gatewayDeviceInfo.getString("status").equals("partial_failure")
+                || gatewayBackendAuthzInfo.getString("status").equals("failure"))) {
             resp.put("status", "failure");
             resp.put("message", gatewayDeviceInfo.getString("message"));
             response.setStatusCode(400);
@@ -285,69 +238,59 @@ public class OnboardingFilter implements PluginFilter {
     }
 
     /**
-     * Handles the configuration of device authorization based on the request body.
+     * Handles POST/PATCH/DELETE for device authorization config.
      *
-     * @param request the incoming HTTP request containing the authorization configuration
-     * @param response the HTTP response to populate
-     * @throws CorruptedConfiguration if the configuration is invalid
+     * @param method "POST", "PATCH", or "DELETE"
      */
-    private void handleDeviceAuthorizationConfig(HttpRequest request, HttpResponse response, String method) throws Exception {
+    private void handleDeviceAuthorizationConfig(HttpRequest request,
+                                                 HttpResponse response,
+                                                 String method) throws Exception {
         Document resp = new Document();
-        if (method.equals("POST")){
+        if (method.equals("POST")) {
             resp = deviceManager.addDeviceAuthorizationConfig(request.getBody());
         } else if (method.equals("PATCH")) {
             resp = deviceManager.updateDeviceAuthorizationConfig(request.getBody());
-        } else if (method.equals("DELETE")){
+        } else if (method.equals("DELETE")) {
             resp = deviceManager.deleteDeviceAuthorizationConfig(request.getBody());
         }
 
-        if (resp.get("status").equals("success")){
-            response.setStatusCode(200);
-        } else {
-            response.setStatusCode(400);
-        }
+        response.setStatusCode(resp.get("status").equals("success") ? 200 : 400);
         response.setBody(resp.toJson());
         requestHandler.skipChain(request);
     }
 
-    /**
-     * Handles the retrieval of authorized commands and params of all devices of a backend based on the request body.
-     * @param request the incoming HTTP request containing the backend ID
-     * @param response the HTTP response to populate
-     * @throws CorruptedConfiguration if the configuration is invalid
-     */
-    private void handleBackendAuthorizedCommands(HttpRequest request, HttpResponse response) throws Exception {
-        String authenticationcheckerResult = authenticationManager.checkAuthentication(request.getHeader("apikey"));
-        Document resp = new Document();
+    // | ================= Query handlers ================= |
 
-        if (authenticationcheckerResult.startsWith("device_")){
-            ExceptionHandler.handleException(response, new IllegalOperation("Unauthorized access: API key belongs to a device"));
+    /**
+     * Returns all authorized commands and params for all devices linked to the requesting backend.
+     * The backend is identified via its API key in the request header.
+     */
+    private void handleBackendAuthorizedCommands(HttpRequest request,
+                                                 HttpResponse response) throws Exception {
+        String authResult = authenticationManager.checkAuthentication(request.getHeader("apikey"));
+
+        // Only backends may query authorized commands — reject devices and invalid keys
+        if (authResult.startsWith("device_")) {
+            ExceptionHandler.handleException(response,
+                    new IllegalOperation("Unauthorized access: API key belongs to a device"));
             return;
-        } else if (authenticationcheckerResult.startsWith("Invalid API key")) {
-            ExceptionHandler.handleException(response, new IllegalOperation(authenticationcheckerResult));
+        } else if (authResult.startsWith("Invalid API key")) {
+            ExceptionHandler.handleException(response, new IllegalOperation(authResult));
             return;
         }
 
-        if(authenticationcheckerResult.startsWith("backend_")){
-            resp = backendManager.getBackendAuthorizedCommands(authenticationcheckerResult);
+        Document resp = new Document();
+        if (authResult.startsWith("backend_")) {
+            resp = backendManager.getBackendAuthorizedCommands(authResult);
         }
 
         logger.info(resp.toJson());
 
-        if (resp.get("status").equals("success")){
-            response.setStatusCode(200);
-        } else {
-            response.setStatusCode(400);
-        }
+        response.setStatusCode(resp.get("status").equals("success") ? 200 : 400);
         response.setBody(resp.toJson());
         requestHandler.skipChain(request);
     }
 
-    /**
-     * Indicates that the plugin requires the request body to function.
-     *
-     * @return true
-     */
     @Override
     public Boolean requiredBody() {
         return true;

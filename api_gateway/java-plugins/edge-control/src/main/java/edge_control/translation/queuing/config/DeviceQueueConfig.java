@@ -7,14 +7,24 @@ import java.time.Duration;
 
 /**
  * Parsed queuing settings for a single device.
- * Constructed from the "queuing" block of the device translation config.
+ * Constructed from the 'queuing' block of the device translation config,
+ * or reconstructed from a persisted MongoDB document.
  */
 public class DeviceQueueConfig {
 
-    private final String gatewayDeviceId;
+    private final String   gatewayDeviceId;
     private final Duration retryInterval;
     private final Duration maxTimeToLive;
 
+    // | ================= Constructors ================= |
+
+    /**
+     * Parses queuing settings from the 'queuing' block of a device config.
+     *
+     * @param gatewayDeviceId Device this config belongs to, used in error messages
+     * @param queuingJson     The 'queuing' JSON block from the device config
+     * @throws CorruptedConfiguration If retryIntervalSeconds or maxTimeToLiveSeconds are missing or non-positive
+     */
     public DeviceQueueConfig(String gatewayDeviceId, JSONObject queuingJson)
             throws CorruptedConfiguration {
 
@@ -38,7 +48,10 @@ public class DeviceQueueConfig {
     }
 
     /**
-     * Reconstruct from a MongoDB document (already parsed as JSONObject).
+     * Reconstructs a DeviceQueueConfig from a persisted MongoDB document.
+     *
+     * @param doc MongoDB document previously produced by toDocument()
+     * @throws CorruptedConfiguration If required fields are missing or invalid
      */
     public DeviceQueueConfig(JSONObject doc) throws CorruptedConfiguration {
         this.gatewayDeviceId = doc.optString("gatewayDeviceId", null);
@@ -64,6 +77,13 @@ public class DeviceQueueConfig {
         this.maxTimeToLive = Duration.ofSeconds(maxTtlSeconds);
     }
 
+    // | ================= Serialisation ================= |
+
+    /**
+     * Serialises this config to a JSONObject for persistence in MongoDB.
+     *
+     * @return JSONObject ready to store in the deviceQueueConfig collection
+     */
     public JSONObject toDocument() {
         JSONObject doc = new JSONObject();
         doc.put("gatewayDeviceId",      gatewayDeviceId);
@@ -72,7 +92,9 @@ public class DeviceQueueConfig {
         return doc;
     }
 
-    public String getGatewayDeviceId()  { return gatewayDeviceId; }
-    public Duration getRetryInterval()  { return retryInterval; }
-    public Duration getMaxTimeToLive()  { return maxTimeToLive; }
+    // | ================= Getters ================= |
+
+    public String   getGatewayDeviceId() { return gatewayDeviceId; }
+    public Duration getRetryInterval()   { return retryInterval; }
+    public Duration getMaxTimeToLive()   { return maxTimeToLive; }
 }

@@ -21,51 +21,51 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
+/**
+ * APISIX plugin filter that authenticates and authorises inbound requests.
+ *
+ * Validates the apikey header, then enriches the request body with identity
+ * and routing info before passing it to downstream filters:
+ * - Backend requests: authorization checked, callbackEndpoint injected
+ * - Device requests: gatewayDeviceId and listOfEndpoints injected, no auth check needed
+ */
 @Component
 public class AuthFilter implements PluginFilter {
+
     private static final Logger API_LOGGER =
             LoggerFactory.getLogger(AuthFilter.class);
 
-    private final EdgeControlLogger logger =
-            EdgeControlLogger.getInstance();
+    private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
-    private final AuthenticationManager authenticationManager =
+    private static final AuthenticationManager authenticationManager =
             AuthenticationManager.getInstance();
 
-    private final AuthorizationManager authorizationManager =
+    private static final AuthorizationManager authorizationManager =
             AuthorizationManager.getInstance();
 
-    private static final RequestHandler requestHandler =
-            RequestHandler.getInstance();
+    private static final RequestHandler requestHandler = RequestHandler.getInstance();
 
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm:ss.SSSS")
-            .withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter TIMING_FORMATTER =
+            DateTimeFormatter.ofPattern("hh:mm:ss.SSSS").withZone(ZoneId.systemDefault());
 
-    /**
-     * Initializes the plugin and logs startup messages.
-     */
     AuthFilter() {
         logger.info("Auth Filter initialized");
         API_LOGGER.warn("Auth Filter is running");
     }
 
-    /**
-     * Returns the name of this plugin filter.
-     *
-     * @return plugin name
-     */
     @Override
     public String name() {
         return "AuthFilter";
     }
 
     /**
-     * Main filter method invoked by APISIX.
-     * Routes requests to health check, device management, or device adapters.
+     * Authenticates the request via its apikey header and enriches the body with
+     * identity and routing fields for downstream filters to consume.
+     * Only POST on /backendForward or /command is accepted.
      *
-     * @param request the incoming HTTP request
-     * @param response the HTTP response to populate
-     * @param chain the APISIX plugin filter chain
+     * @param request  Inbound HTTP request
+     * @param response HTTP response to populate on failure
+     * @param chain    APISIX filter chain
      */
     @Override
     public void filter(HttpRequest request,
@@ -73,35 +73,35 @@ public class AuthFilter implements PluginFilter {
                        PluginFilterChain chain) {
 
         int reqHash = request.hashCode();
-
         Instant start = Instant.now();
-        logger.time("[" + formatter.format(start) + "] Auth Filter: request arrived (" + reqHash + ")");
-
-        // notice about reached filter / route
+        logger.time("[" + TIMING_FORMATTER.format(start) + "] Auth Filter: request arrived (" + reqHash + ")");
         logger.debug("Incoming request in " + name() + ", index: " + chain.getIndex() + " | Path: " + request.getPath());
 
-        // register request
         requestHandler.register(request);
 
-        // check if this filter should skip request
+        // A previous filter may have marked this request to be skipped
         if (requestHandler.shouldSkipRequest(request, chain)) {
-            // logger.info(name() + " skips request...");
             chain.filter(request, response);
             return;
         }
 
+        // This filter only handles POST — reject everything else early
         if (!request.getMethod().equals(HttpRequest.Method.POST)) {
             ExceptionHandler.handleException(response, new IllegalOperation("Only POST method is allowed"));
             requestHandler.skipChain(request);
             chain.filter(request, response);
             return;
-        } else if (!request.getPath().endsWith("/backendForward") && !request.getPath().endsWith("/command")) {
+        }
+
+        // Only /backendForward (device telemetry) and /command (backend command) are valid
+        if (!request.getPath().endsWith("/backendForward") && !request.getPath().endsWith("/command")) {
             ExceptionHandler.handleException(response, new IllegalOperation("Invalid endpoint"));
             requestHandler.skipChain(request);
             chain.filter(request, response);
             return;
         }
 
+        // Verify the apikey and resolve the caller's gateway ID (backend_ or device_ prefixed)
         String gatewayId;
         try {
             gatewayId = authenticationManager.checkAuthentication(request.getHeader("apikey"));
@@ -117,8 +117,9 @@ public class AuthFilter implements PluginFilter {
         JSONObject body = new JSONObject(request.getBody());
 
         if (gatewayId.startsWith("backend_")) {
-            // Backend requests require authorization check
+            // Backend requests require an explicit authorization check against the device
             if (authorizationManager.checkAuthorization(gatewayId, Document.parse(request.getBody()))) {
+                // Inject callbackEndpoint so the queuing layer knows where to notify on retry
                 String callback = authorizationManager.getCallbackEndpoint(gatewayId);
                 if (callback != null) {
                     body.put("callbackEndpoint", callback);
@@ -127,42 +128,31 @@ public class AuthFilter implements PluginFilter {
                 logger.info(gatewayId + " is authorized to perform the operation.");
 
                 Instant end = Instant.now();
-                logger.time("[" + formatter.format(end) + "] Auth Filter: request chained - time took:" + (end.toEpochMilli() - start.toEpochMilli()) + "ms (" + reqHash + ")");
-                // Continue APISIX chain
+                logger.time("[" + TIMING_FORMATTER.format(end) + "] Auth Filter: request chained - time took:"
+                        + (end.toEpochMilli() - start.toEpochMilli()) + "ms (" + reqHash + ")");
                 chain.filter(request, response);
             } else {
                 ExceptionHandler.handleException(response, new IllegalOperation("Unauthorized access"));
                 requestHandler.skipChain(request);
                 chain.filter(request, response);
-
             }
+
         } else if (gatewayId.startsWith("device_")) {
-            // Device requests are automatically forwarded to all available endpoints — no authorization check needed
+            // Device requests are forwarded to all registered backends — no per-device auth check needed
             body.put("gatewayDeviceId", gatewayId);
 
-            // Add listOfEndpoints: { gatewayBackendId → endpoint }
+            // listOfEndpoints maps gatewayBackendId to endpoint URL, consumed by BackendForwarderFilter
             Map<String, String> endpoints = authorizationManager.getDeviceEndpoints(gatewayId);
-            JSONObject listOfEndpoints = new JSONObject(endpoints);
-            body.put("listOfEndpoints", listOfEndpoints);
+            body.put("listOfEndpoints", new JSONObject(endpoints));
 
             request.setBody(body.toString());
             logger.info(gatewayId + " is authorized to perform the operation.");
-            logger.info(body.toString());
-            // Continue APISIX chain
             chain.filter(request, response);
         }
-
-
     }
 
-    /**
-     * Indicates that the plugin requires the request body to function.
-     *
-     * @return true
-     */
     @Override
     public Boolean requiredBody() {
         return true;
     }
-
 }

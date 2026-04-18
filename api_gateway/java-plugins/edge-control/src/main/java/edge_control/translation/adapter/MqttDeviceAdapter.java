@@ -26,22 +26,37 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.*;
 
+/**
+ * DeviceAdapter implementation for MQTT-based devices.
+ *
+ * Manages a persistent connection to an MQTT broker, translates incoming HTTP commands
+ * into MQTT messages using the configured payload templates and mappings, and subscribes
+ * to device topics to receive telemetry and forward it to the backend.
+ *
+ * Supports both plain MQTT (mqtt:// or tcp://) and TLS-secured MQTTS (mqtts:// or ssl://).
+ * The broker URL scheme determines whether TLS is applied.
+ *
+ * Subscriptions are re-established automatically after reconnection since cleanSession=true
+ * wipes them on disconnect.
+ */
 public class MqttDeviceAdapter implements DeviceAdapter {
 
-    private static final EdgeControlLogger logger   = EdgeControlLogger.getInstance();
-    private static final ObjectMapper MAPPER        = new ObjectMapper();
+    private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
+    private static final ObjectMapper MAPPER      = new ObjectMapper();
+
+    // Internal APISIX backendForward route used to push unsolicited device messages upstream
     private static final String BACKEND_FORWARD_URL = "http://localhost:9080/backendForward";
 
-    // Path fixed by Docker volume mount in the APISIX container
+    // Mosquitto uses the same certificate as APISIX since they share the same gateway VM
     private static final String APISIX_CERT_PATH = "/usr/local/apisix/conf/server.crt";
 
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm:ss.SSSS")
-            .withZone(ZoneId.systemDefault());
+    // Shared formatter for timing logs, static since it has no instance-specific state
+    private static final DateTimeFormatter TIMING_FORMATTER =
+            DateTimeFormatter.ofPattern("hh:mm:ss.SSSS").withZone(ZoneId.systemDefault());
 
-    // ── Parsed config ─────────────────────────────────────────────────────────
+    // | ================= Parsed config ================= |
 
-    private String gatewayDeviceId;
-
+    private String  gatewayDeviceId;
     private String  brokerUrl;
     private boolean useTls;
     private int     qos;
@@ -53,21 +68,33 @@ public class MqttDeviceAdapter implements DeviceAdapter {
     private final Map<String, MqttCommandDefinition> commandDefinitions = new HashMap<>();
     private final List<MqttSubscriptionConfig>       subscriptions      = new ArrayList<>();
 
-    // ── Runtime state ─────────────────────────────────────────────────────────
+    // | ================= Runtime state ================= |
 
     private MqttClient mqttClient;
 
-    private final ConcurrentHashMap<String, CompletableFuture<String>> pendingResponses
-            = new ConcurrentHashMap<>();
+    // Pending response futures keyed by correlationId, resolved when the device sends an ack
+    private final ConcurrentHashMap<String, CompletableFuture<String>> pendingResponses =
+            new ConcurrentHashMap<>();
 
     private final CommandTranslationEngine translationEngine = new CommandTranslationEngine();
 
-    // ── Subscription config record ────────────────────────────────────────────
-
+    /**
+     * Holds the topic and forwarding configuration for a single MQTT subscription.
+     *
+     * @param topic           MQTT topic to subscribe to
+     * @param forwardToBackend Whether inbound messages on this topic should be forwarded upstream
+     */
     private record MqttSubscriptionConfig(String topic, boolean forwardToBackend) {}
 
-    // ── Init ──────────────────────────────────────────────────────────────────
+    // | ================= Lifecycle ================= |
 
+    /**
+     * Initialises the adapter from the device configuration.
+     * Loads connection settings, subscriptions, and command definitions, then connects to the broker.
+     *
+     * @param config Device configuration containing broker URL, subscriptions, and commands
+     * @throws EdgeControlException If the config is invalid or the broker connection fails
+     */
     @Override
     public void init(DeviceConfig config) throws EdgeControlException {
         this.gatewayDeviceId = config.getDeviceId();
@@ -81,8 +108,34 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         connectToBroker();
     }
 
-    // ── Config loaders ────────────────────────────────────────────────────────
+    /**
+     * Disconnects from the broker and cancels all pending response futures.
+     * Called when the device is offboarded or the adapter is rebuilt.
+     */
+    @Override
+    public void shutdown() {
+        logger.info("Shutting down MQTT adapter for device: " + gatewayDeviceId);
+        try {
+            if (mqttClient != null && mqttClient.isConnected()) mqttClient.disconnect();
+            if (mqttClient != null) mqttClient.close();
+        } catch (MqttException e) {
+            logger.error("Error during MQTT shutdown: " + e.getMessage());
+        }
+        // Fail all pending futures so callers are not left waiting indefinitely
+        pendingResponses.forEach((id, future) ->
+                future.completeExceptionally(new InterruptedException("Adapter shut down")));
+        pendingResponses.clear();
+    }
 
+    // | ================= Config loaders ================= |
+
+    /**
+     * Parses the 'connection' block and normalises the broker URL to Paho-compatible schemes.
+     * mqtt:// is mapped to tcp://, mqtts:// is mapped to ssl://.
+     *
+     * @param root Root JSON config object
+     * @throws CorruptedConfiguration If the 'connection' section is missing
+     */
     private void loadConnection(JSONObject root) throws CorruptedConfiguration {
         if (!root.has("connection")) {
             throw new CorruptedConfiguration(
@@ -93,10 +146,11 @@ public class MqttDeviceAdapter implements DeviceAdapter {
 
         this.brokerUrl = conn.optString("brokerUrl", "tcp://mosquitto:1883");
 
-        // Detect TLS from scheme — mqtts:// triggers TLS, mqtt:// does not
-        this.useTls = brokerUrl.toLowerCase().startsWith("mqtts://") || brokerUrl.toLowerCase().startsWith("ssl://");
+        // Detect TLS before normalisation so the original scheme is still visible
+        this.useTls = brokerUrl.toLowerCase().startsWith("mqtts://")
+                || brokerUrl.toLowerCase().startsWith("ssl://");
 
-        // Paho requires ssl:// prefix internally — normalise mqtts:// → ssl://
+        // Paho only accepts tcp:// and ssl:// — normalise user-friendly schemes
         if (brokerUrl.toLowerCase().startsWith("mqtts://")) {
             this.brokerUrl = "ssl://" + brokerUrl.substring("mqtts://".length());
         } else if (brokerUrl.toLowerCase().startsWith("mqtt://")) {
@@ -109,12 +163,17 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         this.cleanSession      = conn.optBoolean("cleanSession",  true);
         this.reconnectDelay    = conn.optInt("reconnectDelay",    5);
 
-        logger.debug("Connection config loaded — broker=" + brokerUrl
-                + " tls=" + useTls
-                + " qos=" + qos
-                + " keepAlive=" + keepAliveInterval + "s");
+        logger.debug("Connection config loaded: broker=" + brokerUrl
+                + " tls=" + useTls + " qos=" + qos + " keepAlive=" + keepAliveInterval + "s");
     }
 
+    /**
+     * Parses the optional 'subscriptions' array.
+     * If absent, the adapter operates in command-only mode with no inbound topics.
+     *
+     * @param root Root JSON config object
+     * @throws CorruptedConfiguration If a subscription entry is missing its 'topic' field
+     */
     private void loadSubscriptions(JSONObject root) throws CorruptedConfiguration {
         if (!root.has("subscriptions")) {
             logger.debug("No 'subscriptions' section found for device " + gatewayDeviceId);
@@ -141,6 +200,12 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                 + " subscriptions for device " + gatewayDeviceId);
     }
 
+    /**
+     * Parses the 'commands' object and compiles each command definition.
+     *
+     * @param root Root JSON config object
+     * @throws CorruptedConfiguration If the 'commands' section is missing or a command is invalid
+     */
     private void loadCommands(JSONObject root) throws CorruptedConfiguration {
         if (!root.has("commands")) {
             throw new CorruptedConfiguration(
@@ -162,8 +227,17 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                 + " command definitions for device " + gatewayDeviceId);
     }
 
-    // ── Broker connection ─────────────────────────────────────────────────────
+    // | ================= Broker connection ================= |
 
+    /**
+     * Creates the Paho MqttClient, configures connection options, and connects to the broker.
+     * If TLS is enabled, an SSLSocketFactory is built from the APISIX certificate.
+     *
+     * MqttCallbackExtended is used instead of MqttCallback so that connectComplete() fires
+     * on every reconnect, allowing subscriptions to be restored after a clean-session disconnect.
+     *
+     * @throws EdgeControlException If the connection fails or the TLS setup fails
+     */
     private void connectToBroker() throws EdgeControlException {
         String clientId = "edge-control-" + gatewayDeviceId + "-" + UUID.randomUUID();
 
@@ -175,9 +249,8 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             options.setAutomaticReconnect(true);
             options.setConnectionTimeout(connectionTimeout);
             options.setKeepAliveInterval(keepAliveInterval);
-            options.setMaxReconnectDelay(reconnectDelay * 1000);
+            options.setMaxReconnectDelay(reconnectDelay * 1000); // ms
 
-            // Apply TLS if mqtts:// was specified — uses the same APISIX cert as HTTP
             if (useTls) {
                 try {
                     options.setSocketFactory(TlsHelper.buildSslSocketFactory(APISIX_CERT_PATH));
@@ -195,6 +268,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                 public void connectComplete(boolean reconnect, String serverURI) {
                     logger.info("MQTT " + (reconnect ? "re" : "") + "connected to "
                             + serverURI + " for device " + gatewayDeviceId);
+                    // Re-subscribe on every connect since cleanSession=true wipes subscriptions
                     subscribeToAllTopics();
                 }
 
@@ -211,7 +285,9 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                 }
 
                 @Override
-                public void deliveryComplete(IMqttDeliveryToken token) {}
+                public void deliveryComplete(IMqttDeliveryToken token) {
+                    // Publish ACK, nothing to do here
+                }
             });
 
             mqttClient.connect(options);
@@ -223,6 +299,10 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         }
     }
 
+    /**
+     * Subscribes to all declared topics at the configured QoS level.
+     * Called from connectComplete() so it runs on both initial connect and every reconnect.
+     */
     private void subscribeToAllTopics() {
         for (MqttSubscriptionConfig sub : subscriptions) {
             try {
@@ -234,24 +314,24 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         }
     }
 
-    // ── Shutdown ──────────────────────────────────────────────────────────────
+    // | ================= Request handling ================= |
 
-    @Override
-    public void shutdown() {
-        logger.info("Shutting down MQTT adapter for device: " + gatewayDeviceId);
-        try {
-            if (mqttClient != null && mqttClient.isConnected()) mqttClient.disconnect();
-            if (mqttClient != null) mqttClient.close();
-        } catch (MqttException e) {
-            logger.error("Error during MQTT shutdown: " + e.getMessage());
-        }
-        pendingResponses.forEach((id, future) ->
-                future.completeExceptionally(new InterruptedException("Adapter shut down")));
-        pendingResponses.clear();
-    }
-
-    // ── Request handling ──────────────────────────────────────────────────────
-
+    /**
+     * Handles an inbound HTTP command request by translating it into an MQTT message
+     * and publishing it to the device's command topic.
+     *
+     * If the command has a responseTopic, a CompletableFuture is registered to wait for
+     * the device's ack, keyed by a unique correlationId embedded in the envelope.
+     * If no responseTopic is configured, the command is fire-and-forget (202 returned immediately).
+     *
+     * If the broker is unreachable or the device times out, onDeviceUnreachable is called
+     * so the queuing layer can handle the retry.
+     *
+     * @param request  Incoming HTTP request containing the command and params
+     * @param response HTTP response to populate with the device's reply
+     * @param callback Callback to signal success or device unreachability
+     * @throws Exception If the request body is malformed or the command is unknown
+     */
     @Override
     public void handleRequest(HttpRequest request, HttpResponse response,
                               AdapterCallback callback) throws Exception {
@@ -283,13 +363,17 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         }
 
         int reqHash = request.hashCode();
-        Instant now = Instant.now();
-        logger.time("[" + formatter.format(now) + "] Mqtt Adapter: request to be translated (" + reqHash + ")");
-        JsonNode finalPayload = translationEngine.translate(commandDefinition, backendRequest);
-        Instant after = Instant.now();
-        logger.time("[" + formatter.format(after) + "] Mqtt Adapter: request translated - time took:" + (after.toEpochMilli() - now.toEpochMilli()) + "ms (" + reqHash + ")");
-        logger.time("[" + formatter.format(after) + "] Mqtt Adapter: request to be sent (" + reqHash + ")");
+        Instant translateStart = Instant.now();
+        logger.time("[" + TIMING_FORMATTER.format(translateStart) + "] Mqtt Adapter: request to be translated (" + reqHash + ")");
 
+        JsonNode finalPayload = translationEngine.translate(commandDefinition, backendRequest);
+
+        Instant translateEnd = Instant.now();
+        logger.time("[" + TIMING_FORMATTER.format(translateEnd) + "] Mqtt Adapter: request translated - time took:"
+                + (translateEnd.toEpochMilli() - translateStart.toEpochMilli()) + "ms (" + reqHash + ")");
+        logger.time("[" + TIMING_FORMATTER.format(translateEnd) + "] Mqtt Adapter: request to be sent (" + reqHash + ")");
+
+        // Build the MQTT envelope with a correlationId so the device can echo it back in its ack
         String correlationId = UUID.randomUUID().toString();
         JSONObject envelope = new JSONObject();
         envelope.put("deviceId",      gatewayDeviceId);
@@ -297,10 +381,13 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         envelope.put("type",          "command");
         envelope.put("correlationId", correlationId);
         if (commandDefinition.hasResponseTopic()) {
+            // Tell the device which topic to publish its ack on
             envelope.put("responseTopic", commandDefinition.getResponseTopic());
         }
         envelope.put("payload", new JSONObject(finalPayload.toString()));
 
+        // Register the future before publishing to avoid a race where the device responds
+        // before we start listening
         CompletableFuture<String> responseFuture = null;
         if (commandDefinition.hasResponseTopic()) {
             responseFuture = new CompletableFuture<>();
@@ -324,6 +411,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             return;
         }
 
+        // Fire-and-forget: no ack expected, return immediately
         if (!commandDefinition.hasResponseTopic()) {
             response.setStatusCode(202);
             response.setBody("{\"status\":\"sent\",\"correlationId\":\"" + correlationId + "\"}");
@@ -332,6 +420,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             return;
         }
 
+        // Wait for the device ack asynchronously, with a timeout
         Duration timeout = commandDefinition.getResponseTimeout();
         responseFuture
                 .orTimeout(timeout.getSeconds(), TimeUnit.SECONDS)
@@ -348,7 +437,8 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                     } finally {
                         pendingResponses.remove(correlationId);
                         Instant end = Instant.now();
-                        logger.time("[" + formatter.format(end) + "] Mqtt Adapter: request transmitted and res received - time took:" + (end.toEpochMilli() - after.toEpochMilli()) + "ms (" + reqHash + ")");
+                        logger.time("[" + TIMING_FORMATTER.format(end) + "] Mqtt Adapter: request transmitted and res received - time took:"
+                                + (end.toEpochMilli() - translateEnd.toEpochMilli()) + "ms (" + reqHash + ")");
                         callback.onSuccess();
                     }
                 })
@@ -357,6 +447,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                     pendingResponses.remove(correlationId);
 
                     if (cause instanceof TimeoutException) {
+                        // Device did not respond in time, signal the queuing layer
                         logger.debug("Device " + gatewayDeviceId + " did not respond within "
                                 + timeout.getSeconds() + "s [correlationId=" + correlationId + "]");
                         callback.onDeviceUnreachable(
@@ -379,8 +470,15 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                 });
     }
 
-    // ── Inbound message routing ───────────────────────────────────────────────
+    // | ================= Inbound message routing ================= |
 
+    /**
+     * Routes an inbound MQTT message to the appropriate handler based on the declared subscriptions.
+     * Messages on undeclared topics are logged and ignored.
+     *
+     * @param topic   MQTT topic the message arrived on
+     * @param payload Message payload as a UTF-8 string
+     */
     private void onMessageArrived(String topic, String payload) {
         MqttSubscriptionConfig matched = subscriptions.stream()
                 .filter(s -> s.topic().equals(topic))
@@ -395,10 +493,23 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         handleInboundMessage(payload, matched);
     }
 
+    /**
+     * Handles an inbound message from a subscribed topic.
+     *
+     * If the message carries a correlationId matching a pending request, the corresponding
+     * future is resolved and the waiting handleRequest() call unblocks.
+     * Otherwise, the message is treated as unsolicited telemetry. If the subscription has
+     * forwardToBackend=true, the message is forwarded to the backendForward route with
+     * the device's apikey extracted from the envelope.
+     *
+     * @param payload Raw message payload
+     * @param sub     Subscription config for the topic this message arrived on
+     */
     private void handleInboundMessage(String payload, MqttSubscriptionConfig sub) {
         try {
             JSONObject json = new JSONObject(payload);
 
+            // Check if this is an ack for a pending command
             if (json.has("correlationId")) {
                 String correlationId = json.getString("correlationId");
                 CompletableFuture<String> future = pendingResponses.get(correlationId);
@@ -408,18 +519,21 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                 }
             }
 
+            // Unsolicited message (telemetry, status, etc.)
             logger.info("Inbound message on " + sub.topic() + " for device "
                     + gatewayDeviceId + ": " + payload);
 
             if (!sub.forwardToBackend()) return;
 
+            // The device embeds its apikey in the envelope for the gateway to use when forwarding
             String apiKey = json.optString("apikey", null);
             if (apiKey == null || apiKey.isBlank()) {
                 logger.error("Cannot forward message from device " + gatewayDeviceId
-                        + " — missing 'apikey' field in MQTT envelope");
+                        + " - missing 'apikey' field in MQTT envelope");
                 return;
             }
 
+            // Strip apikey from the forwarded body since it belongs in the header only
             JSONObject forwardBody = new JSONObject(payload);
             forwardBody.remove("apikey");
 
@@ -435,7 +549,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                             Duration.of(10, ChronoUnit.SECONDS),
                             Duration.of(30, ChronoUnit.SECONDS))
                     .thenAccept(result -> logger.debug(
-                            "Forwarded to backendForward — status=" + result.statusCode()))
+                            "Forwarded to backendForward - status=" + result.statusCode()))
                     .exceptionally(throwable -> {
                         Throwable cause = throwable.getCause() != null
                                 ? throwable.getCause() : throwable;

@@ -62,30 +62,33 @@ public final class EdgeControlLogger {
         if (!enabled) return;
         executor.submit(() -> {
             try {
-                // Random ran = new Random();
-                // int r = ran.nextInt(50) + 1;
-                // writer.write(".".repeat(r));
                 writer.write(message);
                 writer.newLine();
                 writer.flush();
             } catch (IOException e) {
-                // Last-resort fallback
+                // fallback...
                 e.printStackTrace();
             }
         });
     }
 
-    public void time(String message) {log(message); }
+    public void time(String message) {
+        log(message);
+    }
 
     public void info(String message) {
-        // log("[INFO] " + message);
+        log("[INFO] " + message);
+    }
+
+    public void warn(String message) {
+        log("[WARN] " + message);
     }
 
     public void debug(String message) {
-        // log("[DEBUG] " + message);
+        log("[DEBUG] " + message);
     }
 
     public void error(String message) {
-        // log("[ERROR] " + message);
+        log("[ERROR] " + message);
     }
 }

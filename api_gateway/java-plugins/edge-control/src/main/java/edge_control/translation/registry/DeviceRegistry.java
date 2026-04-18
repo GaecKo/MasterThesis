@@ -1,7 +1,6 @@
 package edge_control.translation.registry;
 
 import edge_control.database.DevicesTranslationConfigRepository;
-import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.translation.adapter.AdapterFactory;
 import edge_control.translation.adapter.DeviceAdapter;
 import edge_control.translation.config.DeviceConfig;
@@ -16,114 +15,98 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Singleton registry that manages all device adapters in the system.
+ * Singleton registry that manages all active device adapters.
  *
- * Responsibilities:
- * - Maintains active DeviceAdapter instances keyed by device ID.
- * - Tracks device fingerprints to detect configuration changes.
- * - Periodically refreshes adapters based on the repository state.
- * - Handles creation, update (rebuild), and removal of adapters.
- *
- * Provides thread-safe methods to get adapters, refresh the registry,
- * upsert device configurations, and remove adapters.
+ * Periodically syncs with the database to detect config changes, rebuilding
+ * adapters whose fingerprint has changed and removing those that no longer exist.
+ * Also coordinates with QueueRegistry to onboard and remove queuing config.
  */
 public class DeviceRegistry {
 
     private static DeviceRegistry instance;
 
-    private final Map<String, DeviceAdapter> adapters = new ConcurrentHashMap<>();
-    private final Map<String, String> fingerprints = new ConcurrentHashMap<>();
-    private final Map<String, DeviceConfig> deviceConfigs = new ConcurrentHashMap<>();
+    private final Map<String, DeviceAdapter> adapters       = new ConcurrentHashMap<>();
+    private final Map<String, String>        fingerprints   = new ConcurrentHashMap<>();
+    private final Map<String, DeviceConfig>  deviceConfigs  = new ConcurrentHashMap<>();
 
     private static final QueueRegistry queueRegistry = QueueRegistry.getInstance();
 
     private final AdapterFactory adapterFactory = new AdapterFactory();
-    private final DevicesTranslationConfigRepository repository = new DevicesTranslationConfigRepository();
+    private final DevicesTranslationConfigRepository repository =
+            new DevicesTranslationConfigRepository();
 
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
-    /**
-     * Private constructor that initializes the singleton and schedules
-     * periodic refreshes of the device registry.
-     */
     private DeviceRegistry() {
-        ScheduledExecutorService scheduler =
-                Executors.newSingleThreadScheduledExecutor();
-
-        // TODO: change delay to something else
-        scheduler.scheduleAtFixedRate(
-                this::refresh,
-                5,
-                5,
-                TimeUnit.SECONDS
-        );
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        // TODO: make the refresh interval configurable
+        scheduler.scheduleAtFixedRate(this::refresh, 5, 5, TimeUnit.SECONDS);
     }
 
-    public static DeviceRegistry getInstance() {
+    /**
+     * Returns the singleton instance, creating it on first call.
+     * On first creation: loads queue configs, wires the QueueWorker, and does an initial device load.
+     */
+    public static synchronized DeviceRegistry getInstance() {
         if (instance == null) {
             instance = new DeviceRegistry();
-
-            // load queue configs from DB
             queueRegistry.loadAll();
-
-            // wire QueueWorker
             queueRegistry.init();
-
-            // initial device load
             instance.refresh();
         }
         return instance;
     }
 
+    // | ================= Lookup ================= |
+
     /**
-     * Retrieves the adapter for a given device ID.
-     *
-     * @param deviceId the ID of the device
-     * @return DeviceAdapter instance, or null if not registered
+     * @param deviceId Gateway device ID
+     * @return The active adapter for the device, or null if not registered
      */
-    public DeviceAdapter get(String deviceId) {
+    public DeviceAdapter getAdapter(String deviceId) {
         return adapters.get(deviceId);
     }
 
+    /**
+     * @param deviceId Gateway device ID
+     * @return The current DeviceConfig for the device, or null if not registered
+     */
     public DeviceConfig getConfig(String deviceId) {
         return deviceConfigs.get(deviceId);
     }
 
+    // | ================= Refresh ================= |
+
     /**
-     * Synchronizes the registry with the current repository state.
-     * - Updates adapters whose configuration fingerprint has changed.
-     * - Removes adapters that no longer exist in the repository.
+     * Syncs the registry with the current database state.
+     * Rebuilds adapters whose fingerprint has changed, and removes those no longer in the DB.
+     * If a rebuild fails, the device is deleted from the registry and DB to avoid a stale state.
      */
     public synchronized void refresh() {
         List<DeviceConfig> configs = repository.findAll();
         Set<String> seen = new HashSet<>();
 
         for (DeviceConfig config : configs) {
-            String deviceId = config.getDeviceId();
+            String deviceId   = config.getDeviceId();
             String fingerprint = config.fingerprint();
-
-            // logger.info("Syncing device: " + deviceId);
-
             seen.add(deviceId);
 
             if (!fingerprint.equals(fingerprints.get(deviceId))) {
                 try {
                     rebuild(config);
                 } catch (EdgeControlException e) {
-                    logger.error(e.getMessage());
-                    logger.error("Removing config for device " + deviceId + " due to error (refresh)");
+                    logger.error("Failed to rebuild device " + deviceId + ": " + e.getMessage());
+                    logger.error("Removing device " + deviceId + " due to rebuild error");
                     try {
-                        delete(config.getDeviceId());
+                        delete(deviceId);
                     } catch (EdgeControlException ex) {
-                        logger.error(ex.getMessage());
-                        logger.error("Unable to remove config of " + deviceId + " due to error (refresh)");
+                        logger.error("Failed to delete device " + deviceId + " after rebuild error: " + ex.getMessage());
                     }
                 }
-
             }
         }
 
-        // Handle deletions
+        // Remove adapters for devices that were deleted from the DB
         for (String deviceId : new HashSet<>(adapters.keySet())) {
             if (!seen.contains(deviceId)) {
                 remove(deviceId);
@@ -131,39 +114,54 @@ public class DeviceRegistry {
         }
     }
 
+    // | ================= Upsert / Rebuild ================= |
+
     /**
-     * Rebuilds a device adapter using the provided configuration and fingerprint.
-     * - Removes any existing adapter for the device.
-     * - Creates and initializes a new adapter.
-     * - Updates the fingerprints and adapters maps.
+     * Saves the config to the database and rebuilds the adapter.
+     * If the rebuild fails, the device is deleted to avoid a partially initialised state.
      *
-     * @param config the configuration to use
+     * @param config Device configuration to save and apply
+     * @throws EdgeControlException If the rebuild fails
+     */
+    public synchronized void upsert(DeviceConfig config) throws EdgeControlException {
+        repository.save(config);
+        try {
+            rebuild(config);
+        } catch (EdgeControlException e) {
+            delete(config.getDeviceId());
+            throw e;
+        }
+    }
+
+    /**
+     * Removes any existing adapter for the device, then creates and initialises a new one.
+     * Also onboards the queuing config if present.
+     *
+     * @param config Device configuration to apply
+     * @throws EdgeControlException If adapter initialisation fails
      */
     public void rebuild(DeviceConfig config) throws EdgeControlException {
-
         String deviceId = config.getDeviceId();
         remove(deviceId);
 
         DeviceAdapter adapter = adapterFactory.create(config);
-
-        // adapter init: may fail, catched at upper layer (either refresh or upsert)
+        // init may throw — caught by the caller (refresh or upsert)
         adapter.init(config);
-
-        // logger.debug("Rebuilding device: " + deviceId + "\n" + config);
 
         adapters.put(deviceId, adapter);
         deviceConfigs.put(deviceId, config);
         fingerprints.put(deviceId, config.fingerprint());
 
-        // Onboard queuing settings
         queueRegistry.upsert(config);
-
     }
 
+    // | ================= Remove / Delete ================= |
+
     /**
-     * Removes a device adapter from the registry and shuts it down.
+     * Removes the adapter from the in-memory registry and shuts it down.
+     * Does not touch the database.
      *
-     * @param deviceId the ID of the device to remove
+     * @param deviceId Gateway device ID to remove
      */
     public void remove(String deviceId) {
         DeviceAdapter existing = adapters.remove(deviceId);
@@ -174,38 +172,19 @@ public class DeviceRegistry {
         deviceConfigs.remove(deviceId);
     }
 
-    public boolean delete(String gatewayDeviceId) throws EdgeControlException {
-        // remove from db first (so deviceRegistry can't fetch it anymore)
-        boolean db_del = repository.delete(gatewayDeviceId);
-
-        // remove from deviceRegistry - optional, will be updated by refresh anyway
-        remove(gatewayDeviceId);
-
-        // remove queuing config
-        queueRegistry.remove(gatewayDeviceId);
-
-        return db_del;
-    }
-
-    public DeviceAdapter getAdapter(String deviceId) {
-        return adapters.get(deviceId);
-    }
-
     /**
-     * Inserts or updates a device configuration in the repository
-     * and rebuilds the corresponding adapter.
+     * Deletes the device from the database, removes it from the registry,
+     * and clears its queuing configuration.
      *
-     * @param config the device configuration to upsert
+     * @param gatewayDeviceId Gateway device ID to delete
+     * @return True if the document was found and deleted from the database
+     * @throws EdgeControlException If the database delete fails
      */
-    public synchronized void upsert(DeviceConfig config) throws EdgeControlException {
-        repository.save(config);
-
-        try {
-            rebuild(config);
-        } catch (EdgeControlException e) {
-            delete(config.getDeviceId());
-            throw e;
-        }
+    public boolean delete(String gatewayDeviceId) throws EdgeControlException {
+        // Delete from DB first so the next refresh does not re-add it
+        boolean deleted = repository.delete(gatewayDeviceId);
+        remove(gatewayDeviceId);
+        queueRegistry.remove(gatewayDeviceId);
+        return deleted;
     }
-
 }
