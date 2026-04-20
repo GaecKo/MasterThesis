@@ -41,10 +41,6 @@ public class AuthenticationManager {
      * Checks the AuthRegistry cache first; falls back to the backend and device
      * repositories on a miss, caching the result for subsequent requests.
      *
-     * TODO: validateApiKey() returns error strings instead of throwing — the string
-     * comparisons below are fragile. Consider refactoring the repository layer to
-     * throw or return null on invalid keys.
-     *
      * @param apiKey Plain-text API key from the request header
      * @return Gateway ID (backend_ or device_ prefixed)
      * @throws IllegalOperation If the key is null or does not match any known identity
@@ -64,20 +60,21 @@ public class AuthenticationManager {
         }
 
         // Cache miss — check backend repository first, then device repository
-        String gatewayBackendId = backendConfig.validateApiKey(apiKey);
-        if (!gatewayBackendId.startsWith("Invalid API key")
-                && !gatewayBackendId.equals("API key cannot be null")) {
+        try {
+            String gatewayBackendId = backendConfig.validateApiKey(apiKey);
             authRegistry.putGatewayId(hash, gatewayBackendId);
             return gatewayBackendId;
+        } catch (IllegalOperation e) {
+            // Backend key not found; continue by checking device repository
         }
 
-        String gatewayDeviceId = deviceConfig.validateApiKey(apiKey);
-        if (!gatewayDeviceId.equals("Invalid API key")
-                && !gatewayDeviceId.equals("API key cannot be null")) {
+        try {
+            String gatewayDeviceId = deviceConfig.validateApiKey(apiKey);
             authRegistry.putGatewayId(hash, gatewayDeviceId);
             return gatewayDeviceId;
+        } catch (IllegalOperation e) {
+            throw new IllegalOperation("Invalid API key");
         }
 
-        throw new IllegalOperation("Invalid API key");
     }
 }

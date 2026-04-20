@@ -2,6 +2,7 @@ package edge_control.database;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import edge_control.exceptions.IllegalOperation;
 import edge_control.logger.EdgeControlLogger;
 import org.bson.Document;
 
@@ -222,18 +223,23 @@ public class DeviceConfigRepository {
      * Looks up the device that owns the given API key by comparing its hash.
      *
      * @param apiKey Plain-text API key from the request header
-     * @return The gatewayDeviceId if the key matches, or "Invalid API key" if not found
+     * @return The gatewayDeviceId if the key matches
+     * @throws IllegalOperation If apiKey is null or if not found
      */
-    public String validateApiKey(String apiKey) {
-        if (apiKey == null) return "API key cannot be null";
+    public String validateApiKey(String apiKey) throws IllegalOperation {
+        if (apiKey == null) {
+            throw new IllegalOperation("API key cannot be null");
+        }
 
         String hashedApiKey = hashApiKey(apiKey);
         Document deviceDoc = deviceConfigCollection.find(
                 new Document("apiKeyHash", hashedApiKey)).first();
 
-        return deviceDoc != null
-                ? deviceDoc.getString("gatewayDeviceId")
-                : "Invalid API key";
+        if (deviceDoc == null) {
+            throw new IllegalOperation("Invalid API key");
+        }
+
+        return deviceDoc.getString("gatewayDeviceId");
     }
 
     // | ================= Internal helpers ================= |

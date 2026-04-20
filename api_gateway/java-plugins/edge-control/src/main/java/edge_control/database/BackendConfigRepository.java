@@ -3,6 +3,7 @@ package edge_control.database;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import edge_control.logger.EdgeControlLogger;
+import edge_control.exceptions.IllegalOperation;
 import org.bson.Document;
 
 import java.security.MessageDigest;
@@ -208,17 +209,22 @@ public class BackendConfigRepository {
      * Looks up the backend that owns the given API key by comparing its hash.
      *
      * @param apiKey Plain-text API key from the request header
-     * @return The gatewayBackendId if the key matches, or "Invalid API key" if not found
+     * @return The gatewayBackendId if the key matches
+     * @throws IllegalOperation If apiKey is null or if not found
      */
-    public String validateApiKey(String apiKey) {
-        if (apiKey == null) return "API key cannot be null";
+    public String validateApiKey(String apiKey) throws IllegalOperation {
+        if (apiKey == null) {
+            throw new IllegalOperation("API key cannot be null");
+        }
 
         String hashedApiKey = hashApiKey(apiKey);
         Document backendDoc = backendConfigCollection.find(
                 new Document("apiKeyHash", hashedApiKey)).first();
 
-        return backendDoc != null
-                ? backendDoc.getString("gatewayBackendId")
-                : "Invalid API key";
+        if (backendDoc == null) {
+            throw new IllegalOperation("Invalid API key");
+        }
+
+        return backendDoc.getString("gatewayBackendId");
     }
 }
