@@ -31,16 +31,31 @@ function sleep(ms) {
 
 // Handle all HTTP methods and all paths
 app.all('*', async (req, res) => {
-    console.log("[" + new Date().toISOString() + "] " + ".".repeat(Math.random() * (50 - 1) + 1));
-    res.json({
-        path: req.path,
-        method: req.method,
-        body: req.body,
-        query: req.query,
-        params: req.params,
-        url: req.url,
-        originalUrl: req.originalUrl,
-        timestamp: new Date().toISOString()
+  console.log("[" + new Date().toISOString() + "] " + JSON.stringify(req.body));
+  res.json({
+    path: req.path,
+    method: req.method,
+    body: "Command received and processed",
+    timestamp: new Date().toISOString()
+  });
+});
+
+async function sendTelemetry() {
+  const body = {
+    deviceId  : DEVICE_ID,
+    timestamp : new Date().toISOString(),
+    type      : 'telemetry',
+    payload   : {
+      temperature : randomTemp(),
+      humidity    : Math.floor(Math.random() * 40) + 40,
+      status      : 'nominal',
+    },
+  };
+  try {
+    const res = await fetch(`https://nuc4-pc.local:9443/backendForward`, {
+      method  : 'POST',
+      headers : { 'Content-Type': 'application/json', 'apikey': API_KEY },
+      body    : JSON.stringify(body),
     });
 });
 

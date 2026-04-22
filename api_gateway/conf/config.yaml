@@ -27,8 +27,11 @@ deployment:
     prefix: "/apisix"
     timeout: 30
 
+nginx_config:
+  http_server_location_configuration_snippet: |
+    set $upstream_cache_zone off;
+
 ext-plugin:
-  cmd: ['java', '-jar', '-Xmx1g', '/usr/local/apisix/java-plugins/edge-control/target/edge-control-0.0.1-SNAPSHOT.jar']
-  path_for_test: /tmp/runner.sock   
+  cmd: ['java', '-jar', '-Xmx6g', '-Xms2g', '/usr/local/apisix/java-plugins/edge-control/target/edge-control-0.0.1-SNAPSHOT.jar']
   
 

@@ -3,7 +3,9 @@ package edge_control.database;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import edge_control.logger.EdgeControlLogger;
+import edge_control.exceptions.IllegalOperation;
 import org.bson.Document;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -13,11 +15,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Repository for creation and modification of a backend entry from MongoDB.
- *
- * Responsibilities:
- * - Provides access to the "backendConfig" collection in MongoDB.
- * - Creates an entry in the collection for a backend along with its communication info.
+ * Repository for managing backend communication config entries in MongoDB.
+ * Handles creation (with API key generation), update, deletion, and key validation.
  */
 public class BackendConfigRepository {
 
@@ -26,192 +25,174 @@ public class BackendConfigRepository {
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
     /**
-     * Inner class to hold backend creation response (ID and API key)
+     * Holds the result of a backend creation — the generated ID and plain-text API key.
+     * The plain-text key is returned once to the caller and never stored; only its hash is persisted.
+     *
+     * @param gatewayBackendId Unique ID assigned to the new backend
+     * @param apiKey           Plain-text API key to return to the backend admin
      */
-    public static class BackendCreationResult {
-        public final String gatewayBackendId;
-        public final String apiKey;
-
-        public BackendCreationResult(String gatewayBackendId, String apiKey) {
-            this.gatewayBackendId = gatewayBackendId;
-            this.apiKey = apiKey;
-        }
-    }
+    public record BackendCreationResult(String gatewayBackendId, String apiKey) {}
 
     /**
-     * Initializes the repository by connecting to the "devices" collection
-     * in the configured MongoDB database.
+     * Connects to the "backendConfig" collection in the edge_control database.
      */
     public BackendConfigRepository() {
         MongoDatabase db = MongoClientProvider.getDatabase("edge_control");
         this.backendConfigCollection = db.getCollection("backendConfig");
     }
 
+    // | ================= Read operations ================= |
+
     /**
-     * Checks if a backend with the given ID exists in the database.
-     * @param requestBody the request body containing the gatewayBackendId to check
-     * @return true if the backend exists, false otherwise
+     * @param requestBody Must contain 'gatewayBackendId'
+     * @return True if a document with that ID exists
      */
     public boolean backendExists(Document requestBody) {
         String gatewayBackendId = requestBody.getString("gatewayBackendId");
-        if (gatewayBackendId == null) {
-            return false;
-        }
-
-        Document backendDoc = backendConfigCollection.find(new Document("gatewayBackendId", gatewayBackendId)).first();
-        return backendDoc != null;
+        if (gatewayBackendId == null) return false;
+        return backendConfigCollection.find(
+                new Document("gatewayBackendId", gatewayBackendId)).first() != null;
     }
 
+    /**
+     * @return All backend config documents in the collection
+     */
     public List<Document> findAll() {
         return backendConfigCollection.find().into(new ArrayList<>());
     }
 
     /**
-     * Finds a backend configuration by its gatewayBackendId.
+     * Returns the config for a backend, with sensitive fields stripped.
      *
-     * @param gatewayBackendId the ID of the backend to find
-     * @return the backend Document (without apiKeyHash), or null if not found
+     * @param gatewayBackendId ID of the backend to find
+     * @return Backend document without 'apiKeyHash' or '_id', or null if not found
      */
     public Document findBackendById(String gatewayBackendId) {
-        if (gatewayBackendId == null) {
-            return null;
-        }
-        Document doc = backendConfigCollection.find(new Document("gatewayBackendId", gatewayBackendId)).first();
+        if (gatewayBackendId == null) return null;
+
+        Document doc = backendConfigCollection.find(
+                new Document("gatewayBackendId", gatewayBackendId)).first();
         if (doc != null) {
+            // Strip internal fields before returning to callers
             doc.remove("apiKeyHash");
             doc.remove("_id");
         }
         return doc;
     }
 
+    // | ================= Write operations ================= |
+
     /**
-     * Create the backend configuration in the database.
-     * Generates a unique gatewayBackendId and a secure API key.
-     * The API key is hashed before storing in the database for security.
+     * Creates a new backend config entry. Generates a unique ID and a secure 256-bit API key.
+     * The plain-text key is returned once and never stored — only its SHA-256 hash is persisted.
      *
-     * @param config the backend configuration to be created
-     * @return BackendCreationResult containing both gatewayBackendId and apiKey (plain text to send to backend)
+     * @param config Additional config fields to merge into the document
+     * @return BackendCreationResult with the assigned ID and the plain-text API key
      */
     public BackendCreationResult createBackendConfig(Document config) {
-        // Generate a unique gatewayBackendId
         String gatewayBackendId = "backend_" + UUID.randomUUID();
+        String apiKey           = generateApiKey();
 
-        // Generate a secure API key
-        String apiKey = generateApiKey();
-
-        // Hash the API key before storing in database
+        // Store only the hash so a database breach does not expose usable keys
         String hashedApiKey = hashApiKey(apiKey);
 
-        // Create a MongoDB document with the gatewayBackendId, hashed API key, and the provided config
         Document finalDoc = new Document();
         finalDoc.put("gatewayBackendId", gatewayBackendId);
         finalDoc.put("apiKeyHash", hashedApiKey);
         finalDoc.putAll(config);
 
-        // Insert the document into MongoDB
-        this.backendConfigCollection.insertOne(finalDoc);
+        backendConfigCollection.insertOne(finalDoc);
 
         return new BackendCreationResult(gatewayBackendId, apiKey);
     }
 
     /**
-     * Update an existing backend configuration in the database based on the provided gatewayBackendId.
-     * Modifies communication details for an existing backend.
+     * Updates an existing backend config entry.
+     * Regular fields in the body are set via $set; fields listed in 'fieldsToRemove' are unset.
      *
-     * @param requestBody the body of the request containing the backend ID and updated configuration details
-     * @return true if the update was successful, false otherwise
+     * @param requestBody Must contain 'gatewayBackendId'; may contain 'fieldsToRemove'
+     * @return True if the update succeeded, false if ID is missing or nothing to update
      */
     public boolean updateBackendConfig(Document requestBody) {
         String gatewayBackendId = requestBody.getString("gatewayBackendId");
+        if (gatewayBackendId == null) return false;
 
-        if (gatewayBackendId == null) {
-            return false;
-        }
-
-        Document setDoc = new Document();
+        Document setDoc   = new Document();
         Document unsetDoc = new Document();
 
-        // Process fieldsToRemove first (if present)
-        List<String>  fieldsToRemove = requestBody.getList("fieldsToRemove", String.class);
+        // Build $unset from the optional fieldsToRemove list
+        List<String> fieldsToRemove = requestBody.getList("fieldsToRemove", String.class);
+        if (fieldsToRemove != null) {
             for (String field : fieldsToRemove) {
                 unsetDoc.put(field, "");
             }
+        }
 
-
-        // Process regular fields for update/add
+        // Build $set from all other fields, excluding internal routing keys
         for (String key : requestBody.keySet()) {
             if (!key.equals("gatewayBackendId") && !key.equals("fieldsToRemove")) {
-                Object value = requestBody.get(key);
-                setDoc.put(key, value);
+                setDoc.put(key, requestBody.get(key));
             }
         }
 
         if (setDoc.isEmpty() && unsetDoc.isEmpty()) {
-            return false; // No fields to update or remove
+            return false;
         }
 
         try {
             Document updateOperation = new Document();
-
-            // Add $set operation if there are fields to update
-            if (!setDoc.isEmpty()) {
-                updateOperation.put("$set", setDoc);
-            }
-
-            // Add $unset operation if there are fields to remove
-            if (!unsetDoc.isEmpty()) {
-                updateOperation.put("$unset", unsetDoc);
-            }
+            if (!setDoc.isEmpty())   updateOperation.put("$set",   setDoc);
+            if (!unsetDoc.isEmpty()) updateOperation.put("$unset", unsetDoc);
 
             backendConfigCollection.updateOne(
                     new Document("gatewayBackendId", gatewayBackendId),
-                    updateOperation
-            );
+                    updateOperation);
             return true;
         } catch (Exception e) {
+            logger.error("Failed to update backend config for " + gatewayBackendId + ": " + e.getMessage());
             return false;
         }
     }
 
     /**
-     * Delete a backend configuration from the database based on the provided gatewayBackendId.
-     * Removes the corresponding document from the "backendConfig" collection.
-     * @param requestBody the request body containing the gatewayBackendId to delete
-     * @return true if the deletion was successful, false otherwise
+     * Deletes the config document for a backend.
+     *
+     * @param requestBody Must contain 'gatewayBackendId'
+     * @return True if the delete succeeded, false if ID is missing
      */
     public boolean deleteBackendConfig(Document requestBody) {
         String gatewayBackendId = requestBody.getString("gatewayBackendId");
-        if (gatewayBackendId == null) {
-            return false;
-        }
+        if (gatewayBackendId == null) return false;
 
         try {
-            backendConfigCollection.deleteOne(new Document("gatewayBackendId", gatewayBackendId));
+            backendConfigCollection.deleteOne(
+                    new Document("gatewayBackendId", gatewayBackendId));
             return true;
         } catch (Exception e) {
+            logger.error("Failed to delete backend config for " + gatewayBackendId + ": " + e.getMessage());
             return false;
         }
     }
 
+    // | ================= API key helpers ================= |
+
     /**
-     * Generates a secure API key using SecureRandom and Base64 encoding.
-     * The key is 32 bytes (256 bits) encoded as a Base64 URL-safe string.
+     * Generates a cryptographically secure 256-bit API key, Base64 URL-encoded.
      *
-     * @return a secure API key
+     * @return Plain-text API key (to be returned to the caller, never stored)
      */
     private String generateApiKey() {
         SecureRandom secureRandom = new SecureRandom();
-        byte[] apiKeyBytes = new byte[32]; // 256-bit key
+        byte[] apiKeyBytes = new byte[32];
         secureRandom.nextBytes(apiKeyBytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(apiKeyBytes);
     }
 
     /**
-     * Hashes an API key using SHA-256.
-     * This ensures only the hash is stored in the database, not the plain text key.
+     * Hashes an API key using SHA-256 for safe storage.
      *
-     * @param apiKey the plain text API key
-     * @return the SHA-256 hash of the API key
+     * @param apiKey Plain-text API key
+     * @return Base64-encoded SHA-256 hash
      */
     public String hashApiKey(String apiKey) {
         try {
@@ -219,30 +200,31 @@ public class BackendConfigRepository {
             byte[] hash = digest.digest(apiKey.getBytes());
             return Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
+            // SHA-256 is guaranteed available in all Java SE environments
             throw new RuntimeException("SHA-256 algorithm not available", e);
         }
     }
 
     /**
-     * Validates an API key for a given backend ID.
-     * Compares the hash of the provided API key with the stored hash.
+     * Looks up the backend that owns the given API key by comparing its hash.
      *
-     * @param apiKey the plain text API key to validate
-     * @return gatewayBackendId if the API key hash matches
+     * @param apiKey Plain-text API key from the request header
+     * @return The gatewayBackendId if the key matches
+     * @throws IllegalOperation If apiKey is null or if not found
      */
-    public String validateApiKey(String apiKey) {
+    public String validateApiKey(String apiKey) throws IllegalOperation {
         if (apiKey == null) {
-            return "API key cannot be null";
+            throw new IllegalOperation("API key cannot be null");
         }
 
         String hashedApiKey = hashApiKey(apiKey);
-        Document backendDoc = backendConfigCollection.find(new Document("apiKeyHash", hashedApiKey)).first();
+        Document backendDoc = backendConfigCollection.find(
+                new Document("apiKeyHash", hashedApiKey)).first();
 
-        if (backendDoc != null) {
-            return backendDoc.getString("gatewayBackendId");
-        } else {
-            return "Invalid API key";
+        if (backendDoc == null) {
+            throw new IllegalOperation("Invalid API key");
         }
-    }
 
+        return backendDoc.getString("gatewayBackendId");
+    }
 }

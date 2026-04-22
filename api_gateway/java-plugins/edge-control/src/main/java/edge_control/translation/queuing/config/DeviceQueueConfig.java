@@ -7,15 +7,24 @@ import java.time.Duration;
 
 /**
  * Parsed queuing settings for a single device.
- * Constructed from the "queuing" block of the device translation config.
+ * Constructed from the 'queuing' block of the device translation config,
+ * or reconstructed from a persisted MongoDB document.
  */
 public class DeviceQueueConfig {
 
-    private final String gatewayDeviceId;
+    private final String   gatewayDeviceId;
     private final Duration retryInterval;
     private final Duration maxTimeToLive;
-    private final String callbackUrl;
 
+    // | ================= Constructors ================= |
+
+    /**
+     * Parses queuing settings from the 'queuing' block of a device config.
+     *
+     * @param gatewayDeviceId Device this config belongs to, used in error messages
+     * @param queuingJson     The 'queuing' JSON block from the device config
+     * @throws CorruptedConfiguration If retryIntervalSeconds or maxTimeToLiveSeconds are missing or non-positive
+     */
     public DeviceQueueConfig(String gatewayDeviceId, JSONObject queuingJson)
             throws CorruptedConfiguration {
 
@@ -36,17 +45,13 @@ public class DeviceQueueConfig {
                             + ": 'maxTimeToLiveSeconds' must be a positive integer");
         }
         this.maxTimeToLive = Duration.ofSeconds(maxTtlSeconds);
-
-        this.callbackUrl = queuingJson.optString("callbackUrl", null);
-        if (callbackUrl == null || callbackUrl.isBlank()) {
-            throw new CorruptedConfiguration(
-                    "Queuing config for device " + gatewayDeviceId
-                            + ": 'callbackUrl' is missing or empty");
-        }
     }
 
     /**
-     * Reconstruct from a MongoDB document (already parsed as JSONObject).
+     * Reconstructs a DeviceQueueConfig from a persisted MongoDB document.
+     *
+     * @param doc MongoDB document previously produced by toDocument()
+     * @throws CorruptedConfiguration If required fields are missing or invalid
      */
     public DeviceQueueConfig(JSONObject doc) throws CorruptedConfiguration {
         this.gatewayDeviceId = doc.optString("gatewayDeviceId", null);
@@ -70,26 +75,26 @@ public class DeviceQueueConfig {
                             + ": 'maxTimeToLiveSeconds' must be a positive integer");
         }
         this.maxTimeToLive = Duration.ofSeconds(maxTtlSeconds);
-
-        this.callbackUrl = doc.optString("callbackUrl", null);
-        if (callbackUrl == null || callbackUrl.isBlank()) {
-            throw new CorruptedConfiguration(
-                    "Queuing config for device " + gatewayDeviceId
-                            + ": 'callbackUrl' is missing or empty");
-        }
     }
 
+    // | ================= Serialisation ================= |
+
+    /**
+     * Serialises this config to a JSONObject for persistence in MongoDB.
+     *
+     * @return JSONObject ready to store in the deviceQueueConfig collection
+     */
     public JSONObject toDocument() {
         JSONObject doc = new JSONObject();
         doc.put("gatewayDeviceId",      gatewayDeviceId);
         doc.put("retryIntervalSeconds", (int) retryInterval.getSeconds());
         doc.put("maxTimeToLiveSeconds", (int) maxTimeToLive.getSeconds());
-        doc.put("callbackUrl",          callbackUrl);
         return doc;
     }
 
-    public String getGatewayDeviceId()  { return gatewayDeviceId; }
-    public Duration getRetryInterval()  { return retryInterval; }
-    public Duration getMaxTimeToLive()  { return maxTimeToLive; }
-    public String getCallbackUrl()      { return callbackUrl; }
+    // | ================= Getters ================= |
+
+    public String   getGatewayDeviceId() { return gatewayDeviceId; }
+    public Duration getRetryInterval()   { return retryInterval; }
+    public Duration getMaxTimeToLive()   { return maxTimeToLive; }
 }

@@ -4,8 +4,6 @@ import edge_control.RequestHandler;
 import edge_control.exceptions.ExceptionHandler;
 import edge_control.exceptions.IllegalOperation;
 import edge_control.logger.EdgeControlLogger;
-import edge_control.translation.DeviceTranslationManager;
-import edge_control.translation.adapter.DeviceAdapter;
 import edge_control.translation.adapter.HttpForgery;
 import org.apache.apisix.plugin.runner.HttpRequest;
 import org.apache.apisix.plugin.runner.HttpResponse;
@@ -18,18 +16,16 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 /**
- * APISIX plugin filter that handles protocol translation for devices.
+ * APISIX plugin filter that forwards an inbound device message to all registered backend endpoints.
  *
- * Responsibilities:
- * - forward a received message to multiple backends
+ * The list of endpoints is injected into the request body by the AuthFilter as 'listOfEndpoints'.
+ * All forwards are fired in parallel and the filter returns 202 immediately without waiting for results.
  */
 @Component
 public class BackendForwarderFilter implements PluginFilter {
@@ -37,40 +33,28 @@ public class BackendForwarderFilter implements PluginFilter {
     private static final Logger API_LOGGER =
             LoggerFactory.getLogger(BackendForwarderFilter.class);
 
-    private final EdgeControlLogger logger =
-            EdgeControlLogger.getInstance();
+    private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
-    private static final RequestHandler requestHandler =
-            RequestHandler.getInstance();
+    private static final RequestHandler requestHandler = RequestHandler.getInstance();
 
-
-    /**
-     * Initializes the plugin and logs startup messages.
-     */
     BackendForwarderFilter() {
         logger.info("BackendForwarder Filter initialized");
         API_LOGGER.warn("BackendForwarder Filter is running");
     }
 
-    /**
-     * Returns the name of this plugin filter.
-     *
-     * @return plugin name
-     */
     @Override
     public String name() {
         return "BackendForwarder";
     }
 
     /**
-     * Main filter method invoked by APISIX on the event loop thread.
-     * NEVER BLOCK THIS THREAD - return immediately for slow paths.
-     * Main filter method invoked by APISIX.
-     * Routes requests to health check, device management, or device adapters.
+     * Extracts the list of backend endpoints from the request body and forwards the message
+     * to all of them in parallel. Returns 202 immediately without waiting for backend responses.
+     * Must never block the Netty event loop thread.
      *
-     * @param request the incoming HTTP request
-     * @param response the HTTP response to populate
-     * @param chain the APISIX plugin filter chain
+     * @param request  Inbound request; body must contain 'listOfEndpoints'
+     * @param response HTTP response populated with 202 before returning
+     * @param chain    APISIX filter chain
      */
     @Override
     public void filter(HttpRequest request,
@@ -79,10 +63,8 @@ public class BackendForwarderFilter implements PluginFilter {
 
         logger.debug("Incoming request in " + name() + ", index: " + chain.getIndex());
 
-        // Register request
         requestHandler.register(request);
 
-        // Check if this filter should skip request
         if (requestHandler.shouldSkipRequest(request, chain)) {
             chain.filter(request, response);
             return;
@@ -93,11 +75,17 @@ public class BackendForwarderFilter implements PluginFilter {
 
         try {
             JSONObject requestJson = new JSONObject(request.getBody());
+
             if (!requestJson.has("listOfEndpoints")) {
                 throw new IllegalOperation("Missing listOfEndpoints in body: internal filter error");
             }
+
             Map<String, Object> endpoints = requestJson.getJSONObject("listOfEndpoints").toMap();
+
+            // Strip internal routing fields before forwarding to backends
             requestJson.remove("listOfEndpoints");
+            requestJson.remove("gatewayBackendId");
+
             endpoints.forEach((key, value) -> backendEndpoints.add((String) value));
             forwardBody = requestJson.toString();
 
@@ -108,8 +96,7 @@ public class BackendForwarderFilter implements PluginFilter {
             return;
         }
 
-        // Fire all forwards in parallel — do not block, do not wait for results
-        // this is because it is sent to multiple backends
+        // Fire all forwards in parallel — each backend is independent, failures are logged only
         List<CompletableFuture<Void>> forwards = backendEndpoints.stream()
                 .map(endpoint -> HttpForgery.doRequestAsync(
                                 "POST",
@@ -118,24 +105,21 @@ public class BackendForwarderFilter implements PluginFilter {
                                 request.getHeaders(),
                                 Duration.of(10, ChronoUnit.SECONDS),
                                 Duration.of(30, ChronoUnit.SECONDS))
-                        .thenAccept(result -> {
-                            logger.debug("Forwarded to " + endpoint
-                                    + " — status=" + result.statusCode() + " / " + result.body());
-                        })
+                        .thenAccept(result -> logger.debug(
+                                "Forwarded to " + endpoint + " - status=" + result.statusCode()))
                         .exceptionally(throwable -> {
                             Throwable cause = throwable.getCause() != null
                                     ? throwable.getCause() : throwable;
-                            logger.error("Forward to " + endpoint
-                                    + " failed: " + cause.getMessage());
+                            logger.error("Forward to " + endpoint + " failed: " + cause.getMessage());
                             return null;
                         }))
                 .toList();
 
-        // Log when all complete, but do not block the response on them
+        // Log completion of all forwards for observability, but do not block the response on them
         CompletableFuture.allOf(forwards.toArray(new CompletableFuture[0]))
                 .thenRun(() -> logger.debug("All forwards completed for request in " + name()));
 
-        // Return 202 immediately — device does not need to wait for backend responses
+        // Return 202 immediately — the device does not need to wait for backend acknowledgements
         response.setStatusCode(202);
         response.setBody("{\"status\":\"Forwarded\"}");
         response.setHeader("MODIFIED-BY", "EdgeControl/Backend-Forwarder");
@@ -143,24 +127,8 @@ public class BackendForwarderFilter implements PluginFilter {
         chain.filter(request, response);
     }
 
-
-    /**
-     * Indicates that the plugin requires the request body to function.
-     *
-     * @return true
-     */
     @Override
     public Boolean requiredBody() {
-        return true;
-    }
-
-    /**
-     * Indicates that the plugin requires the response body to function.
-     *
-     * @return true
-     */
-    @Override
-    public Boolean requiredRespBody() {
         return true;
     }
 }

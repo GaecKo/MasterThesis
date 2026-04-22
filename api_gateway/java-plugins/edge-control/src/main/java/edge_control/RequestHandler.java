@@ -6,49 +6,77 @@ import org.apache.apisix.plugin.runner.filter.PluginFilterChain;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Tracks per-request state across the APISIX filter chain.
+ *
+ * Each request is registered on first encounter and marked with a skip flag
+ * if an earlier filter decides the chain should not proceed (e.g. auth failure).
+ * The entry is cleaned up automatically at the last filter in the chain.
+ */
 public class RequestHandler {
 
-    private static RequestHandler INSTANCE;
-    private static ConcurrentHashMap<HttpRequest, Boolean> skipRequest;
+    private static RequestHandler instance;
 
-    private final EdgeControlLogger logger =
-            EdgeControlLogger.getInstance();
+    // Tracks whether each in-flight request should be skipped by subsequent filters
+    private final ConcurrentHashMap<HttpRequest, Boolean> skipRequest = new ConcurrentHashMap<>();
 
+    private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
-    public static RequestHandler getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new RequestHandler();
+    private RequestHandler() {}
+
+    /**
+     * Returns the singleton instance, creating it on first call.
+     */
+    public static synchronized RequestHandler getInstance() {
+        if (instance == null) {
+            instance = new RequestHandler();
         }
-        return INSTANCE;
+        return instance;
     }
 
-    private RequestHandler() {
-        skipRequest = new ConcurrentHashMap<>();
-    }
+    // | ================= Request lifecycle ================= |
 
+    /**
+     * Registers a request when it first enters the filter chain.
+     * If the request is already registered, this is a no-op.
+     *
+     * @param httpRequest The incoming request to register
+     */
     public void register(HttpRequest httpRequest) {
         skipRequest.putIfAbsent(httpRequest, false);
     }
 
+    /**
+     * Returns whether this request has been marked for skipping by a previous filter.
+     * Also cleans up the entry when the last filter in the chain is reached.
+     *
+     * Filter chain example:
+     *   StartFilter -> Filter1 -> Filter2 -> Filter3 -> EndFilter          -> RespFilter
+     *   Index:              0  ->       1 ->       2 ->        3 -> 4
+     *   Action:          register    check      check      check + remove
+     *
+     * @param httpRequest The request to check
+     * @param chain       The current filter chain, used to detect the last filter
+     * @return True if subsequent filters should skip processing this request
+     */
     public boolean shouldSkipRequest(HttpRequest httpRequest, PluginFilterChain chain) {
-        boolean cont = skipRequest.get(httpRequest);
+        boolean skip = skipRequest.get(httpRequest);
 
-
-        // Filters: StartFilter -> Filter 1 -> Filter 2 -> Filter 3         -> EndFilter
-        // Index:             0 ->        1 ->        2 ->        3         -> 4
-        // Action:               |  1st reg  |  check    | check + delete
+        // Clean up when we reach the last filter so entries don't accumulate
         if (chain.getIndex() >= chain.getFilters().size() - 1) {
-            // logger.info("Removing request at filter with index: " + chain.getIndex());
-            // remove request from our hashmap if it won't be used anymore
             skipRequest.remove(httpRequest);
         }
 
-        return cont;
+        return skip;
     }
 
+    /**
+     * Marks a request so that all subsequent filters in the chain will skip it.
+     * Called when a filter handles the response itself and the chain should not continue normally.
+     *
+     * @param httpRequest The request to mark for skipping
+     */
     public void skipChain(HttpRequest httpRequest) {
         skipRequest.put(httpRequest, true);
     }
-
-
 }

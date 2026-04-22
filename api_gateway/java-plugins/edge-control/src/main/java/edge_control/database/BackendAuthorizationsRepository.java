@@ -10,11 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Repository for creation and modification of a backend entry from MongoDB.
- *
- * Responsibilities:
- * - Provides access to the "backendAuthorizations" collection in MongoDB.
- * - Creates an entry in the collection for a backend along with its authorization info.
+ * Repository for managing backend authorization entries in MongoDB.
+ * Each entry stores the list of commands a backend is authorized to send to each device.
  */
 public class BackendAuthorizationsRepository {
 
@@ -23,20 +20,21 @@ public class BackendAuthorizationsRepository {
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
     /**
-     * Initializes the repository by connecting to the "devices" collection
-     * in the configured MongoDB database.
+     * Connects to the "backendAuthorizations" collection in the edge_control database.
      */
     public BackendAuthorizationsRepository() {
         MongoDatabase db = MongoClientProvider.getDatabase("edge_control");
         this.backendAuthorizationCollection = db.getCollection("backendAuthorizations");
     }
 
+    // | ================= Write operations ================= |
+
     /**
-     * Creates a new backend authorization entry in the database (POST operation).
-     * This function inserts a fresh entry with initial authorization details.
+     * Inserts a new backend authorization entry.
+     * Returns false if the entry already exists (use updateBackendAuthorization instead).
      *
-     * @param requestBody the request body containing backend ID and authorization details
-     * @return true if the operation was successful, false otherwise
+     * @param requestBody Must contain 'gatewayBackendId' and 'listOfAuthorizations'
+     * @return True if inserted, false if the entry already exists or required fields are missing
      */
     public boolean addBackendAuthorization(Document requestBody) {
         String backendId = requestBody.getString("gatewayBackendId");
@@ -46,17 +44,13 @@ public class BackendAuthorizationsRepository {
             return false;
         }
 
-        // Check if backend authorization entry already exists
+        // Reject if an entry already exists — callers should use update instead
         Document existingEntry = backendAuthorizationCollection.find(
-                new Document("gatewayBackendId", backendId)
-        ).first();
-
+                new Document("gatewayBackendId", backendId)).first();
         if (existingEntry != null) {
-            // Entry already exists, use update instead
             return false;
         }
 
-        // Create new document with initial authorizations
         Document newDocument = new Document();
         newDocument.put("gatewayBackendId", backendId);
         newDocument.put("listOfAuthorizations", newAuths);
@@ -65,96 +59,82 @@ public class BackendAuthorizationsRepository {
             backendAuthorizationCollection.insertOne(newDocument);
             return true;
         } catch (Exception e) {
+            logger.error("Failed to insert backend authorization for " + backendId + ": " + e.getMessage());
             return false;
         }
     }
 
     /**
-     * Updates an existing backend authorization entry in the database (PATCH operation).
-     * This function adds or removes authorization details for an existing backend.
+     * Adds or removes authorized commands for an existing backend entry.
      *
-     * Note: If the same field is being both added to and removed from, we split this into
-     * two separate operations to avoid MongoDB conflicts.
+     * Remove is applied before add to avoid MongoDB conflicts when the same
+     * field appears in both lists.
      *
-     * @param requestBody the request body containing backend ID and authorization details to add/remove
-     * @return true if the operation was successful, false otherwise
+     * @param requestBody Must contain 'gatewayBackendId' and at least one of
+     *                    'listOfAuthorizationsToAdd' or 'listOfAuthorizationsToRemove'
+     * @return True if at least one update matched a document, false otherwise
      */
     public boolean updateBackendAuthorization(Document requestBody) {
         String backendId = requestBody.getString("gatewayBackendId");
-        Document authsToAdd = (Document) requestBody.get("listOfAuthorizationsToAdd");
+        Document authsToAdd    = (Document) requestBody.get("listOfAuthorizationsToAdd");
         Document authsToRemove = (Document) requestBody.get("listOfAuthorizationsToRemove");
 
-        // At least one of the lists must be present
         if (backendId == null || (authsToAdd == null && authsToRemove == null)) {
             return false;
         }
 
         Document filter = new Document("gatewayBackendId", backendId);
 
-        // Step 1: Remove authorizations first (if any)
-        UpdateResult updateDocRemoveResult = null;
-
+        // Step 1: Remove authorizations first to avoid conflicts with step 2
+        UpdateResult removeResult = null;
         if (authsToRemove != null && !authsToRemove.isEmpty()) {
             Document pullDoc = new Document();
-
             for (String deviceId : authsToRemove.keySet()) {
                 Object commandsObj = authsToRemove.get(deviceId);
-
-                if (commandsObj instanceof List<?>) {
-                    List<?> commands = (List<?>) commandsObj;
-
-                    pullDoc.put(
-                            "listOfAuthorizations." + deviceId,
-                            new Document("$in", commands)
-                    );
+                if (commandsObj instanceof List<?> commands) {
+                    // $pull removes each listed command from the array for this device
+                    pullDoc.put("listOfAuthorizations." + deviceId,
+                            new Document("$in", commands));
                 }
             }
-
             if (!pullDoc.isEmpty()) {
-                Document updateDocRemove = new Document("$pull", pullDoc);
-                updateDocRemoveResult = backendAuthorizationCollection.updateOne(filter, updateDocRemove);
+                removeResult = backendAuthorizationCollection.updateOne(
+                        filter, new Document("$pull", pullDoc));
             }
         }
 
-        // Step 2: Add authorizations after (if any)
-        // Separated to avoid conflict when adding/removing from same field
-        UpdateResult updateDocAddResult = null;
-
+        // Step 2: Add new authorizations using $addToSet to avoid duplicates
+        UpdateResult addResult = null;
         if (authsToAdd != null && !authsToAdd.isEmpty()) {
             Document addToSetDoc = new Document();
-
             for (String deviceId : authsToAdd.keySet()) {
                 Object commandsObj = authsToAdd.get(deviceId);
-
-                if (commandsObj instanceof List<?>) {
-                    List<?> commands = (List<?>) commandsObj;
-
-                    addToSetDoc.put(
-                            "listOfAuthorizations." + deviceId,
-                            new Document("$each", commands)
-                    );
+                if (commandsObj instanceof List<?> commands) {
+                    // $each with $addToSet adds multiple items without duplicating existing ones
+                    addToSetDoc.put("listOfAuthorizations." + deviceId,
+                            new Document("$each", commands));
                 }
             }
-
             if (!addToSetDoc.isEmpty()) {
-                Document updateDocAdd = new Document("$addToSet", addToSetDoc);
-                updateDocAddResult = backendAuthorizationCollection.updateOne(filter, updateDocAdd);
+                addResult = backendAuthorizationCollection.updateOne(
+                        filter, new Document("$addToSet", addToSetDoc));
             }
         }
 
-        if ((updateDocRemoveResult != null && updateDocRemoveResult.getMatchedCount() == 0) ||
-                (updateDocAddResult != null && updateDocAddResult.getMatchedCount() == 0)) {
-            return false; // No matching document found for update
+        // Return false if any attempted update found no matching document
+        if ((removeResult != null && removeResult.getMatchedCount() == 0) ||
+                (addResult    != null && addResult.getMatchedCount()    == 0)) {
+            return false;
         }
 
         return true;
     }
 
     /**
-     * Deletes a backend authorization entry from the database (DELETE operation).
-     * This function removes the entire entry for a backend, including all its authorization details.
-     * @param requestBody containing the ID of the backend to delete
-     * @return true if the operation was successful, false otherwise
+     * Deletes the entire authorization entry for a backend.
+     *
+     * @param requestBody Must contain 'gatewayBackendId'
+     * @return True if the delete succeeded, false if the ID is missing
      */
     public boolean deleteBackendAuthorization(Document requestBody) {
         String backendId = requestBody.getString("gatewayBackendId");
@@ -162,59 +142,62 @@ public class BackendAuthorizationsRepository {
             return false;
         }
 
-        Document filter = new Document("gatewayBackendId", backendId);
         try {
-            backendAuthorizationCollection.deleteOne(filter);
+            backendAuthorizationCollection.deleteOne(
+                    new Document("gatewayBackendId", backendId));
             return true;
         } catch (Exception e) {
+            logger.error("Failed to delete backend authorization for " + backendId + ": " + e.getMessage());
             return false;
         }
-
     }
 
     /**
-     * Removes all gatewayDeviceId from the list of authorizations for all the backends.
-     * This is used when a device is deleted to ensure that no device retains an authorization for a non-existent device.
-     * The entire field (deviceId key) is removed from listOfAuthorizations, not just emptied.
+     * Removes a device's authorization entry from all backends.
+     * Called when a device is deleted to prevent dangling references.
+     * The entire field key is removed via $unset, not just emptied.
      *
-     * @param requestBody the ID of the device to remove from backend authorizations
-     * @return true if the operation was successful, false otherwise
+     * @param requestBody Must contain 'gatewayDeviceId'
+     * @return True if the update succeeded, false if the ID is missing
      */
     public boolean removeDeviceFromBackendAuthorizations(Document requestBody) {
         String deviceId = requestBody.getString("gatewayDeviceId");
-
         if (deviceId == null) {
             return false;
         }
 
-        // Filter: find all documents that have this deviceId in listOfAuthorizations
-        Document filter = new Document("listOfAuthorizations." + deviceId, new Document("$exists", true));
+        // Find all backends that have an entry for this device
+        Document filter = new Document("listOfAuthorizations." + deviceId,
+                new Document("$exists", true));
 
-        // Update: use $unset to completely remove the field
-        Document unsetDoc = new Document("listOfAuthorizations." + deviceId, "");
-        Document updateDoc = new Document("$unset", unsetDoc);
+        // $unset removes the field entirely rather than setting it to null or empty
+        Document updateDoc = new Document("$unset",
+                new Document("listOfAuthorizations." + deviceId, ""));
 
         try {
             backendAuthorizationCollection.updateMany(filter, updateDoc);
             return true;
         } catch (Exception e) {
+            logger.error("Failed to remove device " + deviceId + " from backend authorizations: " + e.getMessage());
             return false;
         }
     }
 
+    // | ================= Read operations ================= |
+
     /**
-     * Checks if the given gatewayBackendId is authorized to perform the specified operation.
+     * Checks whether a backend is authorized to send a specific command to a specific device.
      *
-     * @param gatewayBackendId the ID of the backend to check authorization for
-     * @param body the request body containing details of the command to perform
-     * @return true if authorized, false otherwise
+     * @param gatewayBackendId Backend to check authorization for
+     * @param body             Must contain 'gatewayDeviceId' and 'command'
+     * @return True if the command is in the backend's authorization list for that device
      */
     public boolean isAuthorized(String gatewayBackendId, Document body) {
         Document backendAuth = backendAuthorizationCollection.find(
                 new Document("gatewayBackendId", gatewayBackendId)).first();
 
         String gatewayDeviceId = body.getString("gatewayDeviceId");
-        String commandName = body.getString("command");
+        String commandName     = body.getString("command");
 
         if (backendAuth == null || gatewayDeviceId == null || commandName == null) {
             return false;
@@ -225,22 +208,29 @@ public class BackendAuthorizationsRepository {
             return false;
         }
 
-        List<String> authorizedCommandsObj = listOfAuthorizations.getList(gatewayDeviceId, String.class);
-        if (authorizedCommandsObj == null) {
+        // Look up the list of authorized commands for this specific device
+        List<String> authorizedCommands = listOfAuthorizations.getList(gatewayDeviceId, String.class);
+        if (authorizedCommands == null) {
             return false;
         }
 
-        return authorizedCommandsObj.contains(commandName);
-
+        return authorizedCommands.contains(commandName);
     }
 
+    /**
+     * @return All backend authorization documents in the collection
+     */
     public List<Document> findAll() {
         return backendAuthorizationCollection.find().into(new ArrayList<>());
     }
+
+    /**
+     * @param gatewayBackendId Backend to look up
+     * @return The listOfAuthorizations document for the given backend, or null if not found
+     */
     public Document findAuthorizationsById(String gatewayBackendId) {
         Document doc = backendAuthorizationCollection.find(
                 new Document("gatewayBackendId", gatewayBackendId)).first();
         return doc != null ? (Document) doc.get("listOfAuthorizations") : null;
     }
-
 }
