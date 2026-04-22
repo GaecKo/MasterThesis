@@ -14,9 +14,9 @@ The factors we will make vary throughout the context and scenarios
 | {1, 2, 4} |
 
 ### Network related 
-| Virtual Users | 
-| :-----------: | 
-| [1: 400]      | 
+|  Request/sec | 
+| :-----------:| 
+| [1: 400]     | 
 
 ## Load related
 | Packet size     |
@@ -34,7 +34,6 @@ The metrics to observe, **can depend on the context / scenario**:
 * Throughput (req/s): Achieved request per second
 * Component timing: ms per component 
 * System metrics: RAM usage, CPU usage 
-* KB sent, KB received (devices)
 
 ## Contexts
 
@@ -43,15 +42,14 @@ In this context, we want to measure the effect of each architecture component on
 
 > **Common factors of this scenario**:
 
-| CPUs | Virtual Users  | Packet size  | Device Mockup |
+| CPUs | Req/sec        | Packet size  | Device Mockup |
 | :--: | :------------: | :----------: | :-----------: |
-| 2    | {1, 5, 25, 50} | Medium       | F             |
+| 2    | {15, 50, 100}    | Medium       | F             |
 
 > **Common metrics of this scenario**
 * Latency (ms): mean, pX with X = {50, 90, 95, 99, 99.9}, std dev (standard deviation) / Variance
 * Throughput (req/s): Achieved request per second
 * System metrics: RAM usage, CPU usage 
-* KB sent, KB received (devices)
 
 #### Scenario A: No API Gateway 
 Direct communication between a backend and a device (will basically show the forgery and network latency)
@@ -75,28 +73,7 @@ API Gateway forwards request to the plugin, which doesn't do a lot, to then give
 | :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | :--------------: |
 | T           | T              | F                   | F               | F                   | T                |
 
-### Scenario D: API Gateway with Plugin which does the request
-The API Gateway forwards request to the plugin, which has its whole flow and does itself the request to the device
-
-| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Security Enabled |
-| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | :--------------: |
-| T           | T              | T                   | F               | F                   | T                |
-
-### Scenario E1: API Gateway with Plugin Auth only
-The API Gateway forwards request to the plugin, which verifies AuthN/AuthZ, and then does the request to the device (no translation)
-
-| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Security Enabled |
-| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | :--------------: |
-| T           | T              | T                   | T               | F                   | T                |
-
-### Scenario E2: API Gateway with Plugin Translation only
-The API Gateway forwards request to the plugin, which translates the reuest and then does the request to the device (no auth)
-
-| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Security Enabled |
-| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | :--------------: |
-| T           | T              | T                   | F               | T                   | T                |
-
-### Scenario F (Final): API Gateway with full Plugin
+### Scenario D (Final): API Gateway with full Plugin
 The API Gateway forwards request to the plugin, which verifies AuthN/AuthZ, then translates the request, and then does the request to the device 
 
 | API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Security Enabled |
