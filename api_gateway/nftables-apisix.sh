@@ -38,7 +38,7 @@ if nft add set ip apisix_guard _init_flag \
     # HTTPS flood (capture new connections to API port 9443)
     nft add rule ip apisix_guard forward \
         ip protocol tcp tcp dport 9443 ct state new \
-        meter tcp_flood_tls { ip saddr limit rate over 50/second} \
+        meter tcp_flood_tls { ip saddr limit rate over 100/second} \
         add @blacklist { ip saddr } counter drop
 
     # MQTT plain (capture new + established publishes)
@@ -50,13 +50,13 @@ if nft add set ip apisix_guard _init_flag \
     # MQTT WebSocket
     nft add rule ip apisix_guard forward \
         ip protocol tcp tcp dport 9001 ct state new,established \
-        meter mqttws_flood { ip saddr limit rate over 50/second } \
+        meter mqttws_flood { ip saddr limit rate over 35/second } \
         add @blacklist { ip saddr } counter drop
 
     # MQTTS (TLS) if enabled
     nft add rule ip apisix_guard forward \
         ip protocol tcp tcp dport 8883 ct state new,established \
-        meter mqtts_flood { ip saddr limit rate over 50/second } \
+        meter mqtts_flood { ip saddr limit rate over 35/second } \
         add @blacklist { ip saddr } counter drop
 
     # # UDP flood (example for CoAP)
