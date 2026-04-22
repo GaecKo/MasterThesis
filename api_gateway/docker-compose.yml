@@ -87,8 +87,6 @@ services:
       - "8883:8883"   # MQTTS
     volumes:
       - ./brokers/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
-      #- ./conf/server.crt:/mosquitto/certs/server.crt:ro
-      #- ./conf/server.key:/mosquitto/certs/server.key:ro
       - mosquitto_data:/mosquitto/data
       - mosquitto_logs:/mosquitto/log
     networks:

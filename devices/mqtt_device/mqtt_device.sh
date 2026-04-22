@@ -27,12 +27,6 @@ command -v docker     >/dev/null 2>&1 || err "docker not found"
 [ -f "Dockerfile" ]                   || err "Dockerfile not found at ./Dockerfile"
 [ -n "${APISIX_IP:-}" ]              || err "APISIX_IP env var is not set (e.g. export APISIX_IP=192.168.2.x)"
 
-### ── Copy cert into build context ───────────────────────────────────────────
-info "Copying certificate into build context..."
-[ -f /usr/local/share/ca-certificates/apisix.crt ] \
-  || err "Certificate not found. Run setup_device.sh first."
-cp /usr/local/share/ca-certificates/apisix.crt ./apisix.crt
-
 ### ── Build image ─────────────────────────────────────────────────────────────
 info "Building mqtt-device-app image..."
 docker build -t mqtt-device-app ./
