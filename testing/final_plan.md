@@ -42,9 +42,11 @@ In this context, we want to measure the effect of each architecture component on
 
 > **Common factors of this scenario**:
 
-| CPUs | Req/sec        | Packet size  | Device Mockup |
-| :--: | :------------: | :----------: | :-----------: |
-| 2    | {15, 50, 100}    | Medium       | F             |
+| CPUs | Req/sec        | Packet size  | Device Mockup | Security Enabled    | 
+| :--: | :------------: | :----------: | :-----------: | :--------------:    |
+| 4    | {15, 50, 100}    | Medium       | F           | T (no constraining) |
+
+-> Security is not constraining: it is enabled so resulting computation of plugins / firewall are done, but don't have any actual limitations 
 
 > **Common metrics of this scenario**
 * Latency (ms): mean, pX with X = {50, 90, 95, 99, 99.9}, std dev (standard deviation) / Variance
@@ -54,38 +56,45 @@ In this context, we want to measure the effect of each architecture component on
 #### Scenario A: No API Gateway 
 Direct communication between a backend and a device (will basically show the forgery and network latency)
 
-| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Security Enabled |
-| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | :--------------: |
-| F           | F              | F                   | F               | F                   | T    (partial)   |
+| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | 
+| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | 
+| F           | F              | F                   | F               | F                   | 
 
 
 ### Scenario B: API Gateway without Plugin
 API Gateway simply upstreams request to devices 
 
-| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Security Enabled |
-| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | :--------------: |
-| T           | F              | F                   | F               | F                   | T                |
+| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | 
+| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | 
+| T           | F              | F                   | F               | F                   | 
 
 ### Scenario C: API Gateway with Plugin 
 API Gateway forwards request to the plugin, which doesn't do a lot, to then give back to API Gateway which upstreams to devices
 
-| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Security Enabled |
-| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | :--------------: |
-| T           | T              | F                   | F               | F                   | T                |
+| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | 
+| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | 
+| T           | T              | F                   | F               | F                   | 
 
-### Scenario D (Final): API Gateway with full Plugin
+### Scenario D: API Gateway with Plugin who does request
+API Gateway forwards request to the plugin, which does the request to the end devices 
+
+| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | 
+| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | 
+| T           | T              | T                   | F               | F                   | 
+
+### Scenario E (Final): API Gateway with full Plugin
 The API Gateway forwards request to the plugin, which verifies AuthN/AuthZ, then translates the request, and then does the request to the device 
 
-| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Security Enabled |
-| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | :--------------: |
-| T           | T              | T                   | T               | T                   | T                |
+| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | 
+| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | 
+| T           | T              | T                   | T               | T                   | 
 
 ### Extra scenario 1: per APISIX component time analysis
 Indicate the time taken per each component
 > Extra metric: Component timing: ms per component 
-| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Security Enabled |
-| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | :--------------: |
-| T           | T              | T                   | T               | T                   | T                |
+| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | 
+| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | 
+| T           | T              | T                   | T               | T                   | 
 
 ## Context 2: Overload testing
 In this context, we want to see how our full architecture reacts to overloading. We test that with all components enabled, as the system would be in real context
@@ -125,6 +134,4 @@ To remove the overhead of end device performances, we don't actually do the fina
 | :-----------: |
 | T             |
 
-## Extra context: Translation complexity analysis
-Test temporal and spatial complexity of translation 
 
