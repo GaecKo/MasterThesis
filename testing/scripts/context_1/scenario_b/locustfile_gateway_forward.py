@@ -1,25 +1,21 @@
 """
-Scenario A — Direct device communication (no API gateway).
+Scenarios B and C — API Gateway forwarding (no plugin logic on the request path).
+
+Scenario B: Plugin disabled — APISIX routes directly to each device upstream.
+Scenario C: Plugin enabled but does not touch the request — overhead of plugin
+            presence without translation work.
 
 HTTP devices:
-  POST directly to the device endpoint; latency = time to HTTP response.
+  Sends POST to /device/<device_id> on the gateway. APISIX forwards to the
+  device's upstream. No apikey, no translation — pure forwarding overhead.
 
 MQTT devices:
-  Publishes a message with a correlationId in the payload (QoS 1).
-  The Node.js device echoes the correlationId back on the response topic.
-  Latency = time from publish to receiving the matching response — same
-  measurement as MqttDeviceAdapter uses in production.
+  Direct to broker, same as scenario A. The gateway adds no value for MQTT
+  without the plugin, so this gives a stable baseline for comparison with D.
 
-  Mosquitto runs on nuc1 (backend NUC). Locust connects via TLS using
-  backend.crt as the CA cert. Set MQTT_CA_CERT_PATH if the cert is not
-  at the default location.
-
-Fill in HTTP_DEVICES, MQTT_DEVICES, and MQTT_RESPONSE_TOPICS at the top,
+Fill in HTTP_DEVICES and MQTT_* dicts at the top (same values as scenario A),
 then run:
-    LOCUST_FILE=locustfile_direct.py ./run_test.sh scenarioA 50 medium
-
-The Locust CSV produces separate rows for "direct/http" and "direct/mqtt",
-which run_test.sh extracts as separate columns in the master CSV.
+    LOCUST_FILE=locustfile_gateway_forward.py ./run_test.sh scenarioB 50 medium
 
 Dependencies:
     pip install locust paho-mqtt
@@ -34,48 +30,38 @@ import threading
 import time
 import uuid
 
-import urllib3
 import gevent
+import urllib3
 import paho.mqtt.client as mqtt
 from locust import HttpUser, User, constant_throughput, events, task
 
-# Suppress SSL warnings from direct HTTPS to self-signed device certs
+# Suppress SSL warnings — gateway uses self-signed cert
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # | ================= User-provided device config ================= |
 
-# HTTP devices: device_id -> full URL to POST to
-HTTP_DEVICES: dict[str, str] = {
-    "http_device_001": "https://nuc8-pc.local:8443/v2/schedule/",
-    "http_device_002": "https://nuc8-pc.local:8444/v2/schedule/",
-    "http_device_003": "https://nuc8-pc.local:8445/v2/schedule/",
-}
+# HTTP devices: device_id -> (same IDs as scenario A, routes are /device/<id>)
+HTTP_DEVICE_IDS: list[str] = [
+    "http_device_001",
+    "http_device_002",
+    "http_device_003",
+]
 
-# MQTT devices: device_id -> command topic to publish on
+# MQTT — direct to broker, same as scenario A
 MQTT_DEVICES: dict[str, str] = {
     "mqtt_device_004": "devices/mqtt_device_004/commands",
     "mqtt_device_005": "devices/mqtt_device_005/commands",
     "mqtt_device_006": "devices/mqtt_device_006/commands",
 }
-
-# Response topic per device — the Node.js device echoes correlationId here
 MQTT_RESPONSE_TOPICS: dict[str, str] = {
     "mqtt_device_004": "devices/mqtt_device_004/telemetry",
     "mqtt_device_005": "devices/mqtt_device_005/telemetry",
     "mqtt_device_006": "devices/mqtt_device_006/telemetry",
 }
 
-# | ================= MQTT broker config ================= |
-
-# Mosquitto runs on the backend NUC for scenario A
-MQTT_BROKER_HOST = "nuc1-pc.local"
-MQTT_BROKER_PORT = 8883
-
-# CA cert for verifying the broker's self-signed TLS certificate.
-# backend.crt must be present on the machine running Locust.
-MQTT_CA_CERT_PATH = os.environ.get("MQTT_CA_CERT_PATH", "./backend.crt")
-
-# Max wait for a correlationId echo before recording a timeout failure
+MQTT_BROKER_HOST        = "192.168.50.1"   # nuc1 IP — .local doesn't resolve in containers
+MQTT_BROKER_PORT        = 8883
+MQTT_CA_CERT_PATH       = os.environ.get("MQTT_CA_CERT_PATH", "./backend.crt")
 MQTT_RESPONSE_TIMEOUT_S = 10.0
 
 # | ================= Rate control ================= |
@@ -84,21 +70,15 @@ TARGET_RPS   = float(os.environ["TARGET_RPS"])
 NUM_USERS    = int(os.environ["NUM_USERS"])
 PER_USER_RPS = TARGET_RPS / NUM_USERS
 
-HTTP_WEIGHT = max(len(HTTP_DEVICES), 1)
+HTTP_WEIGHT = max(len(HTTP_DEVICE_IDS), 1)
 MQTT_WEIGHT = max(len(MQTT_DEVICES), 1)
 
 # | ================= Medium payload ================= |
 
 def build_medium_payload(device_id: str, command: str, correlation_id: str) -> dict:
-    """
-    Builds a realistic medium-sized payload (~10 fields).
-    correlationId is embedded so the device can echo it back in the response.
-    Actual field values don't matter for scenario A — we measure transport only.
-    """
     return {
         "type":          command,
         "correlationId": correlation_id,
-        # responseTopic is required by the Node.js device to know where to echo the ack
         "responseTopic": f"devices/{device_id}/telemetry",
         "schedule": [{
             "type":      command,
@@ -119,7 +99,7 @@ def build_medium_payload(device_id: str, command: str, correlation_id: str) -> d
             "endAt":   "2024-01-02T00:00:00Z",
         }],
         "metadata": {
-            "source":   "perf_test_direct",
+            "source":   "perf_test_gateway_forward",
             "priority": random.choice(["low", "medium", "high"]),
         },
         "assetIdentifiers": [f"asset_{random.randint(1, 100)}"],
@@ -127,36 +107,39 @@ def build_medium_payload(device_id: str, command: str, correlation_id: str) -> d
 
 # | ================= HTTP user ================= |
 
-_http_iter = itertools.cycle(list(HTTP_DEVICES.items()))
+_http_iter = itertools.cycle(HTTP_DEVICE_IDS)
 _http_lock = threading.Lock()
 
-def next_http_device() -> tuple[str, str]:
+def next_http_device() -> str:
     with _http_lock:
         return next(_http_iter)
 
 
-class HttpDeviceUser(HttpUser):
-    """Sends POST requests directly to HTTP device endpoints."""
+class HttpGatewayUser(HttpUser):
+    """
+    Sends POST requests to /device/<device_id> on the gateway.
+    APISIX forwards to the device upstream — no plugin logic involved.
+    """
     wait_time = constant_throughput(PER_USER_RPS)
     weight    = HTTP_WEIGHT
 
     @task
-    def post_to_device(self):
-        device_id, url = next_http_device()
+    def post_via_gateway(self):
+        device_id      = next_http_device()
         correlation_id = str(uuid.uuid4())
-        payload = build_medium_payload(device_id, "setBatteryOperation", correlation_id)
+        payload        = build_medium_payload(device_id, "setBatteryOperation", correlation_id)
 
         with self.client.post(
-                url,
+                f"/device/{device_id}",
                 json=payload,
                 headers={"Content-Type": "application/json"},
-                name="direct/http",
-                verify=False,       # self-signed cert on device NUC
+                name="gateway/http",
+                verify=False,
                 catch_response=True) as resp:
             if resp.status_code not in (200, 201, 202):
                 resp.failure(f"status={resp.status_code} body={resp.text[:200]}")
 
-# | ================= MQTT user ================= |
+# | ================= MQTT user (direct, same as scenario A) ================= |
 
 _mqtt_iter = itertools.cycle(list(MQTT_DEVICES.items()))
 _mqtt_lock = threading.Lock()
@@ -166,46 +149,29 @@ def next_mqtt_device() -> tuple[str, str]:
         return next(_mqtt_iter)
 
 
-class MqttDeviceUser(User):
+class MqttDirectUser(User):
     """
-    Publishes messages directly to MQTT device command topics on nuc1's broker.
-
-    Each message carries a correlationId. The Node.js device echoes it back
-    on the response topic. Latency = time from publish to receiving the
-    matching response, i.e. the full device round-trip.
-
-    Each virtual user maintains its own persistent TLS connection to the broker.
+    Direct MQTT to broker — unchanged from scenario A.
+    Gateway adds no MQTT value without the plugin.
     """
     wait_time = constant_throughput(PER_USER_RPS)
     weight    = MQTT_WEIGHT
 
     def on_start(self):
-        # pending maps correlationId -> {"start_ns": int, "elapsed_ms": float|None, "done": bool}
-        # Uses polling with gevent.sleep() instead of threading.Event because
-        # paho's loop_start() runs in a real OS thread, and setting a gevent
-        # event from a real thread is occasionally unreliable under load.
         self._pending: dict[str, dict] = {}
         self._pending_lock = threading.Lock()
-        self._connected = False   # set True by _on_connect once broker confirms
+        self._connected    = False
 
         self._client = mqtt.Client(
             callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
-            client_id=f"locust_direct_{id(self)}",
+            client_id=f"locust_gw_{id(self)}",
             protocol=mqtt.MQTTv311)
-
-        # TLS — verify broker cert using backend.crt as CA
-        self._client.tls_set(
-            ca_certs=MQTT_CA_CERT_PATH,
-            tls_version=ssl.PROTOCOL_TLS_CLIENT)
-
+        self._client.tls_set(ca_certs=MQTT_CA_CERT_PATH, tls_version=ssl.PROTOCOL_TLS_CLIENT)
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
         self._client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT, keepalive=30)
         self._client.loop_start()
 
-        # Block until connected and subscribed before allowing the first task
-        # to run. Without this, a user can publish before _on_connect fires,
-        # the device responds but nobody is subscribed yet, causing a timeout.
         deadline = time.perf_counter() + 15
         while not self._connected and time.perf_counter() < deadline:
             gevent.sleep(0.05)
@@ -217,37 +183,25 @@ class MqttDeviceUser(User):
         self._client.disconnect()
 
     def _on_connect(self, client, userdata, connect_flags, reason_code, properties):
-        # reason_code is a ReasonCode object in VERSION2; 0 means success
         if reason_code != 0:
-            print(f"[locust/mqtt] Connection failed reason_code={reason_code}")
+            print(f"[locust/mqtt] Connection failed: {reason_code}")
             return
-        # Subscribe to every response topic so this user can receive acks
-        # for whichever device it happens to send to
-        for response_topic in MQTT_RESPONSE_TOPICS.values():
-            client.subscribe(response_topic, qos=1)
-        # Signal on_start that the connection and subscriptions are ready.
-        # Tasks will not run until this is set.
+        for topic in MQTT_RESPONSE_TOPICS.values():
+            client.subscribe(topic, qos=1)
         self._connected = True
 
     def _on_message(self, client, userdata, msg):
-        """
-        Called by the paho network thread on incoming response topic messages.
-        Matches the correlationId and unblocks the waiting task.
-        """
         try:
-            data = json.loads(msg.payload.decode())
+            data           = json.loads(msg.payload.decode())
             correlation_id = data.get("correlationId")
             if not correlation_id:
                 return
-
             with self._pending_lock:
                 entry = self._pending.pop(correlation_id, None)
-
             if entry:
-                entry["elapsed_ms"]     = (time.perf_counter_ns() - entry["start_ns"]) / 1_000_000
+                entry["elapsed_ms"]      = (time.perf_counter_ns() - entry["start_ns"]) / 1_000_000
                 entry["response_length"] = len(msg.payload)
-                entry["done"]           = True
-
+                entry["done"]            = True
         except Exception:
             pass
 
@@ -261,35 +215,27 @@ class MqttDeviceUser(User):
 
         entry = {"start_ns": time.perf_counter_ns(), "elapsed_ms": None,
                  "response_length": 0, "done": False}
-
-        # Register before publishing to avoid a race where the response
-        # arrives before we've added the entry to pending
         with self._pending_lock:
             self._pending[correlation_id] = entry
 
         self._client.publish(command_topic, payload_bytes, qos=1)
 
-        # Poll with gevent.sleep() — compatible with both gevent greenlets and
-        # the real OS thread that paho uses for loop_start()
         deadline = time.perf_counter() + MQTT_RESPONSE_TIMEOUT_S
         while time.perf_counter() < deadline:
-            gevent.sleep(0.002)   # yield to gevent loop, check every 2ms
+            gevent.sleep(0.002)
             if entry["done"]:
                 break
 
         received   = entry["done"]
         elapsed_ms = entry["elapsed_ms"] if received else MQTT_RESPONSE_TIMEOUT_S * 1000
-
         if not received:
             with self._pending_lock:
                 self._pending.pop(correlation_id, None)
 
         events.request.fire(
             request_type="MQTT",
-            name="direct/mqtt",
+            name="gateway/mqtt",
             response_time=elapsed_ms,
-            # Use the actual response payload size (the ack from the device),
-            # consistent with how Locust measures HTTP response body size
             response_length=entry["response_length"],
             exception=None if received else Exception("MQTT response timeout"),
         )
@@ -299,26 +245,20 @@ class MqttDeviceUser(User):
 @events.test_start.add_listener
 def on_test_start(environment, **kwargs):
     errors = []
-    if not HTTP_DEVICES:
-        errors.append("HTTP_DEVICES is empty")
+    if not HTTP_DEVICE_IDS:
+        errors.append("HTTP_DEVICE_IDS is empty")
     if not MQTT_DEVICES:
         errors.append("MQTT_DEVICES is empty")
-    if MQTT_DEVICES and not MQTT_RESPONSE_TOPICS:
-        errors.append("MQTT_RESPONSE_TOPICS is empty but MQTT_DEVICES is set")
-    if set(MQTT_DEVICES.keys()) != set(MQTT_RESPONSE_TOPICS.keys()):
-        errors.append("MQTT_DEVICES and MQTT_RESPONSE_TOPICS must have the same device IDs")
     if MQTT_DEVICES and not os.path.exists(MQTT_CA_CERT_PATH):
         errors.append(f"MQTT_CA_CERT_PATH not found: {MQTT_CA_CERT_PATH}")
     if errors:
         raise RuntimeError("Config errors:\n  " + "\n  ".join(errors))
 
-    print(f"[locust/direct] HTTP devices : {list(HTTP_DEVICES.keys())}")
-    print(f"[locust/direct] MQTT devices : {list(MQTT_DEVICES.keys())}")
-    print(f"[locust/direct] MQTT broker  : {MQTT_BROKER_HOST}:{MQTT_BROKER_PORT} (TLS)")
-    print(f"[locust/direct] CA cert      : {MQTT_CA_CERT_PATH}")
-    print(f"[locust/direct] Target {TARGET_RPS} req/s via {NUM_USERS} users "
-          f"({PER_USER_RPS:.3f} req/s each)")
+    print(f"[locust/gw-forward] HTTP devices : {HTTP_DEVICE_IDS}")
+    print(f"[locust/gw-forward] HTTP route   : GET /device/<id> via {environment.host}")
+    print(f"[locust/gw-forward] MQTT devices : {list(MQTT_DEVICES.keys())} (direct)")
+    print(f"[locust/gw-forward] Target {TARGET_RPS} req/s via {NUM_USERS} users")
 
 @events.test_stop.add_listener
 def on_test_stop(environment, **kwargs):
-    print("[locust/direct] Test stopped.")
+    print("[locust/gw-forward] Test stopped.")
