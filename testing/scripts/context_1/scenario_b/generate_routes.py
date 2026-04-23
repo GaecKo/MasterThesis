@@ -28,7 +28,7 @@ from pathlib import Path
 
 SUMMARY_PATH    = Path(os.environ.get("SUMMARY_PATH", "./generated_configs/_summary.json"))
 APISIX_ADMIN    = os.environ.get("APISIX_ADMIN", "http://nuc4-pc.local:9180")
-ADMIN_API_KEY   = os.environ.get("ADMIN_API_KEY", "edd1c9f034335f136f87ad84b625c8f1")  # default APISIX key
+ADMIN_API_KEY   = os.environ.get("ADMIN_API_KEY", "admin")  # default APISIX key
 
 # Route IDs are deterministic so --delete can find them without state
 ROUTE_ID_BASE   = 2000   # starts at 2000 to avoid clashing with existing routes
