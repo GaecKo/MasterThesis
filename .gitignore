@@ -3,6 +3,4 @@ api_gateway/java-plugins/edge-control/.idea/*
 api_gateway/java-plugins/edge-control/logs
 **/**.env
 api_gateway/conf/server.*
-**/**.crt
-**/**.key
 **/**.DS_Store
