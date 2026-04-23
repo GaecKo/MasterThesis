@@ -31,7 +31,7 @@ APISIX_IP="${APISIX_IP:-nuc4-pc.local}"
 HTTP_DEVICE_IP="${HTTP_DEVICE_IP:-nuc8-pc.local}"
 
 # Backend NUC — MQTT devices connect to Mosquitto here
-MQTT_BROKER_URL="${MQTT_BROKER_URL:-mqtts://nuc1-pc.local:8883}"
+MQTT_BROKER_URL="${MQTT_BROKER_URL:-mqtts://192.168.50.1:8883}"
 
 # Keep telemetry quiet during perf tests to avoid noise in measurements
 TELEMETRY_INTERVAL_MS="${TELEMETRY_INTERVAL_MS:-60000}"
@@ -208,7 +208,7 @@ case "${1:-}" in
         echo "  HTTP_IMAGE              (default: edgecontrol/http-device:latest)"
         echo "  MQTT_IMAGE              (default: edgecontrol/mqtt-device:latest)"
         echo "  APISIX_IP               (default: nuc4-pc.local)"
-        echo "  MQTT_BROKER_URL         (default: mqtts://nuc1-pc.local:8883)"
+        echo "  MQTT_BROKER_URL         (default: mqtts://192.168.50.1:8883)"
         echo "  TELEMETRY_INTERVAL_MS   (default: 60000)"
         echo "  SUMMARY_PATH            (default: ./generated_configs/_summary.json)"
         exit 1

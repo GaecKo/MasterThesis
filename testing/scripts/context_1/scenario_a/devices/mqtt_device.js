@@ -82,11 +82,11 @@ client.on('connect', () => {
     else     ok(`Subscribed to ${TOPICS.commands}`);
   });
 
-  setInterval(() => publishTelemetry(client), INTERVAL_MS);
+  // setInterval(() => publishTelemetry(client), INTERVAL_MS);
 });
 
 client.on('message', (topic, message) => {
-  info(`← message received on ${topic}:`, message.toString());
+  //info(`← message received on ${topic}:`, message.toString());
 
   let msg;
   try {
@@ -111,7 +111,7 @@ client.on('message', (topic, message) => {
 
   client.publish(responseTopic, ack, { qos: 1 }, (err) => {
     if (err) error('Failed to publish ack:', err.message);
-    else     ok(`→ ack sent to ${responseTopic} [correlationId=${correlationId}]`);
+    // else     ok(`→ ack sent to ${responseTopic} [correlationId=${correlationId}]`);
   });
 });
 

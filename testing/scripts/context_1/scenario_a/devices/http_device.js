@@ -39,7 +39,7 @@ app.get('/health', (req, res) => {
 // Catch-all: accept any command, log it, and respond immediately.
 // Content doesn't matter for perf testing — we measure transport only.
 app.all('*', async (req, res) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} — ${JSON.stringify(req.body)}`);
+  // console.log(`[${new Date().toISOString()}] ${req.method} ${req.path} — ${JSON.stringify(req.body)}`);
   res.json({
     path:      req.path,
     method:    req.method,
@@ -100,4 +100,4 @@ if (!APISIX_IP) {
   console.error('ERROR: APISIX_IP is not set — telemetry will fail');
 }
 
-setInterval(sendTelemetry, INTERVAL_MS);
+// setInterval(sendTelemetry, INTERVAL_MS);
