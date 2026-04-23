@@ -79,40 +79,45 @@ echo " Virtual users:  $NUM_USERS"
 echo " Warmup:         ${WARMUP_SECONDS}s"
 echo " Capture:        ${CAPTURE_SECONDS}s"
 echo " Target host:    $TARGET_HOST"
-echo " Gateway SSH:    $GATEWAY_SSH_HOST"
+echo " Docker stats:   $([ "${SKIP_DOCKER_STATS:-false}" = "true" ] && echo "disabled" || echo "$GATEWAY_SSH_HOST")"
 echo " Results dir:    $RESULTS_DIR"
 echo " Master CSV:     $MASTER_CSV"
 echo "================================================================="
 
 # | ================= Docker stats collector ================= |
 
-echo "timestamp,container,cpu_pct_raw,mem_used,mem_limit,mem_pct_raw,net_in,net_out,block_in,block_out,pids" > "$STATS_CSV"
+STATS_PID=""
 
-echo "[orchestrator] Starting docker stats collection via SSH..."
-ssh -o BatchMode=yes -o ConnectTimeout=5 "$GATEWAY_SSH_HOST" \
-    "while true; do \
-        docker stats --no-stream --format '{{.Name}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemPerc}}|{{.NetIO}}|{{.BlockIO}}|{{.PIDs}}' $CONTAINERS 2>/dev/null \
-        | while IFS= read -r line; do echo \"\$(date +%s)|\$line\"; done; \
-        sleep $STATS_INTERVAL; \
-     done" \
-     | awk -F'|' 'BEGIN{OFS=","} {
-           split($4, mem, " / ");  gsub(/ /, "", mem[1]); gsub(/ /, "", mem[2]);
-           split($6, net, " / ");  gsub(/ /, "", net[1]); gsub(/ /, "", net[2]);
-           split($7, blk, " / ");  gsub(/ /, "", blk[1]); gsub(/ /, "", blk[2]);
-           gsub(/%/, "", $3); gsub(/%/, "", $5);
-           print $1,$2,$3,mem[1],mem[2],$5,net[1],net[2],blk[1],blk[2],$8
-         }' >> "$STATS_CSV" &
-STATS_PID=$!
+if [[ "${SKIP_DOCKER_STATS:-false}" != "true" ]]; then
+    echo "timestamp,container,cpu_pct_raw,mem_used,mem_limit,mem_pct_raw,net_in,net_out,block_in,block_out,pids" > "$STATS_CSV"
+    echo "[orchestrator] Starting docker stats collection via SSH..."
+    ssh -o BatchMode=yes -o ConnectTimeout=5 "$GATEWAY_SSH_HOST" \
+        "while true; do \
+            docker stats --no-stream --format '{{.Name}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemPerc}}|{{.NetIO}}|{{.BlockIO}}|{{.PIDs}}' $CONTAINERS 2>/dev/null \
+            | while IFS= read -r line; do echo \"\$(date +%s)|\$line\"; done; \
+            sleep $STATS_INTERVAL; \
+         done" \
+         | awk -F'|' 'BEGIN{OFS=","} {
+               split($4, mem, " / ");  gsub(/ /, "", mem[1]); gsub(/ /, "", mem[2]);
+               split($6, net, " / ");  gsub(/ /, "", net[1]); gsub(/ /, "", net[2]);
+               split($7, blk, " / ");  gsub(/ /, "", blk[1]); gsub(/ /, "", blk[2]);
+               gsub(/%/, "", $3); gsub(/%/, "", $5);
+               print $1,$2,$3,mem[1],mem[2],$5,net[1],net[2],blk[1],blk[2],$8
+             }' >> "$STATS_CSV" &
+    STATS_PID=$!
+else
+    echo "[orchestrator] Docker stats collection skipped (SKIP_DOCKER_STATS=true)"
+fi
 
 cleanup() {
     echo ""
-    echo "[orchestrator] Stopping stats collection..."
-    if kill -0 "$STATS_PID" 2>/dev/null; then
+    if [[ -n "$STATS_PID" ]]; then
+        echo "[orchestrator] Stopping stats collection..."
         kill "$STATS_PID" 2>/dev/null || true
         wait "$STATS_PID" 2>/dev/null || true
+        ssh -o BatchMode=yes -o ConnectTimeout=5 "$GATEWAY_SSH_HOST" \
+            "pkill -f 'docker stats --no-stream' || true" 2>/dev/null || true
     fi
-    ssh -o BatchMode=yes -o ConnectTimeout=5 "$GATEWAY_SSH_HOST" \
-        "pkill -f 'docker stats --no-stream' || true" 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
 
@@ -127,8 +132,8 @@ TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" \
         -t "${WARMUP_SECONDS}s" \
         --headless --only-summary \
         > "$WARMUP_LOG" 2>&1 || {
-            echo "[orchestrator] Warmup failed — see $WARMUP_LOG"
-            exit 1
+            echo "[orchestrator] /!\ Warmup contains error! — see $WARMUP_LOG"
+            sleep 2
         }
 echo "[orchestrator] Warmup complete."
 
@@ -136,6 +141,8 @@ echo "[orchestrator] Warmup complete."
 
 echo ""
 echo "[orchestrator] === CAPTURE (${CAPTURE_SECONDS}s at $TARGET_RPS req/s) ==="
+# Allow non-zero exit from Locust (it returns 1 when any requests fail).
+# We still want to aggregate and record results in that case.
 TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" \
     locust -f "$LOCUST_FILE" \
         --host "$TARGET_HOST" \
@@ -144,29 +151,36 @@ TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" \
         --headless \
         --csv "$LOCUST_CSV_PREFIX" \
         --csv-full-history \
-        2>&1 | tee "$CAPTURE_LOG"
+        2>&1 | tee "$CAPTURE_LOG" || true
 
 # | ================= Aggregate docker stats ================= |
 
 # Compute mean and max CPU% and mem% across the capture window, per container.
 # Keep it simple with awk — no Python deps needed on the runner host.
 DOCKER_SUMMARY=""
-for container in $CONTAINERS; do
-    line=$(awk -F',' -v c="$container" '
-        $2 == c && $3 != "" {
-            cpu_sum += $3; cpu_n++
-            if ($3+0 > cpu_max) cpu_max = $3+0
-            if ($6+0 > mem_max) mem_max = $6+0
-            mem_sum += $6; mem_n++
-        }
-        END {
-            if (cpu_n > 0)
-                printf "%.2f,%.2f,%.2f,%.2f", cpu_sum/cpu_n, cpu_max, mem_sum/mem_n, mem_max
-            else
-                printf ",,,"
-        }' "$STATS_CSV")
-    DOCKER_SUMMARY="${DOCKER_SUMMARY},${line}"
-done
+if [[ "${SKIP_DOCKER_STATS:-false}" != "true" && -f "$STATS_CSV" ]]; then
+    for container in $CONTAINERS; do
+        line=$(awk -F',' -v c="$container" '
+            $2 == c && $3 != "" {
+                cpu_sum += $3; cpu_n++
+                if ($3+0 > cpu_max) cpu_max = $3+0
+                if ($6+0 > mem_max) mem_max = $6+0
+                mem_sum += $6; mem_n++
+            }
+            END {
+                if (cpu_n > 0)
+                    printf "%.2f,%.2f,%.2f,%.2f", cpu_sum/cpu_n, cpu_max, mem_sum/mem_n, mem_max
+                else
+                    printf ",,,"
+            }' "$STATS_CSV")
+        DOCKER_SUMMARY="${DOCKER_SUMMARY},${line}"
+    done
+else
+    # No docker stats — emit empty columns so the CSV row stays consistent
+    for container in $CONTAINERS; do
+        DOCKER_SUMMARY="${DOCKER_SUMMARY},,,,"
+    done
+fi
 
 # | ================= Aggregate into master CSV ================= |
 
