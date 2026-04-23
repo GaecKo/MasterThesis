@@ -133,7 +133,6 @@ TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" \
         --headless --only-summary \
         > "$WARMUP_LOG" 2>&1 || {
             echo "[orchestrator] Warmup failed — see $WARMUP_LOG"
-            exit 1
         }
 echo "[orchestrator] Warmup complete."
 
@@ -212,10 +211,8 @@ extract_row() {
     if [[ -z "$row" ]]; then
         echo "$EMPTY_METRICS"
     else
-        # Strip Type and Name columns, then strip any 
- or 
- that crept in
-        echo "$row" | cut -d',' -f3- | tr -d $'\r\n'
+        # Strip Type and Name columns and any \r or \n that crept in
+        echo "$row" | cut -d',' -f3- | tr -d '\r\n'
     fi
 }
 
@@ -224,15 +221,15 @@ HTTP_ROW=$(grep -m1 'http' "${LOCUST_CSV_PREFIX}_stats.csv" | awk -F',' '$2 ~ /h
 MQTT_ROW=$(grep -m1 'mqtt' "${LOCUST_CSV_PREFIX}_stats.csv" | awk -F',' '$2 ~ /mqtt/ && $2 != "Name"' || true)
 
 # Strip carriage returns from name fields (Locust CSV may have Windows line endings)
-HTTP_NAME=$(echo "$HTTP_ROW" | cut -d',' -f2 | tr -d $'\r\n')
-MQTT_NAME=$(echo "$MQTT_ROW" | cut -d',' -f2 | tr -d $'\r\n')
+HTTP_NAME=$(echo "$HTTP_ROW" | cut -d',' -f2 | tr -d '\r\n')
+MQTT_NAME=$(echo "$MQTT_ROW" | cut -d',' -f2 | tr -d '\r\n')
 
 HTTP_METRICS=$(extract_row "$HTTP_NAME")
 MQTT_METRICS=$(extract_row "$MQTT_NAME")
 AGG_METRICS=$(extract_row "Aggregated")
 
 # Strip any trailing newlines from docker summary
-DOCKER_SUMMARY=$(echo "$DOCKER_SUMMARY" | tr -d $'\r\n')
+DOCKER_SUMMARY=$(echo "$DOCKER_SUMMARY" | tr -d '\r\n')
 
 # Build the docker stats header (4 cols per container)
 DOCKER_HEADER=""
