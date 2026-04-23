@@ -9,7 +9,7 @@ const APISIX_IP     = process.env.APISIX_IP;
 const HTTP_DEVICE_IP = process.env.HTTP_DEVICE_IP;
 const DEVICE_ID     = process.env.DEVICE_ID || 1;
 const HTTP_PORT     = 8000;
-const HTTPS_PORT    = 8443;
+const HTTPS_PORT    = 8443; 
 const INTERVAL      = process.env.INTERVAL_MS || 60000;
 const API_KEY       = 'c6ZiV6EYWNMZe--2eiU6NX22OxQVVhR_ks0-jSwllvM';
 
@@ -21,6 +21,8 @@ function randomTemp() {
 }
 
 app.use(express.json());
+
+var nb_req = 0
 
 app.get('/health', (req, res) => {
   console.log("health endpoint reached...")
@@ -36,7 +38,10 @@ function sleep(ms) {
 }
 
 app.all('*', async (req, res) => {
-  console.log("[" + new Date().toISOString() + "] " + JSON.stringify(req.body));
+  // console.log("[" + new Date().toISOString() + "] " + JSON.stringify(req.body));
+  nb_req ++;
+  console.log("[" + new Date().toISOString() + "] " + nb_req)
+
   res.json({
     path: req.path,
     method: req.method,
@@ -92,4 +97,4 @@ console.log("= = = = = = = = = = = = = = = = = = = = = = = = = = =");
 if (!APISIX_IP) {
   console.error("ERROR! APISIX_IP is empty or null... Won't be able to send any telemetry");
 }
-setInterval(sendTelemetry, INTERVAL);
+// setInterval(sendTelemetry, INTERVAL);
