@@ -12,7 +12,7 @@ Usage:
     python3 generate_routes.py --delete     # deletes all generated routes
 
 Routes created:
-    POST /device/<device_id>  →  https://nuc8-pc.local:<port>/v2/schedule/
+    POST /device/<device_id>  →  https://192.168.50.8:<port>/v2/schedule/
 
 The APISIX Admin API key and address can be overridden via env vars.
 """
@@ -67,7 +67,7 @@ def build_route_payload(device_id: str, port: int) -> dict:
             "scheme":    "https",
             "pass_host": "pass",
             "nodes": {
-                f"nuc8-pc.local:{port}": 1
+                f"192.168.50.8:{port}": 1
             },
             # Skip TLS verification for the self-signed device cert
             "tls": {
@@ -123,7 +123,7 @@ def cmd_print(summary: dict) -> None:
     for device_id, port in sorted(ports.items()):
         rid     = route_id(device_id, summary)
         payload = build_route_payload(device_id, port)
-        print(f"# Route {rid}: {device_id} → nuc8-pc.local:{port}")
+        print(f"# Route {rid}: {device_id} → 192.168.50.8:{port}")
         print(curl_upsert(rid, payload))
         print()
 
@@ -144,7 +144,7 @@ def cmd_apply(summary: dict) -> None:
         payload = build_route_payload(device_id, port)
         run_curl(
             curl_upsert(rid, payload),
-            f"{device_id}  /device/{device_id} → nuc8-pc.local:{port}"
+            f"{device_id}  /device/{device_id} → 192.168.50.8:{port}"
         )
     print("[apply] Done.")
 
