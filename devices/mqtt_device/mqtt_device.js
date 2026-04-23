@@ -62,7 +62,7 @@ client.on('connect', () => {
     else     ok(`Subscribed to ${TOPICS.commands}`);
   });
 
-  setInterval(() => publishTelemetry(client), INTERVAL_MS);
+  // setInterval(() => publishTelemetry(client), INTERVAL_MS);
 });
 
 client.on('message', (topic, message) => {
