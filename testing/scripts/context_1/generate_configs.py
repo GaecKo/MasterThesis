@@ -22,13 +22,20 @@ import requests
 # Map each device ID to the list of commands it supports.
 # HTTP devices must start with "http_device_", MQTT with "mqtt_device_".
 DEVICE_COMMANDS: dict[str, list[str]] = {
-    # "http_device_001": ["setBatteryOperation", "setChargeTarget"],
-    # "mqtt_device_001": ["setPower", "setMode"],
+    "http_device_001": ["setBatteryOperation", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
+    "http_device_002": ["setBatteryOperation", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
+    "http_device_003": ["setBatteryOperation", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
+    "mqtt_device_004": ["setPower", "setMode", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
+    "mqtt_device_005": ["setPower", "setMode", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
+    "mqtt_device_006": ["setPower", "setMode", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
 }
 
 # Map each backend ID to its plain-text API key.
 BACKEND_API_KEYS: dict[str, str] = {
-    # "backend_001": "abc123...",
+    "backend_001": "abc123...",
+    "backend_002": "abc123...",
+    "backend_003": "abc123...",
+    "backend_004": "abc123...",
 }
 
 # | ================= Configuration ================= |

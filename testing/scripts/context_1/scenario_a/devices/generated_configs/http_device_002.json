@@ -1,0 +1,168 @@
+{
+  "gatewayDeviceId": "http_device_002",
+  "adapter": "http",
+  "queuing": {
+    "retryIntervalSeconds": 5,
+    "maxTimeToLiveSeconds": 40
+  },
+  "commands": {
+    "setBatteryOperation": {
+      "name": "setBatteryOperation",
+      "endpoint": "https://nuc8-pc.local:8444/v2/schedule/",
+      "method": "POST",
+      "timeouts": {
+        "connect": 2,
+        "request": 10
+      },
+      "payloadTemplate": {
+        "schedule": [
+          {
+            "type": "setBatteryOperation",
+            "operation": {
+              "dispatchPower": {
+                "activePower": null
+              },
+              "chargeToState": {
+                "maxCurrent": null
+              }
+            },
+            "startAt": null,
+            "endAt": null
+          }
+        ],
+        "assetIdentifiers": null,
+        "metadata": {
+          "correlationId": null,
+          "reason": null
+        },
+        "flags": {
+          "auditTrailEnabled": null,
+          "forceExecution": null
+        }
+      },
+      "mappings": {
+        "activePower": "schedule[0].operation.dispatchPower.activePower",
+        "maxCurrent": "schedule[0].operation.chargeToState.maxCurrent",
+        "correlationId": "metadata.correlationId",
+        "auditTrailEnabled": "flags.auditTrailEnabled",
+        "forceExecution": "flags.forceExecution",
+        "reason": "metadata.reason",
+        "assetIdentifiers": "assetIdentifiers",
+        "startAt": "schedule[0].startAt",
+        "endAt": "schedule[0].endAt"
+      },
+      "cleanup": {
+        "emptyObjectToNull": false,
+        "removeNulls": true,
+        "removeEmpty": false
+      }
+    },
+    "setChargeTarget": {
+      "name": "setChargeTarget",
+      "endpoint": "https://nuc8-pc.local:8444/v2/schedule/",
+      "method": "POST",
+      "timeouts": {
+        "connect": 2,
+        "request": 10
+      },
+      "payloadTemplate": {
+        "schedule": [
+          {
+            "type": "setChargeTarget",
+            "operation": {
+              "dispatchPower": {
+                "voltage": null,
+                "frequency": null
+              },
+              "chargeToState": {
+                "targetSoC": null
+              }
+            },
+            "startAt": null,
+            "endAt": null
+          }
+        ],
+        "assetIdentifiers": null,
+        "metadata": {
+          "correlationId": null
+        }
+      },
+      "mappings": {
+        "voltage": "schedule[0].operation.dispatchPower.voltage",
+        "correlationId": "metadata.correlationId",
+        "frequency": "schedule[0].operation.dispatchPower.frequency",
+        "targetSoC": "schedule[0].operation.chargeToState.targetSoC",
+        "startAt": "schedule[0].startAt",
+        "endAt": "schedule[0].endAt"
+      },
+      "cleanup": {
+        "emptyObjectToNull": true,
+        "removeNulls": true,
+        "removeEmpty": true
+      }
+    },
+    "setMaxCapacity": {
+      "name": "setMaxCapacity",
+      "endpoint": "https://nuc8-pc.local:8444/v2/schedule/",
+      "method": "POST",
+      "timeouts": {
+        "connect": 2,
+        "request": 10
+      },
+      "payloadTemplate": {
+        "schedule": [
+          {
+            "type": "setMaxCapacity",
+            "operation": {
+              "dispatchPower": {
+                "activePower": null,
+                "frequency": null
+              }
+            },
+            "startAt": null,
+            "endAt": null,
+            "duration": null
+          }
+        ],
+        "assetIdentifiers": null,
+        "context": {
+          "environmentTag": null,
+          "siteId": null,
+          "regionCode": null,
+          "tenantId": null
+        },
+        "metadata": {
+          "reason": null,
+          "source": null,
+          "correlationId": null
+        },
+        "flags": {
+          "overrideExisting": null,
+          "notifyOnComplete": null
+        }
+      },
+      "mappings": {
+        "environmentTag": "context.environmentTag",
+        "duration": "schedule[0].duration",
+        "siteId": "context.siteId",
+        "reason": "metadata.reason",
+        "regionCode": "context.regionCode",
+        "source": "metadata.source",
+        "activePower": "schedule[0].operation.dispatchPower.activePower",
+        "frequency": "schedule[0].operation.dispatchPower.frequency",
+        "overrideExisting": "flags.overrideExisting",
+        "correlationId": "metadata.correlationId",
+        "assetIdentifiers": "assetIdentifiers",
+        "tenantId": "context.tenantId",
+        "notifyOnComplete": "flags.notifyOnComplete",
+        "startAt": "schedule[0].startAt",
+        "endAt": "schedule[0].endAt"
+      },
+      "cleanup": {
+        "emptyObjectToNull": true,
+        "removeNulls": false,
+        "removeEmpty": true
+      }
+    }
+  }
+}
