@@ -14,6 +14,7 @@
 #
 # Example:
 #   ./run_test.sh scenarioD 100 medium
+#   LOCUST_FILE=locustfile_gateway_forward.py ./run_test.sh c1_scenarioB 100 medium
 # ============================================================================
 
 set -euo pipefail
