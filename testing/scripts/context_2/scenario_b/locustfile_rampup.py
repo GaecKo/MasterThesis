@@ -1,28 +1,29 @@
 """
-Scenario E — Full stack: AuthN/Z + translation + plugin does request.
+Context 2 — Overload / ramp-up test.
 
-The gateway receives a command request with an apikey header. The AuthFilter
-authenticates the backend and checks authorization. The TranslationFilter
-maps params onto the device payload template and sends the translated request
-to the device.
+Gradually increases throughput in steps, capturing latency at each level.
+Produces a latency-vs-throughput dataset: as RPS increases, latency rises,
+and eventually throughput plateaus while latency keeps climbing.
 
-Request shape:
-    POST /command
-    Headers: apikey: <backend_api_key>
-    Body: {
-        "gatewayDeviceId": "<device_id>",
-        "command":         "<command_name>",
-        "params": {
-            "<param_name>": <realistic_value>,
-            ...
-        }
-    }
+The command mechanism is identical to scenario E (full stack: AuthN/Z +
+translation). Backend API keys and device definitions come from _summary.json.
 
-Device/command/param definitions are read from generated_configs/_summary.json.
-Backend API keys are hardcoded at the top — fill them in before running.
+Ramp-up shape:
+    START_RPS      →  END_RPS  in increments of STEP_RPS
+    Each step holds for STEP_DURATION_S seconds before incrementing.
+
+    Example: START=10, END=200, STEP=10, DURATION=30
+    → 19 steps × 30s = 570s total run time
+    → data points at 10, 20, 30 ... 200 req/s
+
+Output: results/<name>/locust_stats_history.csv contains achieved_rps and
+latency percentiles per 2-second window — use this for the Y/X plot.
+raw_latencies.csv has every individual request for box plots.
 
 Run:
-    LOCUST_FILE=locustfile_gateway_full.py ./run_test.sh scenarioE 100 medium
+    START_RPS=10 END_RPS=300 STEP_RPS=10 STEP_DURATION_S=30 \\
+        LOCUST_FILE=locustfile_rampup.py \\
+        ./run_test_rampup.sh context2_scenarioE medium
 
 Dependencies:
     pip install locust
@@ -39,14 +40,12 @@ import uuid
 from pathlib import Path
 
 import urllib3
-from locust import HttpUser, constant_throughput, events, task
+from locust import HttpUser, LoadTestShape, constant_throughput, events, task
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # | ================= User-provided backend API keys ================= |
 
-# Map each backend gateway ID to its plain-text API key.
-# These are the keys returned when you created backends via /onboarding/backend.
 BACKEND_API_KEYS: dict[str, str] = {
     # "backend_<uuid>": "<api_key>",
 }
@@ -58,21 +57,19 @@ SUMMARY_PATH = Path(os.environ.get(
 
 if not SUMMARY_PATH.exists():
     raise RuntimeError(
-        f"Summary not found at {SUMMARY_PATH} — run generate_configs.py first "
-        f"or set CONFIGS_SUMMARY env var.")
+        f"Summary not found at {SUMMARY_PATH} — run generate_configs.py first.")
 
 with SUMMARY_PATH.open() as f:
     SUMMARY = json.load(f)
 
-DEVICES = SUMMARY["devices"]   # device_id -> { adapter, commands: {name -> [param_names]} }
+DEVICES = SUMMARY["devices"]
 
 if not BACKEND_API_KEYS:
-    raise RuntimeError("BACKEND_API_KEYS is empty — fill in the dict at the top of this file.")
+    raise RuntimeError("BACKEND_API_KEYS is empty — fill in the dict at the top.")
 
-# Build flat round-robin plan: (backend_id, api_key, device_id, command_name, param_names)
-# Separate plans for HTTP and MQTT so they can be weighted independently.
-HTTP_PLAN: list[tuple[str, str, str, str, list[str]]] = []
-MQTT_PLAN: list[tuple[str, str, str, str, list[str]]] = []
+# Flat round-robin plans per adapter type
+HTTP_PLAN: list[tuple] = []
+MQTT_PLAN: list[tuple] = []
 
 for backend_id, api_key in BACKEND_API_KEYS.items():
     for device_id, device_info in DEVICES.items():
@@ -80,14 +77,8 @@ for backend_id, api_key in BACKEND_API_KEYS.items():
         for command_name, param_names in device_info["commands"].items():
             plan.append((backend_id, api_key, device_id, command_name, param_names))
 
-if not HTTP_PLAN and not MQTT_PLAN:
-    raise RuntimeError("Request plan is empty — check _summary.json.")
-
-print(f"[locust/full] HTTP plan: {len(HTTP_PLAN)} combinations")
-print(f"[locust/full] MQTT plan: {len(MQTT_PLAN)} combinations")
-
-_http_iter = itertools.cycle(HTTP_PLAN)
-_mqtt_iter = itertools.cycle(MQTT_PLAN)
+_http_iter = itertools.cycle(HTTP_PLAN) if HTTP_PLAN else None
+_mqtt_iter = itertools.cycle(MQTT_PLAN) if MQTT_PLAN else None
 _http_lock = threading.Lock()
 _mqtt_lock = threading.Lock()
 
@@ -99,14 +90,53 @@ def next_mqtt():
     with _mqtt_lock:
         return next(_mqtt_iter)
 
-# | ================= Rate control ================= |
+# | ================= Ramp-up shape parameters ================= |
 
-TARGET_RPS   = float(os.environ["TARGET_RPS"])
-NUM_USERS    = int(os.environ["NUM_USERS"])
-PER_USER_RPS = TARGET_RPS / NUM_USERS
+START_RPS       = float(os.environ.get("START_RPS",       "10"))
+END_RPS         = float(os.environ.get("END_RPS",         "300"))
+STEP_RPS        = float(os.environ.get("STEP_RPS",        "10"))
+STEP_DURATION_S = float(os.environ.get("STEP_DURATION_S", "30"))
+
+# Each user sends exactly PER_USER_RPS requests per second via constant_throughput.
+# The shape controls how many users are active — total RPS = users × PER_USER_RPS.
+# Keep PER_USER_RPS small so we can hit low RPS targets with at least a few users.
+PER_USER_RPS = float(os.environ.get("PER_USER_RPS", "1.0"))
 
 HTTP_WEIGHT = max(len(HTTP_PLAN), 1)
 MQTT_WEIGHT = max(len(MQTT_PLAN), 1)
+
+# | ================= Ramp-up shape ================= |
+
+class RampUpShape(LoadTestShape):
+    """
+    Staircase ramp-up: holds each RPS level for STEP_DURATION_S seconds,
+    then increments by STEP_RPS until END_RPS is reached.
+
+    Total run time = ceil((END_RPS - START_RPS) / STEP_RPS + 1) × STEP_DURATION_S
+    """
+
+    def tick(self):
+        """
+        Called every second by Locust. Returns (user_count, spawn_rate) for
+        the current moment, or None to stop the test.
+        """
+        elapsed = self.get_current_run_time()
+
+        # Which step are we in?
+        step_index  = int(elapsed // STEP_DURATION_S)
+        target_rps  = START_RPS + step_index * STEP_RPS
+
+        if target_rps > END_RPS:
+            # All steps complete — stop the test
+            return None
+
+        # Number of users needed to achieve target_rps with constant_throughput
+        user_count  = max(1, round(target_rps / PER_USER_RPS))
+
+        # Spawn all users for the new step at once so the step starts cleanly
+        spawn_rate  = user_count
+
+        return user_count, spawn_rate
 
 # | ================= Param value generator ================= |
 
@@ -116,17 +146,17 @@ def sample_param_value(param_name: str):
         return "2024-01-01T00:00:00Z"
     if param_name in {"activePower", "reactivePower", "apparentPower"}:
         return random.randint(1000, 50000)
-    if param_name in {"frequency"}:
+    if param_name == "frequency":
         return round(random.uniform(49.5, 50.5), 2)
-    if param_name in {"voltage"}:
+    if param_name == "voltage":
         return random.randint(220, 240)
-    if param_name in {"current"}:
+    if param_name == "current":
         return round(random.uniform(10.0, 100.0), 1)
     if param_name in {"maxRate", "minRate", "rampRate", "deadband", "droopSetting"}:
         return round(random.uniform(0.1, 10.0), 2)
     if param_name in {"percentage", "targetSoC"}:
         return random.randint(0, 100)
-    if param_name in {"maxCurrent"}:
+    if param_name == "maxCurrent":
         return round(random.uniform(10.0, 100.0), 1)
     if param_name == "chargeMode":
         return random.choice(["fast", "standard", "eco"])
@@ -141,76 +171,56 @@ def sample_param_value(param_name: str):
         return str(uuid.uuid4())
     if param_name == "duration":
         return random.randint(60, 3600)
-    # String fallback for any unmapped param
     return f"val_{random.randint(0, 1000)}"
 
-# | ================= HTTP user ================= |
+# | ================= Users ================= |
 
-class HttpFullUser(HttpUser):
-    """
-    Sends authenticated, translated commands to HTTP devices via the gateway.
-    The plugin authenticates the backend, checks authorization, maps params
-    onto the device payload template, and forwards the result to the device.
-    """
+class HttpRampUser(HttpUser):
+    """HTTP device commands via the full plugin stack."""
     wait_time = constant_throughput(PER_USER_RPS)
     weight    = HTTP_WEIGHT
 
     @task
     def send_command(self):
+        if not HTTP_PLAN:
+            return
         backend_id, api_key, device_id, command_name, param_names = next_http()
-
-        params = {name: sample_param_value(name) for name in param_names}
-
         payload = {
             "gatewayDeviceId": device_id,
             "command":         command_name,
-            "params":          params,
+            "params":          {n: sample_param_value(n) for n in param_names},
         }
-
         with self.client.post(
                 "/command",
                 json=payload,
-                headers={
-                    "Content-Type": "application/json",
-                    "apikey":       api_key,
-                },
-                name="full/http",
+                headers={"Content-Type": "application/json", "apikey": api_key},
+                name="ramp/http",
                 verify=False,
                 catch_response=True) as resp:
             if resp.status_code not in (200, 202):
                 resp.failure(f"status={resp.status_code} body={resp.text[:200]}")
 
-# | ================= MQTT user ================= |
 
-class MqttFullUser(HttpUser):
-    """
-    Sends authenticated, translated commands to MQTT devices via the gateway.
-    The plugin handles the MQTT adapter internally — Locust measures the full
-    round trip: HTTP POST → plugin → broker → device ack → HTTP response.
-    """
+class MqttRampUser(HttpUser):
+    """MQTT device commands via the full plugin stack (HTTP POST, plugin handles MQTT)."""
     wait_time = constant_throughput(PER_USER_RPS)
     weight    = MQTT_WEIGHT
 
     @task
     def send_command(self):
+        if not MQTT_PLAN:
+            return
         backend_id, api_key, device_id, command_name, param_names = next_mqtt()
-
-        params = {name: sample_param_value(name) for name in param_names}
-
         payload = {
             "gatewayDeviceId": device_id,
             "command":         command_name,
-            "params":          params,
+            "params":          {n: sample_param_value(n) for n in param_names},
         }
-
         with self.client.post(
                 "/command",
                 json=payload,
-                headers={
-                    "Content-Type": "application/json",
-                    "apikey":       api_key,
-                },
-                name="full/mqtt",
+                headers={"Content-Type": "application/json", "apikey": api_key},
+                name="ramp/mqtt",
                 verify=False,
                 catch_response=True) as resp:
             if resp.status_code not in (200, 202):
@@ -218,8 +228,6 @@ class MqttFullUser(HttpUser):
 
 # | ================= Raw latency listener ================= |
 
-# Writes one row per request to raw_latencies.csv for box plot analysis.
-# Columns: timestamp_ms, protocol, name, response_time_ms, success
 _raw_csv_path   = None
 _raw_csv_file   = None
 _raw_csv_writer = None
@@ -228,7 +236,7 @@ _raw_csv_lock   = threading.Lock()
 @events.init.add_listener
 def init_raw_csv(environment, **kwargs):
     global _raw_csv_path, _raw_csv_file, _raw_csv_writer
-    results_dir = os.environ.get("RESULTS_DIR", ".")
+    results_dir   = os.environ.get("RESULTS_DIR", ".")
     _raw_csv_path = os.path.join(results_dir, "raw_latencies.csv")
     _raw_csv_file = open(_raw_csv_path, "w", newline="")
     _raw_csv_writer = csv.writer(_raw_csv_file)
@@ -256,18 +264,20 @@ def close_raw_csv(environment, **kwargs):
         _raw_csv_file.close()
         print(f"[locust] Raw latencies saved to {_raw_csv_path}")
 
-# | ================= Startup validation ================= |
+# | ================= Startup info ================= |
 
 @events.test_start.add_listener
 def on_test_start(environment, **kwargs):
-    print(f"[locust/full] Backends      : {list(BACKEND_API_KEYS.keys())}")
-    print(f"[locust/full] HTTP devices  : "
-          f"{[d for d,i in DEVICES.items() if i['adapter']=='http']}")
-    print(f"[locust/full] MQTT devices  : "
-          f"{[d for d,i in DEVICES.items() if i['adapter']=='mqtt']}")
-    print(f"[locust/full] Target {TARGET_RPS} req/s via {NUM_USERS} users "
-          f"({PER_USER_RPS:.3f} req/s each)")
+    steps = int((END_RPS - START_RPS) / STEP_RPS) + 1
+    total_s = steps * STEP_DURATION_S
+    print(f"[locust/ramp] Backends     : {list(BACKEND_API_KEYS.keys())}")
+    print(f"[locust/ramp] HTTP plan    : {len(HTTP_PLAN)} combinations")
+    print(f"[locust/ramp] MQTT plan    : {len(MQTT_PLAN)} combinations")
+    print(f"[locust/ramp] Ramp         : {START_RPS} → {END_RPS} req/s "
+          f"in steps of {STEP_RPS} ({steps} steps × {STEP_DURATION_S}s "
+          f"= {total_s:.0f}s total)")
+    print(f"[locust/ramp] Per-user RPS : {PER_USER_RPS}")
 
 @events.test_stop.add_listener
 def on_test_stop(environment, **kwargs):
-    print("[locust/full] Test stopped.")
+    print("[locust/ramp] Test stopped.")

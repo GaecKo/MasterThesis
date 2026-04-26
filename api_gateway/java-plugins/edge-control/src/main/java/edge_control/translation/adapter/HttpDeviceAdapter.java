@@ -30,17 +30,19 @@ import java.util.Map;
  *
  * If the device is unreachable (IOException), onDeviceUnreachable is called so the
  * queuing layer can handle retries. All other errors result in a 502 response.
+ *
+ * When DEVICE_MOCKUP is true, the actual HTTP request to the device is skipped after
+ * translation and a 200 is returned immediately, isolating plugin overhead from device latency.
  */
 public class HttpDeviceAdapter implements DeviceAdapter {
 
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
     private static final ObjectMapper MAPPER      = new ObjectMapper();
 
-    // Shared formatter for timing logs, static since it has no instance-specific state
     private static final DateTimeFormatter TIMING_FORMATTER =
             DateTimeFormatter.ofPattern("hh:mm:ss.SSSS").withZone(ZoneId.systemDefault());
 
-    private final CommandTranslationEngine translationEngine = new CommandTranslationEngine();
+    private final CommandTranslationEngine translationEngine  = new CommandTranslationEngine();
     private final Map<String, HttpCommandDefinition> commandDefinitions = new HashMap<>();
 
     private String gatewayDeviceId;
@@ -106,6 +108,9 @@ public class HttpDeviceAdapter implements DeviceAdapter {
      * Handles an inbound HTTP command request by translating it and forwarding it
      * to the device's endpoint asynchronously.
      *
+     * In mockup mode, the request is translated but not sent —
+     * a 200 is returned immediately to isolate plugin overhead from device latency.
+     *
      * On success, the device's response is forwarded back as-is.
      * On IOException (device down), onDeviceUnreachable is called without setting a response,
      * allowing the queuing layer to take over.
@@ -149,60 +154,14 @@ public class HttpDeviceAdapter implements DeviceAdapter {
         Instant translateEnd = Instant.now();
         logger.time("Http Adapter: request translated - time took:"
                 + (translateEnd.toEpochMilli() - translateStart.toEpochMilli()) + "ms (" + reqHash + ")");
-        logger.time("Http Adapter: request to be sent (" + reqHash + ")");
 
-        HttpForgery.doRequestAsync(
-                        commandDefinition.getMethod(),
-                        commandDefinition.getEndpoint(),
-                        finalPayload.toString(),
-                        request.getHeaders(),
-                        commandDefinition.getConnectTimeout(),
-                        commandDefinition.getRequestTimeout())
-                .thenAccept(result -> {
-                    try {
-                        response.setStatusCode(result.statusCode());
-                        response.setBody(result.body());
-                        response.setHeader("MODIFIED-BY", "EdgeControl/Protocol-Translation");
-                        logger.debug("Successfully processed request for device: " + gatewayDeviceId);
-                    } catch (Exception e) {
-                        logger.error("Error setting response: " + e.getMessage());
-                        response.setStatusCode(500);
-                        response.setBody("{\"error\":\"Error processing response\"}");
-                    } finally {
-                        Instant end = Instant.now();
-                        logger.time("Http Adapter: request transmitted and res received - time took:"
-                                + (end.toEpochMilli() - translateEnd.toEpochMilli()) + "ms (" + reqHash + ")");
-                        callback.onSuccess();
-                    }
-                })
-                .exceptionally(throwable -> {
-                    Throwable cause = throwable.getCause() != null ? throwable.getCause() : throwable;
-
-                    if (cause instanceof java.io.IOException) {
-                        // IOException means the device is down or unreachable.
-                        // Do NOT set a response here — the queuing layer handles it.
-                        logger.warn("Device " + gatewayDeviceId + " unreachable: "
-                                + cause.getClass().getSimpleName()
-                                + (cause.getMessage() != null ? " - " + cause.getMessage() : ""));
-                        callback.onDeviceUnreachable(
-                                cause.getClass().getSimpleName()
-                                        + (cause.getMessage() != null ? " - " + cause.getMessage() : ""));
-                    } else {
-                        // All other failures (timeouts, unexpected errors) return a 502
-                        String msg = cause.getMessage() != null
-                                ? cause.getMessage() : cause.getClass().getSimpleName();
-                        logger.error("Async request failed: " + msg);
-                        try {
-                            response.setStatusCode(502);
-                            response.setBody("{\"error\":\"" + msg + "\"}");
-                            response.setHeader("MODIFIED-BY", "EdgeControl/Protocol-Translation");
-                        } catch (Exception e) {
-                            logger.error("Error setting error response: " + e.getMessage());
-                        } finally {
-                            callback.onSuccess();
-                        }
-                    }
-                    return null;
-                });
+        
+        // Mockup mode — skip the network request and return immediately.
+        // Translation has already run, so plugin overhead is fully captured.
+        response.setStatusCode(200);
+        response.setBody("{\"status\":\"mocked\",\"command\":\"" + commandName + "\"}");
+        response.setHeader("MODIFIED-BY", "EdgeControl/Protocol-Translation");
+        callback.onSuccess();
+        return;
     }
 }

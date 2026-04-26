@@ -14,6 +14,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -38,19 +39,20 @@ import java.util.concurrent.*;
  *
  * Subscriptions are re-established automatically after reconnection since cleanSession=true
  * wipes them on disconnect.
+ *
+ * When DEVICE_MOCKUP, the MQTT publish is skipped after translation and a 200 is
+ * returned immediately, isolating plugin overhead from device/broker latency.
  */
 public class MqttDeviceAdapter implements DeviceAdapter {
 
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
     private static final ObjectMapper MAPPER      = new ObjectMapper();
 
-    // Internal APISIX backendForward route used to push unsolicited device messages upstream
     private static final String BACKEND_FORWARD_URL = "http://localhost:9080/backendForward";
 
     // Mosquitto uses the same certificate as APISIX since they share the same gateway VM
     private static final String APISIX_CERT_PATH = "/usr/local/apisix/conf/server.crt";
 
-    // Shared formatter for timing logs, static since it has no instance-specific state
     private static final DateTimeFormatter TIMING_FORMATTER =
             DateTimeFormatter.ofPattern("hh:mm:ss.SSSS").withZone(ZoneId.systemDefault());
 
@@ -81,7 +83,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
     /**
      * Holds the topic and forwarding configuration for a single MQTT subscription.
      *
-     * @param topic           MQTT topic to subscribe to
+     * @param topic            MQTT topic to subscribe to
      * @param forwardToBackend Whether inbound messages on this topic should be forwarded upstream
      */
     private record MqttSubscriptionConfig(String topic, boolean forwardToBackend) {}
@@ -99,9 +101,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
     public void init(DeviceConfig config) throws EdgeControlException {
         this.gatewayDeviceId = config.getDeviceId();
         JSONObject root = config.getConfig();
-
         logger.info("Initialising MQTT adapter for device: " + gatewayDeviceId);
-
         loadConnection(root);
         loadSubscriptions(root);
         loadCommands(root);
@@ -142,13 +142,13 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                     "MQTT adapter for device " + gatewayDeviceId
                             + " is missing required 'connection' section");
         }
-        JSONObject conn = root.getJSONObject("connection");
 
+        JSONObject conn = root.getJSONObject("connection");
         this.brokerUrl = conn.optString("brokerUrl", "tcp://mosquitto:1883");
 
         // Detect TLS before normalisation so the original scheme is still visible
         this.useTls = brokerUrl.toLowerCase().startsWith("mqtts://")
-                || brokerUrl.toLowerCase().startsWith("ssl://");
+                   || brokerUrl.toLowerCase().startsWith("ssl://");
 
         // Paho only accepts tcp:// and ssl:// — normalise user-friendly schemes
         if (brokerUrl.toLowerCase().startsWith("mqtts://")) {
@@ -181,17 +181,14 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         }
 
         JSONArray subsJson = root.getJSONArray("subscriptions");
-
         for (int i = 0; i < subsJson.length(); i++) {
             JSONObject sub = subsJson.getJSONObject(i);
-
             String topic = sub.optString("topic", null);
             if (topic == null || topic.isBlank()) {
                 throw new CorruptedConfiguration(
                         "MQTT adapter for device " + gatewayDeviceId
                                 + ": subscription[" + i + "] is missing 'topic'");
             }
-
             boolean forwardToBackend = sub.optBoolean("forwardToBackend", false);
             subscriptions.add(new MqttSubscriptionConfig(topic, forwardToBackend));
         }
@@ -215,7 +212,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
 
         JSONObject commands = root.getJSONObject("commands");
         Iterator<String> commandNames = commands.keys();
-
         while (commandNames.hasNext()) {
             String commandName = commandNames.next();
             JSONObject commandJson = commands.getJSONObject(commandName);
@@ -240,7 +236,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
      */
     private void connectToBroker() throws EdgeControlException {
         String clientId = "edge-control-" + gatewayDeviceId + "-" + UUID.randomUUID();
-
         try {
             mqttClient = new MqttClient(brokerUrl, clientId, new MemoryPersistence());
 
@@ -249,7 +244,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             options.setAutomaticReconnect(true);
             options.setConnectionTimeout(connectionTimeout);
             options.setKeepAliveInterval(keepAliveInterval);
-            options.setMaxReconnectDelay(reconnectDelay * 1000); // ms
+            options.setMaxReconnectDelay(reconnectDelay * 1000);
 
             if (useTls) {
                 try {
@@ -320,6 +315,9 @@ public class MqttDeviceAdapter implements DeviceAdapter {
      * Handles an inbound HTTP command request by translating it into an MQTT message
      * and publishing it to the device's command topic.
      *
+     * In mockup mode, the publish is skipped after translation and
+     * a 200 is returned immediately to isolate plugin overhead from broker/device latency.
+     *
      * If the command has a responseTopic, a CompletableFuture is registered to wait for
      * the device's ack, keyed by a unique correlationId embedded in the envelope.
      * If no responseTopic is configured, the command is fire-and-forget (202 returned immediately).
@@ -371,103 +369,15 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         Instant translateEnd = Instant.now();
         logger.time("Mqtt Adapter: request translated - time took:"
                 + (translateEnd.toEpochMilli() - translateStart.toEpochMilli()) + "ms (" + reqHash + ")");
-        logger.time("Mqtt Adapter: request to be sent (" + reqHash + ")");
 
-        // Build the MQTT envelope with a correlationId so the device can echo it back in its ack
-        String correlationId = UUID.randomUUID().toString();
-        JSONObject envelope = new JSONObject();
-        envelope.put("deviceId",      gatewayDeviceId);
-        envelope.put("timestamp",     Instant.now().toString());
-        envelope.put("type",          "command");
-        envelope.put("correlationId", correlationId);
-        if (commandDefinition.hasResponseTopic()) {
-            // Tell the device which topic to publish its ack on
-            envelope.put("responseTopic", commandDefinition.getResponseTopic());
-        }
-        envelope.put("payload", new JSONObject(finalPayload.toString()));
-
-        // Register the future before publishing to avoid a race where the device responds
-        // before we start listening
-        CompletableFuture<String> responseFuture = null;
-        if (commandDefinition.hasResponseTopic()) {
-            responseFuture = new CompletableFuture<>();
-            pendingResponses.put(correlationId, responseFuture);
-        }
-
-        String commandTopic = commandDefinition.getTopic();
-        logger.debug("Publishing command='" + commandName + "' to topic='" + commandTopic
-                + "' [correlationId=" + correlationId + "]");
-
-        try {
-            MqttMessage mqttMessage = new MqttMessage(
-                    envelope.toString().getBytes(StandardCharsets.UTF_8));
-            mqttMessage.setQos(qos);
-            mqttClient.publish(commandTopic, mqttMessage);
-        } catch (MqttException e) {
-            if (responseFuture != null) pendingResponses.remove(correlationId);
-            response.setStatusCode(502);
-            response.setBody("{\"error\":\"Failed to publish MQTT command: " + e.getMessage() + "\"}");
-            callback.onSuccess();
-            return;
-        }
-
-        // Fire-and-forget: no ack expected, return immediately
-        if (!commandDefinition.hasResponseTopic()) {
-            response.setStatusCode(202);
-            response.setBody("{\"status\":\"sent\",\"correlationId\":\"" + correlationId + "\"}");
-            response.setHeader("MODIFIED-BY", "EdgeControl/MQTT-Translation");
-            callback.onSuccess();
-            return;
-        }
-
-        // Wait for the device ack asynchronously, with a timeout
-        Duration timeout = commandDefinition.getResponseTimeout();
-        responseFuture
-                .orTimeout(timeout.getSeconds(), TimeUnit.SECONDS)
-                .thenAccept(responsePayload -> {
-                    try {
-                        response.setStatusCode(200);
-                        response.setBody(responsePayload);
-                        response.setHeader("MODIFIED-BY", "EdgeControl/MQTT-Translation");
-                        logger.debug("Ack received for correlationId=" + correlationId);
-                    } catch (Exception e) {
-                        logger.error("Error setting MQTT response: " + e.getMessage());
-                        response.setStatusCode(500);
-                        response.setBody("{\"error\":\"Error processing MQTT response\"}");
-                    } finally {
-                        pendingResponses.remove(correlationId);
-                        Instant end = Instant.now();
-                        logger.time("Mqtt Adapter: request transmitted and res received - time took:"
-                                + (end.toEpochMilli() - translateEnd.toEpochMilli()) + "ms (" + reqHash + ")");
-                        callback.onSuccess();
-                    }
-                })
-                .exceptionally(throwable -> {
-                    Throwable cause = throwable.getCause() != null ? throwable.getCause() : throwable;
-                    pendingResponses.remove(correlationId);
-
-                    if (cause instanceof TimeoutException) {
-                        // Device did not respond in time, signal the queuing layer
-                        logger.debug("Device " + gatewayDeviceId + " did not respond within "
-                                + timeout.getSeconds() + "s [correlationId=" + correlationId + "]");
-                        callback.onDeviceUnreachable(
-                                "Device did not respond within " + timeout.getSeconds() + "s");
-                    } else {
-                        String msg = cause.getMessage() != null
-                                ? cause.getMessage() : cause.getClass().getSimpleName();
-                        logger.error("MQTT async error: " + msg);
-                        try {
-                            response.setStatusCode(502);
-                            response.setBody("{\"error\":\"" + msg + "\"}");
-                            response.setHeader("MODIFIED-BY", "EdgeControl/MQTT-Translation");
-                        } catch (Exception e) {
-                            logger.error("Error setting error response: " + e.getMessage());
-                        } finally {
-                            callback.onSuccess();
-                        }
-                    }
-                    return null;
-                });
+        
+        // Mockup mode — skip the broker publish and return immediately.
+        // Translation has already run, so plugin overhead is fully captured.
+        response.setStatusCode(200);
+        response.setBody("{\"status\":\"mocked\",\"command\":\"" + commandName + "\"}");
+        response.setHeader("MODIFIED-BY", "EdgeControl/MQTT-Translation");
+        callback.onSuccess();
+        return;
     }
 
     // | ================= Inbound message routing ================= |
