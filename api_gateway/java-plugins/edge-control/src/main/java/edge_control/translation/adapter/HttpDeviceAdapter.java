@@ -144,7 +144,7 @@ public class HttpDeviceAdapter implements DeviceAdapter {
         Instant translateStart = Instant.now();
         logger.time("Http Adapter: request to be translated (" + reqHash + ")");
 
-        JsonNode finalPayload = backendRequest;
+        JsonNode finalPayload = translationEngine.translate(commandDefinition, backendRequest);
 
         Instant translateEnd = Instant.now();
         logger.time("Http Adapter: request translated - time took:"
