@@ -54,7 +54,7 @@ docker run -d \
   -e DEVICE_ID=device_ce66dadb-8ba5-4989-aeaa-b4f2bb8d15c8 \
   -e API_KEY=Rgh5Cwca_UHVak_12BCedSIv0C_chETTZy_WqftZrbE \
   -e BROKER_URL="mqtts://nuc4-pc.local:8883" \
-  -e INTERVAL_MS=10000 \
+  -e INTERVAL_MS=20000 \
   mqtt-device-app
 
 ### ── Status ──────────────────────────────────────────────────────────────────

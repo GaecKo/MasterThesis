@@ -44,7 +44,7 @@ In this context, we want to measure the effect of each architecture component on
 
 | CPUs | Req/sec        | Packet size  | Device Mockup | Security Enabled    | 
 | :--: | :------------: | :----------: | :-----------: | :--------------:    |
-| 4    | {15, 50, 100}    | Medium       | F           | T (no constraining) |
+| 4    |  100           | Medium       | F           | T (no constraining) |
 
 -> Security is not constraining: it is enabled so resulting computation of plugins / firewall are done, but don't have any actual limitations 
 
