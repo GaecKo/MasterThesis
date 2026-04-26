@@ -125,14 +125,14 @@ trap cleanup EXIT INT TERM
 
 echo ""
 echo "[orchestrator] === WARMUP (${WARMUP_SECONDS}s at $TARGET_RPS req/s) ==="
-TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" \
+TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" RESULTS_DIR="$RESULTS_DIR" \
     locust -f "$LOCUST_FILE" \
         --host "$TARGET_HOST" \
         -u "$NUM_USERS" -r "$NUM_USERS" \
         -t "${WARMUP_SECONDS}s" \
         --headless --only-summary \
         > "$WARMUP_LOG" 2>&1 || {
-            echo "[orchestrator] Warmup failed — see $WARMUP_LOG"
+            echo "[orchestrator] Warmup error — see $WARMUP_LOG"
         }
 echo "[orchestrator] Warmup complete."
 
@@ -142,7 +142,7 @@ echo ""
 echo "[orchestrator] === CAPTURE (${CAPTURE_SECONDS}s at $TARGET_RPS req/s) ==="
 # Allow non-zero exit from Locust (it returns 1 when any requests fail).
 # We still want to aggregate and record results in that case.
-TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" \
+TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" RESULTS_DIR="$RESULTS_DIR" CAPTURE_PHASE="true" \
     locust -f "$LOCUST_FILE" \
         --host "$TARGET_HOST" \
         -u "$NUM_USERS" -r "$NUM_USERS" \

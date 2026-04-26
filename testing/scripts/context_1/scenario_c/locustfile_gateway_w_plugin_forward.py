@@ -1,7 +1,7 @@
 """
-Scenarios C — API Gateway forwarding with plugin
+Scenarios B and C — API Gateway forwarding (no plugin logic on the request path).
 
-
+Scenario B: Plugin disabled — APISIX routes directly to each device upstream.
 Scenario C: Plugin enabled but does not touch the request — overhead of plugin
             presence without translation work.
 
@@ -15,7 +15,7 @@ MQTT devices:
 
 Fill in HTTP_DEVICES and MQTT_* dicts at the top (same values as scenario A),
 then run:
-    LOCUST_FILE=locustfile_gateway_w_plugin_forward.py ./run_test.sh scenarioC 100 medium
+    LOCUST_FILE=locustfile_gateway_forward.py ./run_test.sh scenarioB 50 medium
 
 Dependencies:
     pip install locust paho-mqtt
@@ -33,6 +33,8 @@ import uuid
 
 import gevent
 import urllib3
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import paho.mqtt.client as mqtt
 from locust import HttpUser, User, constant_throughput, events, task
 
@@ -123,6 +125,18 @@ class HttpGatewayUser(HttpUser):
     """
     wait_time = constant_throughput(PER_USER_RPS)
     weight    = HTTP_WEIGHT
+
+    def on_start(self):
+        # Mount a persistent HTTPS adapter so TLS sessions are reused across requests.
+        # Without this each virtual user renegotiates TLS per connection, making
+        # scenario A artificially slower than B (where APISIX pools connections).
+        adapter = HTTPAdapter(
+            pool_connections=1,    # one connection pool per host
+            pool_maxsize=1,        # one persistent connection per user
+            max_retries=Retry(total=0),
+        )
+        self.client.mount("https://", adapter)
+        self.client.mount("http://",  adapter)
 
     @task
     def post_via_gateway(self):
@@ -254,6 +268,11 @@ _raw_csv_lock   = threading.Lock()
 @events.init.add_listener
 def init_raw_csv(environment, **kwargs):
     global _raw_csv_path, _raw_csv_file, _raw_csv_writer
+    # Only record raw latencies during the capture phase, not warmup.
+    # run_test.sh sets CAPTURE_PHASE=true only for the capture invocation.
+    if os.environ.get("CAPTURE_PHASE", "false").lower() != "true":
+        print("[locust] Warmup phase — raw latency recording disabled")
+        return
     results_dir = os.environ.get("RESULTS_DIR", ".")
     _raw_csv_path = os.path.join(results_dir, "raw_latencies.csv")
     _raw_csv_file = open(_raw_csv_path, "w", newline="")
