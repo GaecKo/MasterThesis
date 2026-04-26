@@ -36,6 +36,8 @@ import time
 import uuid
 
 import urllib3
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import gevent
 import paho.mqtt.client as mqtt
 from locust import HttpUser, User, constant_throughput, events, task
@@ -128,22 +130,46 @@ def build_medium_payload(device_id: str, command: str, correlation_id: str) -> d
 
 # | ================= HTTP user ================= |
 
-_http_iter = itertools.cycle(list(HTTP_DEVICES.items()))
-_http_lock = threading.Lock()
+# Shared counter for assigning devices to users round-robin at spawn time
+_http_device_list = list(HTTP_DEVICES.items())
+_http_assign_idx  = 0
+_http_assign_lock = threading.Lock()
 
-def next_http_device() -> tuple[str, str]:
-    with _http_lock:
-        return next(_http_iter)
+def assign_http_device() -> tuple[str, str]:
+    """Assigns the next device to a user at spawn time. Each user keeps the same device."""
+    global _http_assign_idx
+    with _http_assign_lock:
+        item = _http_device_list[_http_assign_idx % len(_http_device_list)]
+        _http_assign_idx += 1
+        return item
 
 
 class HttpDeviceUser(HttpUser):
-    """Sends POST requests directly to HTTP device endpoints."""
+    """
+    Sends POST requests directly to HTTP device endpoints.
+    Each user is pinned to one device at spawn time so the TLS connection
+    stays warm across requests — avoids per-request TLS renegotiation caused
+    by round-robining between different hosts within the same session.
+    """
     wait_time = constant_throughput(PER_USER_RPS)
     weight    = HTTP_WEIGHT
 
+    def on_start(self):
+        # Pin this user to one device for the entire test run
+        self._device_id, self._url = assign_http_device()
+
+        # Persistent TLS adapter — one warm connection per user
+        adapter = HTTPAdapter(
+            pool_connections=1,
+            pool_maxsize=1,
+            max_retries=Retry(total=0),
+        )
+        self.client.mount("https://", adapter)
+        self.client.mount("http://",  adapter)
+
     @task
     def post_to_device(self):
-        device_id, url = next_http_device()
+        device_id, url = self._device_id, self._url
         correlation_id = str(uuid.uuid4())
         payload = build_medium_payload(device_id, "setBatteryOperation", correlation_id)
 
@@ -308,6 +334,11 @@ _raw_csv_lock   = threading.Lock()
 @events.init.add_listener
 def init_raw_csv(environment, **kwargs):
     global _raw_csv_path, _raw_csv_file, _raw_csv_writer
+    # Only record raw latencies during the capture phase, not warmup.
+    # run_test.sh sets CAPTURE_PHASE=true only for the capture invocation.
+    if os.environ.get("CAPTURE_PHASE", "false").lower() != "true":
+        print("[locust] Warmup phase — raw latency recording disabled")
+        return
     results_dir = os.environ.get("RESULTS_DIR", ".")
     _raw_csv_path = os.path.join(results_dir, "raw_latencies.csv")
     _raw_csv_file = open(_raw_csv_path, "w", newline="")

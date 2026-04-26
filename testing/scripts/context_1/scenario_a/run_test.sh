@@ -21,8 +21,8 @@ set -euo pipefail
 # | ================= Placeholders ================= |
 
 GATEWAY_SSH_HOST="${GATEWAY_SSH_HOST:-nuc4@nuc4-pc.local}"
-TARGET_HOST="${TARGET_HOST:-http://nuc4-pc.local:9080}"
-CONTAINERS="${CONTAINERS:-apisix mongodb mosquitto etcd}"
+TARGET_HOST="${TARGET_HOST:-https://nuc4-pc.local:9443}"
+CONTAINERS="${CONTAINERS:-apisix apisix-etcd}"
 
 WARMUP_SECONDS="${WARMUP_SECONDS:-120}"     # 2 minutes
 CAPTURE_SECONDS="${CAPTURE_SECONDS:-900}"   # 15 minutes
@@ -91,19 +91,16 @@ STATS_PID=""
 if [[ "${SKIP_DOCKER_STATS:-false}" != "true" ]]; then
     echo "timestamp,container,cpu_pct_raw,mem_used,mem_limit,mem_pct_raw,net_in,net_out,block_in,block_out,pids" > "$STATS_CSV"
     echo "[orchestrator] Starting docker stats collection via SSH..."
-    ssh -o BatchMode=yes -o ConnectTimeout=5 "$GATEWAY_SSH_HOST" \
+    # Simpler format — comma-separated directly, no awk parsing needed
+    # -n redirects stdin from /dev/null so SSH doesn't consume the script's stdin
+    ssh -n -o BatchMode=yes -o ConnectTimeout=5 "$GATEWAY_SSH_HOST" \
         "while true; do \
-            docker stats --no-stream --format '{{.Name}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemPerc}}|{{.NetIO}}|{{.BlockIO}}|{{.PIDs}}' $CONTAINERS 2>/dev/null \
-            | while IFS= read -r line; do echo \"\$(date +%s)|\$line\"; done; \
+            docker stats --no-stream --format \
+                '{{.Name}},{{.CPUPerc}},{{.MemUsage}},{{.MemPerc}},{{.NetIO}},{{.BlockIO}},{{.PIDs}}' \
+                $CONTAINERS 2>/dev/null \
+            | while IFS= read -r line; do echo \"\$(date +%s),\$line\"; done; \
             sleep $STATS_INTERVAL; \
-         done" \
-         | awk -F'|' 'BEGIN{OFS=","} {
-               split($4, mem, " / ");  gsub(/ /, "", mem[1]); gsub(/ /, "", mem[2]);
-               split($6, net, " / ");  gsub(/ /, "", net[1]); gsub(/ /, "", net[2]);
-               split($7, blk, " / ");  gsub(/ /, "", blk[1]); gsub(/ /, "", blk[2]);
-               gsub(/%/, "", $3); gsub(/%/, "", $5);
-               print $1,$2,$3,mem[1],mem[2],$5,net[1],net[2],blk[1],blk[2],$8
-             }' >> "$STATS_CSV" &
+         done" >> "$STATS_CSV" &
     STATS_PID=$!
 else
     echo "[orchestrator] Docker stats collection skipped (SKIP_DOCKER_STATS=true)"
@@ -113,10 +110,13 @@ cleanup() {
     echo ""
     if [[ -n "$STATS_PID" ]]; then
         echo "[orchestrator] Stopping stats collection..."
+        # Kill the local pipe first
         kill "$STATS_PID" 2>/dev/null || true
-        wait "$STATS_PID" 2>/dev/null || true
-        ssh -o BatchMode=yes -o ConnectTimeout=5 "$GATEWAY_SSH_HOST" \
-            "pkill -f 'docker stats --no-stream' || true" 2>/dev/null || true
+        # Kill the remote loop without blocking — fire and forget
+        ssh -o BatchMode=yes -o ConnectTimeout=3 "$GATEWAY_SSH_HOST" \
+            "pkill -f 'docker stats' 2>/dev/null || true" </dev/null &
+        sleep 1
+        echo "[orchestrator] Stats collection stopped."
     fi
 }
 trap cleanup EXIT INT TERM
@@ -125,15 +125,15 @@ trap cleanup EXIT INT TERM
 
 echo ""
 echo "[orchestrator] === WARMUP (${WARMUP_SECONDS}s at $TARGET_RPS req/s) ==="
-TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" \
+TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" RESULTS_DIR="$RESULTS_DIR" \
     locust -f "$LOCUST_FILE" \
         --host "$TARGET_HOST" \
         -u "$NUM_USERS" -r "$NUM_USERS" \
         -t "${WARMUP_SECONDS}s" \
         --headless --only-summary \
         > "$WARMUP_LOG" 2>&1 || {
-            echo "[orchestrator] /!\ Warmup contains error! — see $WARMUP_LOG"
-            sleep 2
+            echo "[orchestrator] Warmup failed — see $WARMUP_LOG"
+            exit 1
         }
 echo "[orchestrator] Warmup complete."
 
@@ -143,7 +143,7 @@ echo ""
 echo "[orchestrator] === CAPTURE (${CAPTURE_SECONDS}s at $TARGET_RPS req/s) ==="
 # Allow non-zero exit from Locust (it returns 1 when any requests fail).
 # We still want to aggregate and record results in that case.
-TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" \
+TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" RESULTS_DIR="$RESULTS_DIR" CAPTURE_PHASE="true" \
     locust -f "$LOCUST_FILE" \
         --host "$TARGET_HOST" \
         -u "$NUM_USERS" -r "$NUM_USERS" \
@@ -155,21 +155,36 @@ TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" \
 
 # | ================= Aggregate docker stats ================= |
 
-# Compute mean and max CPU% and mem% across the capture window, per container.
-# Keep it simple with awk — no Python deps needed on the runner host.
+# Compute mean and max CPU% and actual RAM (MiB) per container.
+# CSV format from docker stats: timestamp,name,cpu%,mem_used/mem_limit,mem%,net,block,pids
+# $3 = cpu% (e.g. "0.23%"), $4 = mem field (e.g. "128.3MiB / 14.89GiB")
+# We store CPU as percentage and RAM as MiB (actual usage, not percentage).
 DOCKER_SUMMARY=""
 if [[ "${SKIP_DOCKER_STATS:-false}" != "true" && -f "$STATS_CSV" ]]; then
     for container in $CONTAINERS; do
         line=$(awk -F',' -v c="$container" '
             $2 == c && $3 != "" {
-                cpu_sum += $3; cpu_n++
-                if ($3+0 > cpu_max) cpu_max = $3+0
-                if ($6+0 > mem_max) mem_max = $6+0
-                mem_sum += $6; mem_n++
+                # CPU — strip % sign
+                cpu = $3; gsub(/%/, "", cpu); cpu += 0
+
+                # RAM — parse the used portion of "128.3MiB / 14.89GiB"
+                # Take everything before " / ", strip the unit, convert to MiB
+                mem_str = $4; sub(/ \/ .*/, "", mem_str)
+                mem_val = mem_str; gsub(/[A-Za-z]/, "", mem_val); mem_val += 0
+                if      (mem_str ~ /GiB/) mem_mib = mem_val * 1024
+                else if (mem_str ~ /MiB/) mem_mib = mem_val
+                else if (mem_str ~ /kB/)  mem_mib = mem_val / 1024
+                else if (mem_str ~ /MB/)  mem_mib = mem_val * 0.9537  # 1 MB = 0.9537 MiB
+                else                      mem_mib = mem_val
+
+                cpu_sum += cpu; cpu_n++
+                mem_sum += mem_mib; mem_n++
+                if (cpu    > cpu_max) cpu_max = cpu
+                if (mem_mib > mem_max) mem_max = mem_mib
             }
             END {
                 if (cpu_n > 0)
-                    printf "%.2f,%.2f,%.2f,%.2f", cpu_sum/cpu_n, cpu_max, mem_sum/mem_n, mem_max
+                    printf "%.2f,%.2f,%.1f,%.1f", cpu_sum/cpu_n, cpu_max, mem_sum/mem_n, mem_max
                 else
                     printf ",,,"
             }' "$STATS_CSV")
@@ -197,19 +212,31 @@ extract_row() {
     if [[ -z "$row" ]]; then
         echo "$EMPTY_METRICS"
     else
-        # Strip Type and Name columns — keep numbers only
-        echo "$row" | cut -d',' -f3-
+        # Strip Type and Name columns and any \r or \n that crept in
+        echo "$row" | cut -d',' -f3- | tr -d '\r\n'
     fi
 }
 
-HTTP_METRICS=$(extract_row "direct/http")
-MQTT_METRICS=$(extract_row "direct/mqtt")
+# Support both scenario A names (direct/*) and B/C/D names (gateway/*)
+HTTP_ROW=$(grep -m1 'http' "${LOCUST_CSV_PREFIX}_stats.csv" | awk -F',' '$2 ~ /http/ && $2 != "Name"' || true)
+MQTT_ROW=$(grep -m1 'mqtt' "${LOCUST_CSV_PREFIX}_stats.csv" | awk -F',' '$2 ~ /mqtt/ && $2 != "Name"' || true)
+
+# Strip carriage returns from name fields (Locust CSV may have Windows line endings)
+HTTP_NAME=$(echo "$HTTP_ROW" | cut -d',' -f2 | tr -d '\r\n')
+MQTT_NAME=$(echo "$MQTT_ROW" | cut -d',' -f2 | tr -d '\r\n')
+
+HTTP_METRICS=$(extract_row "$HTTP_NAME")
+MQTT_METRICS=$(extract_row "$MQTT_NAME")
 AGG_METRICS=$(extract_row "Aggregated")
+
+# Strip any trailing newlines from docker summary
+DOCKER_SUMMARY=$(echo "$DOCKER_SUMMARY" | tr -d '\r\n')
 
 # Build the docker stats header (4 cols per container)
 DOCKER_HEADER=""
 for container in $CONTAINERS; do
-    DOCKER_HEADER="${DOCKER_HEADER},${container}_cpu_avg,${container}_cpu_max,${container}_mem_avg,${container}_mem_max"
+    # cpu = percentage (%), ram = actual usage in MiB
+    DOCKER_HEADER="${DOCKER_HEADER},${container}_cpu_avg_pct,${container}_cpu_max_pct,${container}_ram_avg_mib,${container}_ram_max_mib"
 done
 
 # Metric column suffix (same set repeated for http, mqtt, aggregated)
