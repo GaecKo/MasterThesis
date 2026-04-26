@@ -68,10 +68,6 @@ def build_route_payload(device_id: str, port: int) -> dict:
             "pass_host": "pass",
             "nodes": {
                 f"192.168.50.8:{port}": 1
-            },
-            # Skip TLS verification for the self-signed device cert
-            "tls": {
-                "verify": False
             }
         }
     }
