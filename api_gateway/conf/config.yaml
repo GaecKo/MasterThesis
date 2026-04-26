@@ -1,0 +1,37 @@
+apisix:
+  node_listen: 9080
+  enable_ipv6: false
+
+  enable_control: true
+  control:
+    ip: "0.0.0.0"
+    port: 9092
+
+deployment:
+  admin:
+    allow_admin:
+      - 0.0.0.0/0   # ⚠️ restrict in production
+
+    admin_key:
+      - name: admin
+        key: admin
+        role: admin
+
+      - name: viewer
+        key: viewer
+        role: viewer
+
+  etcd:
+    host:
+      - "http://etcd:2379"
+    prefix: "/apisix"
+    timeout: 30
+
+nginx_config:
+  http_server_location_configuration_snippet: |
+    set $upstream_cache_zone off;
+
+ext-plugin:
+  cmd: ['java', '-jar', '-Xmx6g', '-Xms2g', '/usr/local/apisix/java-plugins/edge-control/target/edge-control-0.0.1-SNAPSHOT.jar']
+  
+

@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  etcd:
+    image: bitnamilegacy/etcd:3.5.11
+    container_name: apisix-etcd
+    restart: unless-stopped
+    environment:
+      ETCD_ENABLE_V2: "true"
+      ALLOW_NONE_AUTHENTICATION: "yes"
+      ETCD_ADVERTISE_CLIENT_URLS: "http://etcd:2379"
+      ETCD_LISTEN_CLIENT_URLS: "http://0.0.0.0:2379"
+    ports:
+      - "2379:2379"
+    volumes:
+      - etcd_data:/bitnami/etcd
+    networks:
+      - apisix
+
+  apisix:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: apisix
+    restart: unless-stopped
+    depends_on:
+      - etcd
+      - mongodb
+      - mosquitto
+    extra_hosts:
+      - "nuc1-pc.local:192.168.50.1"
+      - "nuc8-pc.local:192.168.50.8"
+    volumes:
+      - ./conf/config.yaml:/usr/local/apisix/conf/config.yaml
+      - ./java-plugins/edge-control/target/edge-control-0.0.1-SNAPSHOT.jar:/usr/local/apisix/java-plugins/edge-control/target/edge-control-0.0.1-SNAPSHOT.jar
+      - ./java-plugins/edge-control/logs:/usr/local/apisix/java-plugins/edge-control/logs
+      - ./conf/server.crt:/usr/local/apisix/conf/server.crt:ro
+      - ./conf/server.key:/usr/local/apisix/conf/server.key:ro
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9080:9080"
+      - "9443:9443"
+      - "9180:9180"
+      - "9092:9092"
+    networks:
+      - apisix
+
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - apisix
+
+  mongo-express:
+    image: mongo-express:1.0.2
+    container_name: mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_SERVER: mongodb
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      - mongodb
+    networks:
+      - apisix
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"   # external — device VM connects here
+      - "9001:9001"   # WebSocket — useful for debugging
+      - "8883:8883"   # MQTTS
+    volumes:
+      - ./brokers/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./conf/server.crt:/mosquitto/certs/server.crt:ro
+      - ./conf/server.key:/mosquitto/certs/server.key:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_logs:/mosquitto/log
+    networks:
+      - apisix
+
+networks:
+  apisix:
+    driver: bridge
+
+volumes:
+  etcd_data:
+    driver: local
+  mongo_data:
+    driver: local
+  mosquitto_data:
+  mosquitto_logs:
