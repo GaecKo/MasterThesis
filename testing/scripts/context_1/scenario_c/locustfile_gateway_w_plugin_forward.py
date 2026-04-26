@@ -1,7 +1,7 @@
 """
-Scenarios B and C — API Gateway forwarding (no plugin logic on the request path).
+Scenarios C — API Gateway forwarding with plugin
 
-Scenario B: Plugin disabled — APISIX routes directly to each device upstream.
+
 Scenario C: Plugin enabled but does not touch the request — overhead of plugin
             presence without translation work.
 
@@ -15,7 +15,7 @@ MQTT devices:
 
 Fill in HTTP_DEVICES and MQTT_* dicts at the top (same values as scenario A),
 then run:
-    LOCUST_FILE=locustfile_gateway_forward.py ./run_test.sh scenarioB 50 medium
+    LOCUST_FILE=locustfile_gateway_w_plugin_forward.py ./run_test.sh scenarioC 100 medium
 
 Dependencies:
     pip install locust paho-mqtt
@@ -23,6 +23,7 @@ Dependencies:
 
 import itertools
 import json
+import csv
 import os
 import random
 import ssl
@@ -239,6 +240,47 @@ class MqttDirectUser(User):
             response_length=entry["response_length"],
             exception=None if received else Exception("MQTT response timeout"),
         )
+
+
+# | ================= Raw latency listener ================= |
+
+# Writes one row per request to raw_latencies.csv for box plot analysis.
+# Columns: timestamp_ms, protocol, name, response_time_ms, success
+_raw_csv_path   = None
+_raw_csv_file   = None
+_raw_csv_writer = None
+_raw_csv_lock   = threading.Lock()
+
+@events.init.add_listener
+def init_raw_csv(environment, **kwargs):
+    global _raw_csv_path, _raw_csv_file, _raw_csv_writer
+    results_dir = os.environ.get("RESULTS_DIR", ".")
+    _raw_csv_path = os.path.join(results_dir, "raw_latencies.csv")
+    _raw_csv_file = open(_raw_csv_path, "w", newline="")
+    _raw_csv_writer = csv.writer(_raw_csv_file)
+    _raw_csv_writer.writerow(
+        ["timestamp_ms", "protocol", "name", "response_time_ms", "success"])
+    print(f"[locust] Raw latency log: {_raw_csv_path}")
+
+@events.request.add_listener
+def on_request(request_type, name, response_time, exception, **kwargs):
+    if _raw_csv_writer is None:
+        return
+    with _raw_csv_lock:
+        _raw_csv_writer.writerow([
+            int(time.time() * 1000),
+            request_type,
+            name,
+            round(response_time, 3),
+            exception is None,
+        ])
+
+@events.quitting.add_listener
+def close_raw_csv(environment, **kwargs):
+    if _raw_csv_file:
+        _raw_csv_file.flush()
+        _raw_csv_file.close()
+        print(f"[locust] Raw latencies saved to {_raw_csv_path}")
 
 # | ================= Startup validation ================= |
 
