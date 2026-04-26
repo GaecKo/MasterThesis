@@ -78,7 +78,6 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/1 -H 'X-API-KEY: admin' -X PUT
                 "priority": 12000
             },
             "conf" : [
-                {"name": "AuthFilter", "value": "{\"enable\":\"feature\"}"},
                 {"name": "DeviceTranslation", "value": "{\"enable\":\"feature\"}"}
             ]
         }
