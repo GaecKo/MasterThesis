@@ -1,0 +1,218 @@
+{
+  "gatewayDeviceId": "mqtt_device_006",
+  "adapter": "mqtt",
+  "queuing": {
+    "retryIntervalSeconds": 5,
+    "maxTimeToLiveSeconds": 40
+  },
+  "connection": {
+    "qos": 1,
+    "keepAliveInterval": 30,
+    "connectionTimeout": 10,
+    "cleanSession": true,
+    "reconnectDelay": 5
+  },
+  "subscriptions": [
+    {
+      "topic": "devices/mqtt_device_006/telemetry",
+      "forwardToBackend": true
+    },
+    {
+      "topic": "devices/mqtt_device_006/status",
+      "forwardToBackend": true
+    }
+  ],
+  "commands": {
+    "setPower": {
+      "name": "setPower",
+      "topic": "devices/mqtt_device_006/commands",
+      "responseTopic": "devices/mqtt_device_006/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setPower",
+        "operation": {},
+        "startAt": null,
+        "endAt": null,
+        "flags": {
+          "overrideExisting": null,
+          "forceExecution": null
+        },
+        "context": {
+          "siteId": null,
+          "regionCode": null,
+          "environmentTag": null
+        }
+      },
+      "mappings": {
+        "overrideExisting": "flags.overrideExisting",
+        "forceExecution": "flags.forceExecution",
+        "siteId": "context.siteId",
+        "regionCode": "context.regionCode",
+        "environmentTag": "context.environmentTag",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+      "cleanup": {
+        "removeNulls": false,
+        "removeEmpty": false,
+        "emptyObjectToNull": false
+      }
+    },
+    "setMode": {
+      "name": "setMode",
+      "topic": "devices/mqtt_device_006/commands",
+      "responseTopic": "devices/mqtt_device_006/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setMode",
+        "operation": {
+          "dispatchPower": {
+            "frequency": null,
+            "current": null
+          },
+          "deliverFCR": {
+            "minRate": null,
+            "maxRate": null
+          },
+          "chargeToState": {
+            "rampRate": null,
+            "maxCurrent": null,
+            "targetSoC": null
+          }
+        },
+        "startAt": null,
+        "endAt": null,
+        "context": {
+          "regionCode": null,
+          "siteId": null,
+          "operatorId": null,
+          "environmentTag": null
+        },
+        "assetIdentifiers": null
+      },
+      "mappings": {
+        "regionCode": "context.regionCode",
+        "frequency": "operation.dispatchPower.frequency",
+        "siteId": "context.siteId",
+        "minRate": "operation.deliverFCR.minRate",
+        "maxRate": "operation.deliverFCR.maxRate",
+        "rampRate": "operation.chargeToState.rampRate",
+        "operatorId": "context.operatorId",
+        "assetIdentifiers": "assetIdentifiers",
+        "environmentTag": "context.environmentTag",
+        "maxCurrent": "operation.chargeToState.maxCurrent",
+        "current": "operation.dispatchPower.current",
+        "targetSoC": "operation.chargeToState.targetSoC",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+      "cleanup": {
+        "removeNulls": false,
+        "removeEmpty": true,
+        "emptyObjectToNull": false
+      }
+    },
+    "setChargeTarget": {
+      "name": "setChargeTarget",
+      "topic": "devices/mqtt_device_006/commands",
+      "responseTopic": "devices/mqtt_device_006/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setChargeTarget",
+        "operation": {
+          "deliverFCR": {
+            "minRate": null,
+            "deadband": null
+          },
+          "chargeToState": {
+            "targetSoC": null
+          }
+        },
+        "startAt": null,
+        "endAt": null,
+        "metadata": {
+          "requestVersion": null
+        }
+      },
+      "mappings": {
+        "minRate": "operation.deliverFCR.minRate",
+        "deadband": "operation.deliverFCR.deadband",
+        "targetSoC": "operation.chargeToState.targetSoC",
+        "requestVersion": "metadata.requestVersion",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+      "cleanup": {
+        "removeNulls": true,
+        "removeEmpty": true,
+        "emptyObjectToNull": true
+      }
+    },
+    "setMaxCapacity": {
+      "name": "setMaxCapacity",
+      "topic": "devices/mqtt_device_006/commands",
+      "responseTopic": "devices/mqtt_device_006/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setMaxCapacity",
+        "operation": {
+          "deliverFCR": {
+            "minRate": null,
+            "maxRate": null,
+            "deadband": null
+          },
+          "dispatchPower": {
+            "voltage": null,
+            "reactivePower": null
+          },
+          "chargeToState": {
+            "maxCurrent": null
+          }
+        },
+        "startAt": null,
+        "endAt": null,
+        "context": {
+          "siteId": null,
+          "operatorId": null
+        },
+        "metadata": {
+          "priority": null,
+          "source": null
+        },
+        "flags": {
+          "dryRun": null,
+          "notifyOnComplete": null
+        }
+      },
+      "mappings": {
+        "minRate": "operation.deliverFCR.minRate",
+        "siteId": "context.siteId",
+        "maxRate": "operation.deliverFCR.maxRate",
+        "voltage": "operation.dispatchPower.voltage",
+        "reactivePower": "operation.dispatchPower.reactivePower",
+        "maxCurrent": "operation.chargeToState.maxCurrent",
+        "operatorId": "context.operatorId",
+        "priority": "metadata.priority",
+        "dryRun": "flags.dryRun",
+        "source": "metadata.source",
+        "deadband": "operation.deliverFCR.deadband",
+        "notifyOnComplete": "flags.notifyOnComplete",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+      "cleanup": {
+        "removeNulls": false,
+        "removeEmpty": true,
+        "emptyObjectToNull": true
+      }
+    }
+  }
+}
