@@ -22,7 +22,7 @@ set -euo pipefail
 # | ================= Placeholders ================= |
 
 GATEWAY_SSH_HOST="${GATEWAY_SSH_HOST:-nuc4@nuc4-pc.local}"
-TARGET_HOST="${TARGET_HOST:-https://nuc4-pc.local:9443}"
+TARGET_HOST="${TARGET_HOST:-http://192.168.50.4:9080}"
 CONTAINERS="${CONTAINERS:-apisix apisix-etcd}"
 
 WARMUP_SECONDS="${WARMUP_SECONDS:-120}"     # 2 minutes
