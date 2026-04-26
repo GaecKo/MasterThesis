@@ -107,11 +107,11 @@ In this context, we want to see how our full architecture reacts to overloading.
 | {1, 2, 4} | Peak mechanism | {Medium, High} | 
 
 > Fixed factors for all scenarios
-| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Security Enabled |
-| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | :--------------: |
-| T           | T              | T                   | T               | T                   | F                |
+| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Security Enabled   |
+| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | :----------------: |
+| T           | T              | T                   | T               | T                   | T (no constraining)|
 
-* Security is disabled for allowing overloading!
+* Security is not constraining for allowing overloading!
 
 > **Common metrics of this scenario**
 * Latency (ms): mean, pX with X = {50, 90, 95, 99, 99.9}, std dev (standard deviation) / Variance
