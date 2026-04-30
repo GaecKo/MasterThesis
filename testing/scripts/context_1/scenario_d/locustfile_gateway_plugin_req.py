@@ -63,15 +63,13 @@ MQTT_WEIGHT = max(len(MQTT_DEVICES), 1)
 # | ================= Request plan ================= |
 
 # Round-robin over (device_id, command) pairs per protocol
-_http_plan  = list(itertools.cycle(
-    [(dev, cmd) for dev, cmds in HTTP_DEVICES.items() for cmd in cmds]))
-_mqtt_plan  = list(itertools.cycle(
-    [(dev, cmd) for dev, cmds in MQTT_DEVICES.items() for cmd in cmds]))
-
-_http_iter  = itertools.cycle(_http_plan)
-_http_lock  = threading.Lock()
-_mqtt_iter  = itertools.cycle(_mqtt_plan)
-_mqtt_lock  = threading.Lock()
+# Note: itertools.cycle() must NOT be wrapped in list() — it is infinite
+_http_iter = itertools.cycle(
+    [(dev, cmd) for dev, cmds in HTTP_DEVICES.items() for cmd in cmds])
+_http_lock = threading.Lock()
+_mqtt_iter = itertools.cycle(
+    [(dev, cmd) for dev, cmds in MQTT_DEVICES.items() for cmd in cmds])
+_mqtt_lock = threading.Lock()
 
 def next_http() -> tuple[str, str]:
     with _http_lock:
