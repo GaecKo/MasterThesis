@@ -22,11 +22,11 @@ set -euo pipefail
 # | ================= Placeholders ================= |
 
 GATEWAY_SSH_HOST="${GATEWAY_SSH_HOST:-nuc4@nuc4-pc.local}"
-TARGET_HOST="${TARGET_HOST:-https://nuc4-pc.local:9443}"
+TARGET_HOST="${TARGET_HOST:-http://192.168.50.4:9080}"
 CONTAINERS="${CONTAINERS:-apisix apisix-etcd}"
 
-WARMUP_SECONDS="${WARMUP_SECONDS:-120}"     # 2 minutes
-CAPTURE_SECONDS="${CAPTURE_SECONDS:-900}"   # 15 minutes
+WARMUP_SECONDS="${WARMUP_SECONDS:-5}"     # 2 minutes
+CAPTURE_SECONDS="${CAPTURE_SECONDS:-30}"   # 15 minutes
 STATS_INTERVAL="${STATS_INTERVAL:-2}"       # seconds between docker stats polls
 
 # Base number of virtual users. More users = higher achievable throughput.
@@ -144,7 +144,7 @@ echo ""
 echo "[orchestrator] === CAPTURE (${CAPTURE_SECONDS}s at $TARGET_RPS req/s) ==="
 # Allow non-zero exit from Locust (it returns 1 when any requests fail).
 # We still want to aggregate and record results in that case.
-TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" RESULTS_DIR="$RESULTS_DIR" \
+TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" RESULTS_DIR="$RESULTS_DIR" CAPTURE_PHASE="true" \
     locust -f "$LOCUST_FILE" \
         --host "$TARGET_HOST" \
         -u "$NUM_USERS" -r "$NUM_USERS" \

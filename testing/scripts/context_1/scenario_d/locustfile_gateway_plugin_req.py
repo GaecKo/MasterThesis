@@ -220,6 +220,11 @@ _raw_csv_lock   = threading.Lock()
 @events.init.add_listener
 def init_raw_csv(environment, **kwargs):
     global _raw_csv_path, _raw_csv_file, _raw_csv_writer
+    # Only record raw latencies during the capture phase, not warmup.
+    # run_test.sh sets CAPTURE_PHASE=true only for the capture invocation.
+    if os.environ.get("CAPTURE_PHASE", "false").lower() != "true":
+        print("[locust] Warmup phase — raw latency recording disabled")
+        return
     results_dir = os.environ.get("RESULTS_DIR", ".")
     _raw_csv_path = os.path.join(results_dir, "raw_latencies.csv")
     _raw_csv_file = open(_raw_csv_path, "w", newline="")
