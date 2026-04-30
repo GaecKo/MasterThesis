@@ -63,15 +63,13 @@ MQTT_WEIGHT = max(len(MQTT_DEVICES), 1)
 # | ================= Request plan ================= |
 
 # Round-robin over (device_id, command) pairs per protocol
-_http_plan  = list(itertools.cycle(
-    [(dev, cmd) for dev, cmds in HTTP_DEVICES.items() for cmd in cmds]))
-_mqtt_plan  = list(itertools.cycle(
-    [(dev, cmd) for dev, cmds in MQTT_DEVICES.items() for cmd in cmds]))
-
-_http_iter  = itertools.cycle(_http_plan)
-_http_lock  = threading.Lock()
-_mqtt_iter  = itertools.cycle(_mqtt_plan)
-_mqtt_lock  = threading.Lock()
+# Note: itertools.cycle() must NOT be wrapped in list() — it is infinite
+_http_iter = itertools.cycle(
+    [(dev, cmd) for dev, cmds in HTTP_DEVICES.items() for cmd in cmds])
+_http_lock = threading.Lock()
+_mqtt_iter = itertools.cycle(
+    [(dev, cmd) for dev, cmds in MQTT_DEVICES.items() for cmd in cmds])
+_mqtt_lock = threading.Lock()
 
 def next_http() -> tuple[str, str]:
     with _http_lock:
@@ -220,6 +218,11 @@ _raw_csv_lock   = threading.Lock()
 @events.init.add_listener
 def init_raw_csv(environment, **kwargs):
     global _raw_csv_path, _raw_csv_file, _raw_csv_writer
+    # Only record raw latencies during the capture phase, not warmup.
+    # run_test.sh sets CAPTURE_PHASE=true only for the capture invocation.
+    if os.environ.get("CAPTURE_PHASE", "false").lower() != "true":
+        print("[locust] Warmup phase — raw latency recording disabled")
+        return
     results_dir = os.environ.get("RESULTS_DIR", ".")
     _raw_csv_path = os.path.join(results_dir, "raw_latencies.csv")
     _raw_csv_file = open(_raw_csv_path, "w", newline="")
