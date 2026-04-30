@@ -1,0 +1,203 @@
+{
+  "gatewayDeviceId": "device_91b2610e-dd50-4d60-803b-420eca4dbf39",
+  "adapter": "mqtt",
+  "queuing": {
+    "retryIntervalSeconds": 5,
+    "maxTimeToLiveSeconds": 40
+  },
+  "connection": {
+    "qos": 1,
+    "keepAliveInterval": 30,
+    "connectionTimeout": 10,
+    "cleanSession": true,
+    "reconnectDelay": 5
+  },
+  "subscriptions": [
+    {
+      "topic": "devices/device_91b2610e-dd50-4d60-803b-420eca4dbf39/telemetry",
+      "forwardToBackend": true
+    },
+    {
+      "topic": "devices/device_91b2610e-dd50-4d60-803b-420eca4dbf39/status",
+      "forwardToBackend": true
+    }
+  ],
+  "commands": {
+    "setPower": {
+      "name": "setPower",
+      "topic": "devices/device_91b2610e-dd50-4d60-803b-420eca4dbf39/commands",
+      "responseTopic": "devices/device_91b2610e-dd50-4d60-803b-420eca4dbf39/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setPower",
+        "operation": {
+          "dispatchPower": {
+            "reactivePower": null
+          }
+        },
+        "startAt": null,
+        "endAt": null,
+        "context": {
+          "siteId": null,
+          "timezone": null
+        },
+        "metadata": {
+          "reason": null
+        },
+        "flags": {
+          "overrideExisting": null
+        }
+      },
+      "mappings": {
+        "reactivePower": "operation.dispatchPower.reactivePower",
+        "siteId": "context.siteId",
+        "reason": "metadata.reason",
+        "timezone": "context.timezone",
+        "overrideExisting": "flags.overrideExisting",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+      "cleanup": {
+        "removeNulls": true,
+        "removeEmpty": false,
+        "emptyObjectToNull": false
+      }
+    },
+    "setMode": {
+      "name": "setMode",
+      "topic": "devices/device_91b2610e-dd50-4d60-803b-420eca4dbf39/commands",
+      "responseTopic": "devices/device_91b2610e-dd50-4d60-803b-420eca4dbf39/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setMode",
+        "operation": {
+          "dispatchPower": {
+            "voltage": null,
+            "apparentPower": null
+          },
+          "chargeToState": {
+            "targetSoC": null
+          }
+        },
+        "startAt": null,
+        "endAt": null,
+        "context": {
+          "siteId": null
+        }
+      },
+      "mappings": {
+        "voltage": "operation.dispatchPower.voltage",
+        "targetSoC": "operation.chargeToState.targetSoC",
+        "apparentPower": "operation.dispatchPower.apparentPower",
+        "siteId": "context.siteId",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+      "cleanup": {
+        "removeNulls": true,
+        "removeEmpty": true,
+        "emptyObjectToNull": true
+      }
+    },
+    "setChargeTarget": {
+      "name": "setChargeTarget",
+      "topic": "devices/device_91b2610e-dd50-4d60-803b-420eca4dbf39/commands",
+      "responseTopic": "devices/device_91b2610e-dd50-4d60-803b-420eca4dbf39/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setChargeTarget",
+        "operation": {
+          "dispatchPower": {
+            "frequency": null,
+            "voltage": null
+          },
+          "deliverFCR": {
+            "maxRate": null,
+            "droopSetting": null
+          },
+          "chargeToState": {
+            "maxCurrent": null
+          }
+        },
+        "startAt": null,
+        "endAt": null,
+        "context": {
+          "operatorId": null
+        },
+        "flags": {
+          "forceExecution": null,
+          "notifyOnComplete": null
+        },
+        "metadata": {
+          "correlationId": null
+        },
+        "assetIdentifiers": null
+      },
+      "mappings": {
+        "operatorId": "context.operatorId",
+        "frequency": "operation.dispatchPower.frequency",
+        "maxRate": "operation.deliverFCR.maxRate",
+        "droopSetting": "operation.deliverFCR.droopSetting",
+        "maxCurrent": "operation.chargeToState.maxCurrent",
+        "forceExecution": "flags.forceExecution",
+        "correlationId": "metadata.correlationId",
+        "voltage": "operation.dispatchPower.voltage",
+        "assetIdentifiers": "assetIdentifiers",
+        "notifyOnComplete": "flags.notifyOnComplete",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+      "cleanup": {
+        "removeNulls": true,
+        "removeEmpty": true,
+        "emptyObjectToNull": true
+      }
+    },
+    "setMaxCapacity": {
+      "name": "setMaxCapacity",
+      "topic": "devices/device_91b2610e-dd50-4d60-803b-420eca4dbf39/commands",
+      "responseTopic": "devices/device_91b2610e-dd50-4d60-803b-420eca4dbf39/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setMaxCapacity",
+        "operation": {
+          "chargeToState": {
+            "percentage": null,
+            "maxCurrent": null
+          },
+          "deliverFCR": {
+            "maxRate": null
+          }
+        },
+        "startAt": null,
+        "endAt": null,
+        "context": {
+          "timezone": null,
+          "environmentTag": null
+        }
+      },
+      "mappings": {
+        "percentage": "operation.chargeToState.percentage",
+        "maxCurrent": "operation.chargeToState.maxCurrent",
+        "timezone": "context.timezone",
+        "maxRate": "operation.deliverFCR.maxRate",
+        "environmentTag": "context.environmentTag",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+      "cleanup": {
+        "removeNulls": false,
+        "removeEmpty": false,
+        "emptyObjectToNull": true
+      }
+    }
+  }
+}

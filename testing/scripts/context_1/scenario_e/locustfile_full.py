@@ -48,7 +48,10 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Map each backend gateway ID to its plain-text API key.
 # These are the keys returned when you created backends via /onboarding/backend.
 BACKEND_API_KEYS: dict[str, str] = {
-    # "backend_<uuid>": "<api_key>",
+"backend_0ac63729-9e64-4c7f-8c77-46f9f5755166": "aPyDBQ9-zuCVC-wHPA161VI2zcgNutLntckj1F7by4I",
+"backend_052e1ef9-189d-4905-8827-e3185ea49d35": "oGBDK-aGWV4XAmF2GK1wzdSlsJfHRyJY2vRNRRY09PE",
+"backend_84a92f7d-a962-465e-94a4-721517b037b6": "wRSK9A8RJ3OqhfJ26hC1C146zzxdcp7upadRLcjQeoQ",
+"backend_589f04d4-b279-4e5c-b6f1-7d7faa70b113": "NhlXvYlKtDKD972qDGQV0CTAPrUrdXUagV9W4vxJH7w",
 }
 
 # | ================= Load test plan from summary ================= |

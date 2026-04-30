@@ -1,0 +1,192 @@
+{
+  "gatewayDeviceId": "device_a5dee0dd-8d79-49d4-8db7-00f423829004",
+  "adapter": "http",
+  "queuing": {
+    "retryIntervalSeconds": 5,
+    "maxTimeToLiveSeconds": 40
+  },
+  "commands": {
+    "setBatteryOperation": {
+      "name": "setBatteryOperation",
+      "endpoint": "https://nuc8-pc.local:8443/v2/schedule/",
+      "method": "POST",
+      "timeouts": {
+        "connect": 2,
+        "request": 10
+      },
+      "payloadTemplate": {
+        "schedule": [
+          {
+            "type": "setBatteryOperation",
+            "operation": {
+              "chargeToState": {
+                "percentage": null,
+                "maxCurrent": null
+              },
+              "dispatchPower": {
+                "frequency": null
+              }
+            },
+            "startAt": null,
+            "endAt": null
+          }
+        ],
+        "assetIdentifiers": null,
+        "context": {
+          "environmentTag": null,
+          "operatorId": null,
+          "timezone": null
+        },
+        "flags": {
+          "dryRun": null,
+          "forceExecution": null
+        },
+        "metadata": {
+          "correlationId": null,
+          "priority": null
+        }
+      },
+      "mappings": {
+        "environmentTag": "context.environmentTag",
+        "dryRun": "flags.dryRun",
+        "percentage": "schedule[0].operation.chargeToState.percentage",
+        "correlationId": "metadata.correlationId",
+        "operatorId": "context.operatorId",
+        "maxCurrent": "schedule[0].operation.chargeToState.maxCurrent",
+        "frequency": "schedule[0].operation.dispatchPower.frequency",
+        "forceExecution": "flags.forceExecution",
+        "timezone": "context.timezone",
+        "priority": "metadata.priority",
+        "startAt": "schedule[0].startAt",
+        "endAt": "schedule[0].endAt"
+      },
+      "cleanup": {
+        "emptyObjectToNull": true,
+        "removeNulls": false,
+        "removeEmpty": false
+      }
+    },
+    "setChargeTarget": {
+      "name": "setChargeTarget",
+      "endpoint": "https://nuc8-pc.local:8443/v2/schedule/",
+      "method": "POST",
+      "timeouts": {
+        "connect": 2,
+        "request": 10
+      },
+      "payloadTemplate": {
+        "schedule": [
+          {
+            "type": "setChargeTarget",
+            "operation": {
+              "chargeToState": {
+                "percentage": null,
+                "maxCurrent": null
+              },
+              "dispatchPower": {
+                "reactivePower": null
+              }
+            },
+            "startAt": null,
+            "endAt": null,
+            "duration": null
+          }
+        ],
+        "assetIdentifiers": null,
+        "flags": {
+          "overrideExisting": null
+        },
+        "context": {
+          "timezone": null,
+          "regionCode": null
+        },
+        "metadata": {
+          "priority": null,
+          "source": null
+        }
+      },
+      "mappings": {
+        "overrideExisting": "flags.overrideExisting",
+        "timezone": "context.timezone",
+        "priority": "metadata.priority",
+        "percentage": "schedule[0].operation.chargeToState.percentage",
+        "maxCurrent": "schedule[0].operation.chargeToState.maxCurrent",
+        "regionCode": "context.regionCode",
+        "duration": "schedule[0].duration",
+        "source": "metadata.source",
+        "reactivePower": "schedule[0].operation.dispatchPower.reactivePower",
+        "startAt": "schedule[0].startAt",
+        "endAt": "schedule[0].endAt"
+      },
+      "cleanup": {
+        "emptyObjectToNull": false,
+        "removeNulls": false,
+        "removeEmpty": false
+      }
+    },
+    "setMaxCapacity": {
+      "name": "setMaxCapacity",
+      "endpoint": "https://nuc8-pc.local:8443/v2/schedule/",
+      "method": "POST",
+      "timeouts": {
+        "connect": 2,
+        "request": 10
+      },
+      "payloadTemplate": {
+        "schedule": [
+          {
+            "type": "setMaxCapacity",
+            "operation": {
+              "deliverFCR": {
+                "maxRate": null,
+                "droopSetting": null
+              },
+              "dispatchPower": {
+                "apparentPower": null
+              }
+            },
+            "startAt": null,
+            "endAt": null
+          }
+        ],
+        "assetIdentifiers": null,
+        "context": {
+          "environmentTag": null,
+          "siteId": null,
+          "timezone": null
+        },
+        "flags": {
+          "auditTrailEnabled": null,
+          "overrideExisting": null,
+          "notifyOnComplete": null
+        },
+        "metadata": {
+          "source": null,
+          "reason": null,
+          "requestVersion": null
+        }
+      },
+      "mappings": {
+        "maxRate": "schedule[0].operation.deliverFCR.maxRate",
+        "environmentTag": "context.environmentTag",
+        "siteId": "context.siteId",
+        "auditTrailEnabled": "flags.auditTrailEnabled",
+        "apparentPower": "schedule[0].operation.dispatchPower.apparentPower",
+        "source": "metadata.source",
+        "overrideExisting": "flags.overrideExisting",
+        "timezone": "context.timezone",
+        "notifyOnComplete": "flags.notifyOnComplete",
+        "reason": "metadata.reason",
+        "requestVersion": "metadata.requestVersion",
+        "droopSetting": "schedule[0].operation.deliverFCR.droopSetting",
+        "startAt": "schedule[0].startAt",
+        "endAt": "schedule[0].endAt"
+      },
+      "cleanup": {
+        "emptyObjectToNull": false,
+        "removeNulls": false,
+        "removeEmpty": false
+      }
+    }
+  }
+}

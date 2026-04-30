@@ -1,5 +1,5 @@
 {
-  "gatewayDeviceId": "http_device_001",
+  "gatewayDeviceId": "device_e72f9271-ebb9-426d-b1b8-b33d70a7b750",
   "adapter": "http",
   "queuing": {
     "retryIntervalSeconds": 5,
@@ -8,7 +8,7 @@
   "commands": {
     "setBatteryOperation": {
       "name": "setBatteryOperation",
-      "endpoint": "https://nuc8-pc.local:8443/v2/schedule/",
+      "endpoint": "https://nuc8-pc.local:8445/v2/schedule/",
       "method": "POST",
       "timeouts": {
         "connect": 2,
@@ -20,16 +20,7 @@
             "type": "setBatteryOperation",
             "operation": {
               "dispatchPower": {
-                "current": null,
-                "reactivePower": null
-              },
-              "chargeToState": {
-                "rampRate": null,
-                "maxCurrent": null,
-                "chargeMode": null
-              },
-              "deliverFCR": {
-                "deadband": null
+                "current": null
               }
             },
             "startAt": null,
@@ -40,43 +31,38 @@
         "assetIdentifiers": null,
         "flags": {
           "dryRun": null,
-          "notifyOnComplete": null
-        },
-        "metadata": {
-          "requestVersion": null,
-          "reason": null,
-          "requestedBy": null
+          "overrideExisting": null
         },
         "context": {
-          "siteId": null
+          "regionCode": null,
+          "siteId": null,
+          "environmentTag": null
+        },
+        "metadata": {
+          "reason": null
         }
       },
       "mappings": {
-        "current": "schedule[0].operation.dispatchPower.current",
         "dryRun": "flags.dryRun",
-        "rampRate": "schedule[0].operation.chargeToState.rampRate",
-        "notifyOnComplete": "flags.notifyOnComplete",
-        "requestVersion": "metadata.requestVersion",
+        "current": "schedule[0].operation.dispatchPower.current",
+        "overrideExisting": "flags.overrideExisting",
+        "regionCode": "context.regionCode",
         "reason": "metadata.reason",
-        "maxCurrent": "schedule[0].operation.chargeToState.maxCurrent",
         "duration": "schedule[0].duration",
         "siteId": "context.siteId",
-        "deadband": "schedule[0].operation.deliverFCR.deadband",
-        "chargeMode": "schedule[0].operation.chargeToState.chargeMode",
-        "reactivePower": "schedule[0].operation.dispatchPower.reactivePower",
-        "requestedBy": "metadata.requestedBy",
+        "environmentTag": "context.environmentTag",
         "startAt": "schedule[0].startAt",
         "endAt": "schedule[0].endAt"
       },
       "cleanup": {
         "emptyObjectToNull": false,
-        "removeNulls": false,
-        "removeEmpty": false
+        "removeNulls": true,
+        "removeEmpty": true
       }
     },
     "setChargeTarget": {
       "name": "setChargeTarget",
-      "endpoint": "https://nuc8-pc.local:8443/v2/schedule/",
+      "endpoint": "https://nuc8-pc.local:8445/v2/schedule/",
       "method": "POST",
       "timeouts": {
         "connect": 2,
@@ -88,10 +74,15 @@
             "type": "setChargeTarget",
             "operation": {
               "deliverFCR": {
+                "droopSetting": null,
+                "maxRate": null,
                 "deadband": null
               },
               "dispatchPower": {
-                "voltage": null
+                "current": null
+              },
+              "chargeToState": {
+                "percentage": null
               }
             },
             "startAt": null,
@@ -100,17 +91,31 @@
         ],
         "assetIdentifiers": null,
         "flags": {
-          "notifyOnComplete": null
+          "dryRun": null,
+          "auditTrailEnabled": null
+        },
+        "metadata": {
+          "source": null
         },
         "context": {
-          "timezone": null
+          "operatorId": null,
+          "timezone": null,
+          "tenantId": null
         }
       },
       "mappings": {
+        "dryRun": "flags.dryRun",
+        "droopSetting": "schedule[0].operation.deliverFCR.droopSetting",
+        "source": "metadata.source",
+        "assetIdentifiers": "assetIdentifiers",
+        "operatorId": "context.operatorId",
+        "current": "schedule[0].operation.dispatchPower.current",
+        "auditTrailEnabled": "flags.auditTrailEnabled",
+        "percentage": "schedule[0].operation.chargeToState.percentage",
+        "maxRate": "schedule[0].operation.deliverFCR.maxRate",
         "deadband": "schedule[0].operation.deliverFCR.deadband",
-        "notifyOnComplete": "flags.notifyOnComplete",
         "timezone": "context.timezone",
-        "voltage": "schedule[0].operation.dispatchPower.voltage",
+        "tenantId": "context.tenantId",
         "startAt": "schedule[0].startAt",
         "endAt": "schedule[0].endAt"
       },
@@ -122,7 +127,7 @@
     },
     "setMaxCapacity": {
       "name": "setMaxCapacity",
-      "endpoint": "https://nuc8-pc.local:8443/v2/schedule/",
+      "endpoint": "https://nuc8-pc.local:8445/v2/schedule/",
       "method": "POST",
       "timeouts": {
         "connect": 2,
@@ -134,15 +139,10 @@
             "type": "setMaxCapacity",
             "operation": {
               "dispatchPower": {
-                "frequency": null,
-                "apparentPower": null,
                 "activePower": null
               },
-              "deliverFCR": {
-                "droopSetting": null
-              },
               "chargeToState": {
-                "targetSoC": null
+                "chargeMode": null
               }
             },
             "startAt": null,
@@ -151,22 +151,13 @@
         ],
         "assetIdentifiers": null,
         "context": {
-          "operatorId": null
-        },
-        "flags": {
-          "auditTrailEnabled": null,
-          "notifyOnComplete": null
+          "regionCode": null
         }
       },
       "mappings": {
-        "operatorId": "context.operatorId",
-        "auditTrailEnabled": "flags.auditTrailEnabled",
-        "frequency": "schedule[0].operation.dispatchPower.frequency",
-        "apparentPower": "schedule[0].operation.dispatchPower.apparentPower",
-        "droopSetting": "schedule[0].operation.deliverFCR.droopSetting",
-        "targetSoC": "schedule[0].operation.chargeToState.targetSoC",
-        "notifyOnComplete": "flags.notifyOnComplete",
+        "regionCode": "context.regionCode",
         "activePower": "schedule[0].operation.dispatchPower.activePower",
+        "chargeMode": "schedule[0].operation.chargeToState.chargeMode",
         "startAt": "schedule[0].startAt",
         "endAt": "schedule[0].endAt"
       },
