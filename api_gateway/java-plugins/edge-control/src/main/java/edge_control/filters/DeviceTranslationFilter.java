@@ -68,16 +68,7 @@ public class DeviceTranslationFilter implements PluginFilter {
                        HttpResponse response,
                        PluginFilterChain chain) {
 
-        logger.debug("Incoming request in " + name() + ", index: " + chain.getIndex());
 
-        requestHandler.register(request);
-
-        // A previous filter may have marked this request to be skipped (e.g. auth failure)
-        if (requestHandler.shouldSkipRequest(request, chain)) {
-            logger.debug("Skipping request in " + name() + ", index: " + chain.getIndex());
-            chain.filter(request, response);
-            return;
-        }
 
         int reqHash = request.hashCode();
         Instant start = Instant.now();
@@ -126,14 +117,6 @@ public class DeviceTranslationFilter implements PluginFilter {
 
             String gatewayDeviceId = config.getString("gatewayDeviceId");
 
-            // callbackEndpoint is consumed here by the queuing layer — strip it before
-            // forwarding so the device does not receive an unexpected field
-            String callbackEndpoint = null;
-            if (config.has("callbackEndpoint")) {
-                callbackEndpoint = config.getString("callbackEndpoint");
-                config.remove("callbackEndpoint");
-            }
-
             // Write the cleaned body back so the adapter sees it without internal fields
             request.setBody(config.toString());
 
@@ -155,10 +138,6 @@ public class DeviceTranslationFilter implements PluginFilter {
                 @Override
                 public void onSuccess() {
                     try {
-                        Instant end = Instant.now();
-                        logger.time("Trans Filter: request processed - time took:"
-                                + (end.toEpochMilli() - start.toEpochMilli()) + "ms (" + request.hashCode() + ")");
-                        // Response already set by the adapter — continue the chain
                         chain.filter(request, response);
                     } catch (Exception e) {
                         logger.error("Error in chain.filter callback: " + e.getMessage());
@@ -167,35 +146,14 @@ public class DeviceTranslationFilter implements PluginFilter {
 
                 @Override
                 public void onDeviceUnreachable(String reason) {
-                    try {
-                        if (queueRegistry.hasQueuing(gatewayDeviceId)) {
-                            // Persist the request for retry and return 202 to the caller
-                            String queuedRequestId = queueRegistry.enqueue(
-                                    gatewayDeviceId, finalCallbackEndpoint,
-                                    request.getBody(), request.getHeaders());
-                            response.setStatusCode(202);
-                            response.setBody("{\"status\":\"queued\","
-                                    + "\"message\":\"Device unreachable - request queued for retry\","
-                                    + "\"deviceId\":\"" + gatewayDeviceId + "\","
-                                    + "\"queuedRequestId\":\"" + queuedRequestId + "\"}");
-                            response.setHeader("MODIFIED-BY", "EdgeControl/Queuing");
-                            logger.info("Request queued for device " + gatewayDeviceId + ": " + reason);
-                        } else {
-                            // Device is down and no retry mechanism is configured — fail immediately
-                            response.setStatusCode(502);
-                            response.setBody("{\"error\":\"Device unreachable: " + reason
-                                    + ", device has no queuing mechanism configured\"}");
-                            logger.warn("Device unreachable, no queuing configured: " + gatewayDeviceId);
-                        }
-                    } catch (Exception e) {
-                        logger.error("Failed to enqueue request for device "
-                                + gatewayDeviceId + ": " + e.getMessage());
-                        response.setStatusCode(502);
-                        response.setBody("{\"error\":\"Device unreachable and queuing failed: " + reason + "\"}");
-                    } finally {
-                        // Always continue the chain, even on queuing failure
-                        chain.filter(request, response);
-                    }
+                    // Device is down and no retry mechanism is configured — fail immediately
+                    response.setStatusCode(502);
+                    response.setBody("{\"error\":\"Device unreachable: " + reason
+                            + ", device has no queuing mechanism configured\"}");
+                    logger.warn("Device unreachable, no queuing configured: " + gatewayDeviceId);
+                    // Always continue the chain, even on queuing failure
+                    chain.filter(request, response);
+                    
                 }
             });
 
