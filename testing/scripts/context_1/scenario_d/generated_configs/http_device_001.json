@@ -21,7 +21,13 @@
             "operation": {
               "chargeToState": {
                 "rampRate": null,
-                "targetSoC": null
+                "percentage": null
+              },
+              "deliverFCR": {
+                "deadband": null
+              },
+              "dispatchPower": {
+                "voltage": null
               }
             },
             "startAt": null,
@@ -29,20 +35,26 @@
           }
         ],
         "assetIdentifiers": null,
+        "context": {
+          "environmentTag": null
+        },
         "flags": {
-          "auditTrailEnabled": null
+          "overrideExisting": null
         }
       },
       "mappings": {
+        "environmentTag": "context.environmentTag",
         "rampRate": "schedule[0].operation.chargeToState.rampRate",
-        "auditTrailEnabled": "flags.auditTrailEnabled",
-        "targetSoC": "schedule[0].operation.chargeToState.targetSoC",
+        "overrideExisting": "flags.overrideExisting",
+        "deadband": "schedule[0].operation.deliverFCR.deadband",
+        "voltage": "schedule[0].operation.dispatchPower.voltage",
+        "percentage": "schedule[0].operation.chargeToState.percentage",
         "startAt": "schedule[0].startAt",
         "endAt": "schedule[0].endAt"
       },
       "cleanup": {
-        "emptyObjectToNull": true,
-        "removeNulls": true,
+        "emptyObjectToNull": false,
+        "removeNulls": false,
         "removeEmpty": true
       }
     },
@@ -59,11 +71,15 @@
           {
             "type": "setChargeTarget",
             "operation": {
+              "chargeToState": {
+                "chargeMode": null
+              },
               "dispatchPower": {
-                "reactivePower": null
+                "reactivePower": null,
+                "voltage": null
               },
               "deliverFCR": {
-                "minRate": null
+                "droopSetting": null
               }
             },
             "startAt": null,
@@ -71,16 +87,26 @@
           }
         ],
         "assetIdentifiers": null,
+        "context": {
+          "operatorId": null,
+          "regionCode": null,
+          "timezone": null,
+          "siteId": null
+        },
         "metadata": {
-          "reason": null,
-          "requestVersion": null
+          "source": null
         }
       },
       "mappings": {
-        "reason": "metadata.reason",
+        "operatorId": "context.operatorId",
+        "regionCode": "context.regionCode",
+        "chargeMode": "schedule[0].operation.chargeToState.chargeMode",
+        "timezone": "context.timezone",
         "reactivePower": "schedule[0].operation.dispatchPower.reactivePower",
-        "requestVersion": "metadata.requestVersion",
-        "minRate": "schedule[0].operation.deliverFCR.minRate",
+        "siteId": "context.siteId",
+        "voltage": "schedule[0].operation.dispatchPower.voltage",
+        "source": "metadata.source",
+        "droopSetting": "schedule[0].operation.deliverFCR.droopSetting",
         "startAt": "schedule[0].startAt",
         "endAt": "schedule[0].endAt"
       },
@@ -104,11 +130,16 @@
             "type": "setMaxCapacity",
             "operation": {
               "deliverFCR": {
+                "droopSetting": null,
                 "maxRate": null
               },
+              "chargeToState": {
+                "targetSoC": null,
+                "percentage": null
+              },
               "dispatchPower": {
-                "current": null,
-                "frequency": null
+                "voltage": null,
+                "activePower": null
               }
             },
             "startAt": null,
@@ -117,20 +148,29 @@
         ],
         "assetIdentifiers": null,
         "metadata": {
-          "source": null
+          "priority": null,
+          "source": null,
+          "reason": null
         },
         "context": {
-          "regionCode": null,
-          "siteId": null
+          "environmentTag": null
+        },
+        "flags": {
+          "auditTrailEnabled": null
         }
       },
       "mappings": {
-        "source": "metadata.source",
+        "droopSetting": "schedule[0].operation.deliverFCR.droopSetting",
+        "priority": "metadata.priority",
+        "targetSoC": "schedule[0].operation.chargeToState.targetSoC",
         "maxRate": "schedule[0].operation.deliverFCR.maxRate",
-        "current": "schedule[0].operation.dispatchPower.current",
-        "regionCode": "context.regionCode",
-        "siteId": "context.siteId",
-        "frequency": "schedule[0].operation.dispatchPower.frequency",
+        "percentage": "schedule[0].operation.chargeToState.percentage",
+        "environmentTag": "context.environmentTag",
+        "voltage": "schedule[0].operation.dispatchPower.voltage",
+        "auditTrailEnabled": "flags.auditTrailEnabled",
+        "activePower": "schedule[0].operation.dispatchPower.activePower",
+        "source": "metadata.source",
+        "reason": "metadata.reason",
         "startAt": "schedule[0].startAt",
         "endAt": "schedule[0].endAt"
       },

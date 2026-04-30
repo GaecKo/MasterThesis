@@ -34,40 +34,32 @@
         "type": "setPower",
         "operation": {
           "deliverFCR": {
-            "deadband": null,
-            "droopSetting": null,
-            "maxRate": null
+            "minRate": null
           },
           "dispatchPower": {
+            "activePower": null,
             "apparentPower": null
           }
         },
         "startAt": null,
         "endAt": null,
-        "metadata": {
-          "requestVersion": null
-        },
-        "flags": {
-          "auditTrailEnabled": null
-        },
         "context": {
-          "timezone": null
+          "environmentTag": null,
+          "tenantId": null
         }
       },
       "mappings": {
-        "deadband": "operation.deliverFCR.deadband",
+        "minRate": "operation.deliverFCR.minRate",
+        "activePower": "operation.dispatchPower.activePower",
+        "environmentTag": "context.environmentTag",
+        "tenantId": "context.tenantId",
         "apparentPower": "operation.dispatchPower.apparentPower",
-        "requestVersion": "metadata.requestVersion",
-        "auditTrailEnabled": "flags.auditTrailEnabled",
-        "droopSetting": "operation.deliverFCR.droopSetting",
-        "maxRate": "operation.deliverFCR.maxRate",
-        "timezone": "context.timezone",
         "startAt": "startAt",
         "endAt": "endAt"
       },
       "cleanup": {
-        "removeNulls": false,
-        "removeEmpty": true,
+        "removeNulls": true,
+        "removeEmpty": false,
         "emptyObjectToNull": false
       }
     },
@@ -82,38 +74,38 @@
         "type": "setMode",
         "operation": {
           "dispatchPower": {
-            "voltage": null,
-            "apparentPower": null,
-            "reactivePower": null
+            "current": null,
+            "frequency": null,
+            "activePower": null
           },
           "deliverFCR": {
-            "droopSetting": null,
             "maxRate": null
-          },
-          "chargeToState": {
-            "chargeMode": null
           }
         },
         "startAt": null,
         "endAt": null,
         "context": {
-          "regionCode": null
+          "timezone": null,
+          "operatorId": null
+        },
+        "flags": {
+          "dryRun": null,
+          "overrideExisting": null
         },
         "metadata": {
-          "requestVersion": null
-        },
-        "duration": null
+          "correlationId": null
+        }
       },
       "mappings": {
-        "voltage": "operation.dispatchPower.voltage",
-        "droopSetting": "operation.deliverFCR.droopSetting",
-        "regionCode": "context.regionCode",
-        "chargeMode": "operation.chargeToState.chargeMode",
+        "timezone": "context.timezone",
+        "operatorId": "context.operatorId",
+        "dryRun": "flags.dryRun",
+        "correlationId": "metadata.correlationId",
+        "current": "operation.dispatchPower.current",
         "maxRate": "operation.deliverFCR.maxRate",
-        "requestVersion": "metadata.requestVersion",
-        "duration": "duration",
-        "apparentPower": "operation.dispatchPower.apparentPower",
-        "reactivePower": "operation.dispatchPower.reactivePower",
+        "overrideExisting": "flags.overrideExisting",
+        "frequency": "operation.dispatchPower.frequency",
+        "activePower": "operation.dispatchPower.activePower",
         "startAt": "startAt",
         "endAt": "endAt"
       },
@@ -134,38 +126,26 @@
         "type": "setChargeTarget",
         "operation": {
           "dispatchPower": {
-            "apparentPower": null
+            "current": null
           },
           "deliverFCR": {
-            "droopSetting": null,
-            "deadband": null,
-            "minRate": null
-          },
-          "chargeToState": {
-            "rampRate": null
+            "droopSetting": null
           }
         },
         "startAt": null,
         "endAt": null,
-        "context": {
-          "operatorId": null
+        "flags": {
+          "notifyOnComplete": null
         },
         "metadata": {
-          "priority": null
-        },
-        "flags": {
-          "dryRun": null
+          "source": null
         }
       },
       "mappings": {
-        "apparentPower": "operation.dispatchPower.apparentPower",
+        "notifyOnComplete": "flags.notifyOnComplete",
+        "current": "operation.dispatchPower.current",
         "droopSetting": "operation.deliverFCR.droopSetting",
-        "deadband": "operation.deliverFCR.deadband",
-        "operatorId": "context.operatorId",
-        "minRate": "operation.deliverFCR.minRate",
-        "priority": "metadata.priority",
-        "rampRate": "operation.chargeToState.rampRate",
-        "dryRun": "flags.dryRun",
+        "source": "metadata.source",
         "startAt": "startAt",
         "endAt": "endAt"
       },
@@ -186,41 +166,49 @@
         "type": "setMaxCapacity",
         "operation": {
           "chargeToState": {
-            "maxCurrent": null
-          },
-          "dispatchPower": {
-            "current": null
+            "targetSoC": null,
+            "percentage": null,
+            "chargeMode": null
           },
           "deliverFCR": {
-            "deadband": null,
             "droopSetting": null
+          },
+          "dispatchPower": {
+            "activePower": null,
+            "reactivePower": null,
+            "current": null
           }
         },
         "startAt": null,
         "endAt": null,
-        "assetIdentifiers": null,
-        "context": {
-          "environmentTag": null
+        "metadata": {
+          "requestVersion": null
         },
-        "flags": {
-          "forceExecution": null
-        }
+        "context": {
+          "tenantId": null,
+          "regionCode": null
+        },
+        "assetIdentifiers": null
       },
       "mappings": {
-        "assetIdentifiers": "assetIdentifiers",
-        "maxCurrent": "operation.chargeToState.maxCurrent",
-        "current": "operation.dispatchPower.current",
-        "deadband": "operation.deliverFCR.deadband",
+        "targetSoC": "operation.chargeToState.targetSoC",
+        "requestVersion": "metadata.requestVersion",
+        "percentage": "operation.chargeToState.percentage",
+        "tenantId": "context.tenantId",
         "droopSetting": "operation.deliverFCR.droopSetting",
-        "environmentTag": "context.environmentTag",
-        "forceExecution": "flags.forceExecution",
+        "activePower": "operation.dispatchPower.activePower",
+        "reactivePower": "operation.dispatchPower.reactivePower",
+        "regionCode": "context.regionCode",
+        "chargeMode": "operation.chargeToState.chargeMode",
+        "assetIdentifiers": "assetIdentifiers",
+        "current": "operation.dispatchPower.current",
         "startAt": "startAt",
         "endAt": "endAt"
       },
       "cleanup": {
         "removeNulls": true,
         "removeEmpty": true,
-        "emptyObjectToNull": false
+        "emptyObjectToNull": true
       }
     }
   }
