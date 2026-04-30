@@ -35,6 +35,9 @@ STATS_INTERVAL="${STATS_INTERVAL:-2}"       # seconds between docker stats polls
 # 50 users comfortably covers p99 up to 500ms at 100 req/s.
 NUM_USERS="${NUM_USERS:-50}"
 
+# Users spawned per second — spread out spawn to avoid burst overwhelming nuc1
+SPAWN_RATE="${SPAWN_RATE:-5}"
+
 # Locust file to use — override for scenario A direct testing
 LOCUST_FILE="${LOCUST_FILE:-locustfile.py}"
 
@@ -129,7 +132,7 @@ echo "[orchestrator] === WARMUP (${WARMUP_SECONDS}s at $TARGET_RPS req/s) ==="
 TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" RESULTS_DIR="$RESULTS_DIR" \
     locust -f "$LOCUST_FILE" \
         --host "$TARGET_HOST" \
-        -u "$NUM_USERS" -r "$NUM_USERS" \
+        -u "$NUM_USERS" -r "$SPAWN_RATE" \
         -t "${WARMUP_SECONDS}s" \
         --headless --only-summary \
         > "$WARMUP_LOG" 2>&1 || {
@@ -147,7 +150,7 @@ echo "[orchestrator] === CAPTURE (${CAPTURE_SECONDS}s at $TARGET_RPS req/s) ==="
 TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" RESULTS_DIR="$RESULTS_DIR" CAPTURE_PHASE="true" \
     locust -f "$LOCUST_FILE" \
         --host "$TARGET_HOST" \
-        -u "$NUM_USERS" -r "$NUM_USERS" \
+        -u "$NUM_USERS" -r "$SPAWN_RATE" \
         -t "${CAPTURE_SECONDS}s" \
         --headless \
         --csv "$LOCUST_CSV_PREFIX" \

@@ -100,4 +100,4 @@ if (!APISIX_IP) {
   console.error('ERROR: APISIX_IP is not set — telemetry will fail');
 }
 
-setInterval(sendTelemetry, INTERVAL_MS);
+// setInterval(sendTelemetry, INTERVAL_MS);
