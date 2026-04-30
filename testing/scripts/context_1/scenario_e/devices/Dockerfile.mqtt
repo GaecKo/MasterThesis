@@ -9,13 +9,13 @@ COPY mqtt_device.js ./
 
 # device.crt / device.key are not strictly needed by MQTT devices (no mTLS),
 # but backend.crt is required to verify the Mosquitto broker's TLS certificate.
-COPY backend.crt /certs/backend.crt
+COPY apisix.crt /certs/apisix.crt
 
-RUN chmod 644 /certs/backend.crt
+RUN chmod 644 /certs/apisix.crt
 
 ENV DEVICE_ID=mqtt_device_001 \
     BROKER_URL=mqtts://nuc1-pc.local:8883 \
     INTERVAL_MS=60000 \
-    CA_CERT_PATH=/certs/backend.crt
+    CA_CERT_PATH=/certs/apisix.crt
 
 CMD ["node", "mqtt_device.js"]

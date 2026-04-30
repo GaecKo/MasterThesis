@@ -11,10 +11,9 @@
 #
 # Usage:
 #   ./run_test.sh <scenario_name> <nb_req_per_sec> <payload_size>
-#   
+#
 # Example:
 #   ./run_test.sh scenarioD 100 medium
-#   LOCUST_FILE=locustfile_gateway_plugin_req.py ./run_test.sh scenarioD 100 medium
 # ============================================================================
 
 set -euo pipefail
@@ -34,6 +33,9 @@ STATS_INTERVAL="${STATS_INTERVAL:-2}"       # seconds between docker stats polls
 # Needs to be large enough to absorb latency: NUM_USERS >= TARGET_RPS * p99_latency_sec
 # 50 users comfortably covers p99 up to 500ms at 100 req/s.
 NUM_USERS="${NUM_USERS:-50}"
+
+# Users spawned per second — spread out spawn to avoid burst overwhelming nuc1
+SPAWN_RATE="${SPAWN_RATE:-5}"
 
 # Locust file to use — override for scenario A direct testing
 LOCUST_FILE="${LOCUST_FILE:-locustfile.py}"
@@ -129,7 +131,7 @@ echo "[orchestrator] === WARMUP (${WARMUP_SECONDS}s at $TARGET_RPS req/s) ==="
 TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" RESULTS_DIR="$RESULTS_DIR" \
     locust -f "$LOCUST_FILE" \
         --host "$TARGET_HOST" \
-        -u "$NUM_USERS" -r "$NUM_USERS" \
+        -u "$NUM_USERS" -r "$SPAWN_RATE" \
         -t "${WARMUP_SECONDS}s" \
         --headless --only-summary \
         > "$WARMUP_LOG" 2>&1 || {
@@ -144,10 +146,10 @@ echo ""
 echo "[orchestrator] === CAPTURE (${CAPTURE_SECONDS}s at $TARGET_RPS req/s) ==="
 # Allow non-zero exit from Locust (it returns 1 when any requests fail).
 # We still want to aggregate and record results in that case.
-TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" RESULTS_DIR="$RESULTS_DIR" \
+TARGET_RPS="$TARGET_RPS" NUM_USERS="$NUM_USERS" RESULTS_DIR="$RESULTS_DIR" CAPTURE_PHASE="true" \
     locust -f "$LOCUST_FILE" \
         --host "$TARGET_HOST" \
-        -u "$NUM_USERS" -r "$NUM_USERS" \
+        -u "$NUM_USERS" -r "$SPAWN_RATE" \
         -t "${CAPTURE_SECONDS}s" \
         --headless \
         --csv "$LOCUST_CSV_PREFIX" \
