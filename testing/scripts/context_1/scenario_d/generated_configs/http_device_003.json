@@ -19,33 +19,44 @@
           {
             "type": "setBatteryOperation",
             "operation": {
+              "deliverFCR": {
+                "deadband": null,
+                "minRate": null
+              },
               "dispatchPower": {
-                "voltage": null
+                "voltage": null,
+                "frequency": null
               }
             },
             "startAt": null,
-            "endAt": null,
-            "duration": null
+            "endAt": null
           }
         ],
         "assetIdentifiers": null,
-        "metadata": {
-          "priority": null
+        "flags": {
+          "overrideExisting": null
         },
         "context": {
-          "tenantId": null
+          "siteId": null
+        },
+        "metadata": {
+          "source": null
         }
       },
       "mappings": {
-        "priority": "metadata.priority",
-        "tenantId": "context.tenantId",
+        "overrideExisting": "flags.overrideExisting",
+        "deadband": "schedule[0].operation.deliverFCR.deadband",
+        "minRate": "schedule[0].operation.deliverFCR.minRate",
+        "siteId": "context.siteId",
         "voltage": "schedule[0].operation.dispatchPower.voltage",
-        "duration": "schedule[0].duration",
+        "frequency": "schedule[0].operation.dispatchPower.frequency",
+        "assetIdentifiers": "assetIdentifiers",
+        "source": "metadata.source",
         "startAt": "schedule[0].startAt",
         "endAt": "schedule[0].endAt"
       },
       "cleanup": {
-        "emptyObjectToNull": true,
+        "emptyObjectToNull": false,
         "removeNulls": true,
         "removeEmpty": false
       }
@@ -63,10 +74,15 @@
           {
             "type": "setChargeTarget",
             "operation": {
+              "dispatchPower": {
+                "voltage": null
+              },
+              "chargeToState": {
+                "rampRate": null,
+                "targetSoC": null
+              },
               "deliverFCR": {
-                "deadband": null,
-                "droopSetting": null,
-                "maxRate": null
+                "minRate": null
               }
             },
             "startAt": null,
@@ -75,25 +91,30 @@
         ],
         "assetIdentifiers": null,
         "flags": {
-          "auditTrailEnabled": null
+          "forceExecution": null
         },
         "context": {
           "regionCode": null
+        },
+        "metadata": {
+          "requestedBy": null
         }
       },
       "mappings": {
-        "deadband": "schedule[0].operation.deliverFCR.deadband",
-        "droopSetting": "schedule[0].operation.deliverFCR.droopSetting",
-        "maxRate": "schedule[0].operation.deliverFCR.maxRate",
-        "auditTrailEnabled": "flags.auditTrailEnabled",
+        "forceExecution": "flags.forceExecution",
+        "voltage": "schedule[0].operation.dispatchPower.voltage",
+        "rampRate": "schedule[0].operation.chargeToState.rampRate",
         "regionCode": "context.regionCode",
+        "requestedBy": "metadata.requestedBy",
+        "targetSoC": "schedule[0].operation.chargeToState.targetSoC",
+        "minRate": "schedule[0].operation.deliverFCR.minRate",
         "startAt": "schedule[0].startAt",
         "endAt": "schedule[0].endAt"
       },
       "cleanup": {
         "emptyObjectToNull": true,
-        "removeNulls": false,
-        "removeEmpty": true
+        "removeNulls": true,
+        "removeEmpty": false
       }
     },
     "setMaxCapacity": {
@@ -108,24 +129,27 @@
         "schedule": [
           {
             "type": "setMaxCapacity",
-            "operation": {},
+            "operation": {
+              "chargeToState": {
+                "targetSoC": null
+              }
+            },
             "startAt": null,
             "endAt": null
           }
         ],
         "assetIdentifiers": null,
         "flags": {
-          "dryRun": null,
           "forceExecution": null
         },
-        "context": {
-          "siteId": null
+        "metadata": {
+          "correlationId": null
         }
       },
       "mappings": {
-        "dryRun": "flags.dryRun",
-        "siteId": "context.siteId",
+        "targetSoC": "schedule[0].operation.chargeToState.targetSoC",
         "forceExecution": "flags.forceExecution",
+        "correlationId": "metadata.correlationId",
         "startAt": "schedule[0].startAt",
         "endAt": "schedule[0].endAt"
       },

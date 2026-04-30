@@ -19,11 +19,14 @@
           {
             "type": "setBatteryOperation",
             "operation": {
-              "dispatchPower": {
-                "activePower": null
-              },
               "chargeToState": {
-                "maxCurrent": null
+                "maxCurrent": null,
+                "percentage": null,
+                "targetSoC": null
+              },
+              "dispatchPower": {
+                "frequency": null,
+                "reactivePower": null
               }
             },
             "startAt": null,
@@ -31,30 +34,35 @@
           }
         ],
         "assetIdentifiers": null,
-        "metadata": {
-          "correlationId": null,
-          "reason": null
-        },
         "flags": {
-          "auditTrailEnabled": null,
-          "forceExecution": null
+          "overrideExisting": null,
+          "dryRun": null
+        },
+        "metadata": {
+          "requestVersion": null,
+          "reason": null,
+          "priority": null
         }
       },
       "mappings": {
-        "activePower": "schedule[0].operation.dispatchPower.activePower",
         "maxCurrent": "schedule[0].operation.chargeToState.maxCurrent",
-        "correlationId": "metadata.correlationId",
-        "auditTrailEnabled": "flags.auditTrailEnabled",
-        "forceExecution": "flags.forceExecution",
+        "overrideExisting": "flags.overrideExisting",
+        "requestVersion": "metadata.requestVersion",
         "reason": "metadata.reason",
+        "frequency": "schedule[0].operation.dispatchPower.frequency",
+        "priority": "metadata.priority",
+        "dryRun": "flags.dryRun",
+        "percentage": "schedule[0].operation.chargeToState.percentage",
+        "reactivePower": "schedule[0].operation.dispatchPower.reactivePower",
+        "targetSoC": "schedule[0].operation.chargeToState.targetSoC",
         "assetIdentifiers": "assetIdentifiers",
         "startAt": "schedule[0].startAt",
         "endAt": "schedule[0].endAt"
       },
       "cleanup": {
-        "emptyObjectToNull": false,
+        "emptyObjectToNull": true,
         "removeNulls": true,
-        "removeEmpty": false
+        "removeEmpty": true
       }
     },
     "setChargeTarget": {
@@ -71,11 +79,9 @@
             "type": "setChargeTarget",
             "operation": {
               "dispatchPower": {
-                "voltage": null,
-                "frequency": null
-              },
-              "chargeToState": {
-                "targetSoC": null
+                "apparentPower": null,
+                "reactivePower": null,
+                "current": null
               }
             },
             "startAt": null,
@@ -83,22 +89,24 @@
           }
         ],
         "assetIdentifiers": null,
-        "metadata": {
-          "correlationId": null
+        "context": {
+          "tenantId": null,
+          "environmentTag": null
         }
       },
       "mappings": {
-        "voltage": "schedule[0].operation.dispatchPower.voltage",
-        "correlationId": "metadata.correlationId",
-        "frequency": "schedule[0].operation.dispatchPower.frequency",
-        "targetSoC": "schedule[0].operation.chargeToState.targetSoC",
+        "apparentPower": "schedule[0].operation.dispatchPower.apparentPower",
+        "reactivePower": "schedule[0].operation.dispatchPower.reactivePower",
+        "tenantId": "context.tenantId",
+        "current": "schedule[0].operation.dispatchPower.current",
+        "environmentTag": "context.environmentTag",
         "startAt": "schedule[0].startAt",
         "endAt": "schedule[0].endAt"
       },
       "cleanup": {
-        "emptyObjectToNull": true,
+        "emptyObjectToNull": false,
         "removeNulls": true,
-        "removeEmpty": true
+        "removeEmpty": false
       }
     },
     "setMaxCapacity": {
@@ -115,6 +123,7 @@
             "type": "setMaxCapacity",
             "operation": {
               "dispatchPower": {
+                "reactivePower": null,
                 "activePower": null,
                 "frequency": null
               }
@@ -126,40 +135,27 @@
         ],
         "assetIdentifiers": null,
         "context": {
-          "environmentTag": null,
-          "siteId": null,
-          "regionCode": null,
-          "tenantId": null
+          "timezone": null,
+          "environmentTag": null
         },
         "metadata": {
-          "reason": null,
-          "source": null,
-          "correlationId": null
-        },
-        "flags": {
-          "overrideExisting": null,
-          "notifyOnComplete": null
+          "requestVersion": null
         }
       },
       "mappings": {
-        "environmentTag": "context.environmentTag",
-        "duration": "schedule[0].duration",
-        "siteId": "context.siteId",
-        "reason": "metadata.reason",
-        "regionCode": "context.regionCode",
-        "source": "metadata.source",
+        "reactivePower": "schedule[0].operation.dispatchPower.reactivePower",
         "activePower": "schedule[0].operation.dispatchPower.activePower",
         "frequency": "schedule[0].operation.dispatchPower.frequency",
-        "overrideExisting": "flags.overrideExisting",
-        "correlationId": "metadata.correlationId",
         "assetIdentifiers": "assetIdentifiers",
-        "tenantId": "context.tenantId",
-        "notifyOnComplete": "flags.notifyOnComplete",
+        "timezone": "context.timezone",
+        "requestVersion": "metadata.requestVersion",
+        "duration": "schedule[0].duration",
+        "environmentTag": "context.environmentTag",
         "startAt": "schedule[0].startAt",
         "endAt": "schedule[0].endAt"
       },
       "cleanup": {
-        "emptyObjectToNull": true,
+        "emptyObjectToNull": false,
         "removeNulls": false,
         "removeEmpty": true
       }

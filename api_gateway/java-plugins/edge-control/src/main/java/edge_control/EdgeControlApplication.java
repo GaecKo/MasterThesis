@@ -16,7 +16,7 @@ public class EdgeControlApplication {
 
     public static void main(String[] args) {
         logger.info("EdgeControlApplication is starting ...");
-        logger.disable()
+        // logger.disable();
         new SpringApplicationBuilder(EdgeControlApplication.class)
                 .web(WebApplicationType.NONE)
                 .run(args);

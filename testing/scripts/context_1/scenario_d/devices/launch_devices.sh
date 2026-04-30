@@ -53,7 +53,7 @@ require_summary() {
 require_certs() {
     [[ -f "$SCRIPT_DIR/device.crt"  ]] || die "device.crt not found in $SCRIPT_DIR"
     [[ -f "$SCRIPT_DIR/device.key"  ]] || die "device.key not found in $SCRIPT_DIR"
-    [[ -f "$SCRIPT_DIR/backend.crt" ]] || die "backend.crt not found in $SCRIPT_DIR"
+    [[ -f "$SCRIPT_DIR/apisix.crt" ]] || die "apisix.crt not found in $SCRIPT_DIR"
 }
 
 remove_if_exists() {
@@ -148,7 +148,7 @@ for dev_id, info in data['devices'].items():
                 -e "BROKER_URL=${MQTT_BROKER_URL}" \
                 -e "INTERVAL_MS=${TELEMETRY_INTERVAL_MS}" \
                 -e "API_KEY=${API_KEY}" \
-                -e "CA_CERT_PATH=/certs/backend.crt" \
+                -e "CA_CERT_PATH=/certs/apisix.crt" \
                 "$MQTT_IMAGE" > /dev/null
 
             log "    ✓ $container_name"

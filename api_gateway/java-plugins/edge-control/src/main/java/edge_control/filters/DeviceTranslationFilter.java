@@ -131,9 +131,6 @@ public class DeviceTranslationFilter implements PluginFilter {
                 return;
             }
 
-            // Must be final to be captured by the anonymous AdapterCallback class below
-            final String finalCallbackEndpoint = callbackEndpoint;
-
             adapter.handleRequest(request, response, new AdapterCallback() {
                 @Override
                 public void onSuccess() {
