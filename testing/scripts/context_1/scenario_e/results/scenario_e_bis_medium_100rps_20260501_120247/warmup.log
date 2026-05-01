@@ -1,0 +1,30 @@
+[2026-05-01 12:02:48,055] nuc1-pc/INFO/locust.main: Starting Locust 2.43.4
+[2026-05-01 12:02:48,056] nuc1-pc/INFO/locust.main: Run time limit set to 120 seconds
+[2026-05-01 12:02:48,056] nuc1-pc/INFO/locust.runners: Ramping to 50 users at a rate of 5.00 per second
+[2026-05-01 12:02:57,079] nuc1-pc/INFO/locust.runners: All users spawned: {"HttpFullUser": 25, "MqttFullUser": 25} (50 total users)
+[2026-05-01 12:04:47,868] nuc1-pc/INFO/locust.main: --run-time limit reached, shutting down
+[2026-05-01 12:04:47,887] nuc1-pc/INFO/locust.main: Shutting down (exit code 0)
+Type     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+POST     full/http                                                                       5780     0(0.00%) |     50      13     383     42 |   48.30        0.00
+POST     full/mqtt                                                                       5770     0(0.00%) |     60       9     409     49 |   48.22        0.00
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+         Aggregated                                                                     11550     0(0.00%) |     55       9     409     45 |   96.52        0.00
+
+Response time percentiles (approximated)
+Type     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+POST     full/http                                                                              42     51     61     67     80    100    120    140    370    380    380   5780
+POST     full/mqtt                                                                              49     70     80     89    110    140    150    160    290    410    410   5770
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+         Aggregated                                                                             45     60     71     77    100    120    140    160    310    410    410  11550
+
+[locust/full] HTTP plan: 36 combinations
+[locust/full] MQTT plan: 48 combinations
+[locust] Raw latency log: ./results/scenario_e_bis_medium_100rps_20260501_120247/raw_latencies.csv
+[locust/full] Backends      : ['backend_0ac63729-9e64-4c7f-8c77-46f9f5755166', 'backend_052e1ef9-189d-4905-8827-e3185ea49d35', 'backend_84a92f7d-a962-465e-94a4-721517b037b6', 'backend_589f04d4-b279-4e5c-b6f1-7d7faa70b113']
+[locust/full] HTTP devices  : ['device_a5dee0dd-8d79-49d4-8db7-00f423829004', 'device_56a59874-75ff-4076-a587-f722f3214668', 'device_e72f9271-ebb9-426d-b1b8-b33d70a7b750']
+[locust/full] MQTT devices  : ['device_9c12fe18-bd18-4506-b7ab-4460af97bae3', 'device_a8053ac3-8966-47c2-a6b0-d950a632dfc5', 'device_91b2610e-dd50-4d60-803b-420eca4dbf39']
+[locust/full] Target 100.0 req/s via 50 users (2.000 req/s each)
+[locust/full] Test stopped.
+[locust] Raw latencies saved to ./results/scenario_e_bis_medium_100rps_20260501_120247/raw_latencies.csv
