@@ -101,7 +101,7 @@ curl -i http://127.0.0.1:9180/apisix/admin/routes/2 -H 'X-API-KEY: admin' -X PUT
             "_meta": {
                 "priority": 13500
             },
-            "max_body_size" : 5000
+            "max_body_size" : 10000
         },
         "jwt-auth": {
             "_meta": {
