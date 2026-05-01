@@ -74,10 +74,12 @@ def build_route_payload(device_id: str, port: int) -> dict:
                 "verify": False
             }
         },
-        "ext-plugin-post-req": {
-            "conf" : [
-                {"name": "SimpleFilter", "value": "{\"enable\":\"feature\"}"},
-            ]
+        "plugins": {
+            "ext-plugin-post-req": {
+                "conf" : [
+                    {"name": "SimpleFilter", "value": "{\"enable\":\"feature\"}"},
+                ]
+            }   
         }
     }
 
