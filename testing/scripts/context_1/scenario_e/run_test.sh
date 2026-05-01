@@ -13,7 +13,8 @@
 #   ./run_test.sh <scenario_name> <nb_req_per_sec> <payload_size>
 #
 # Example:
-#   ./run_test.sh scenarioD 100 medium
+#   ./run_test.sh scenario_e 100 medium
+#   LOCUST_FILE=locustfile_full.py ./run_test.sh scenario_e 100 medium
 # ============================================================================
 
 set -euo pipefail

@@ -39,6 +39,8 @@ import uuid
 from pathlib import Path
 
 import urllib3
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from locust import HttpUser, constant_throughput, events, task
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -46,9 +48,12 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # | ================= User-provided backend API keys ================= |
 
 # Map each backend gateway ID to its plain-text API key.
-# These are the keys returned when you created backends via /onboarding/backend.
+# Map each backend ID to its plain-text API key.
 BACKEND_API_KEYS: dict[str, str] = {
-    # "backend_<uuid>": "<api_key>",
+"backend_0ac63729-9e64-4c7f-8c77-46f9f5755166": "aPyDBQ9-zuCVC-wHPA161VI2zcgNutLntckj1F7by4I",
+"backend_052e1ef9-189d-4905-8827-e3185ea49d35": "oGBDK-aGWV4XAmF2GK1wzdSlsJfHRyJY2vRNRRY09PE",
+"backend_84a92f7d-a962-465e-94a4-721517b037b6": "wRSK9A8RJ3OqhfJ26hC1C146zzxdcp7upadRLcjQeoQ",
+"backend_589f04d4-b279-4e5c-b6f1-7d7faa70b113": "NhlXvYlKtDKD972qDGQV0CTAPrUrdXUagV9W4vxJH7w",
 }
 
 # | ================= Load test plan from summary ================= |
@@ -105,8 +110,10 @@ TARGET_RPS   = float(os.environ["TARGET_RPS"])
 NUM_USERS    = int(os.environ["NUM_USERS"])
 PER_USER_RPS = TARGET_RPS / NUM_USERS
 
-HTTP_WEIGHT = max(len(HTTP_PLAN), 1)
-MQTT_WEIGHT = max(len(MQTT_PLAN), 1)
+# Weight by number of devices, not plan size — otherwise devices with more
+# commands get disproportionately more traffic than devices with fewer commands.
+HTTP_WEIGHT = max(sum(1 for d in DEVICES.values() if d["adapter"] == "http"), 1)
+MQTT_WEIGHT = max(sum(1 for d in DEVICES.values() if d["adapter"] == "mqtt"), 1)
 
 # | ================= Param value generator ================= |
 
@@ -155,6 +162,17 @@ class HttpFullUser(HttpUser):
     wait_time = constant_throughput(PER_USER_RPS)
     weight    = HTTP_WEIGHT
 
+    def on_start(self):
+        # Persistent TLS connection pool — reuses TLS sessions across requests
+        # so per-request TLS overhead doesn't inflate latency measurements.
+        adapter = HTTPAdapter(
+            pool_connections=1,
+            pool_maxsize=1,
+            max_retries=Retry(total=0),
+        )
+        self.client.mount("https://", adapter)
+        self.client.mount("http://",  adapter)
+
     @task
     def send_command(self):
         backend_id, api_key, device_id, command_name, param_names = next_http()
@@ -190,6 +208,17 @@ class MqttFullUser(HttpUser):
     """
     wait_time = constant_throughput(PER_USER_RPS)
     weight    = MQTT_WEIGHT
+
+    def on_start(self):
+        # Persistent TLS connection pool — reuses TLS sessions across requests
+        # so per-request TLS overhead doesn't inflate latency measurements.
+        adapter = HTTPAdapter(
+            pool_connections=1,
+            pool_maxsize=1,
+            max_retries=Retry(total=0),
+        )
+        self.client.mount("https://", adapter)
+        self.client.mount("http://",  adapter)
 
     @task
     def send_command(self):
