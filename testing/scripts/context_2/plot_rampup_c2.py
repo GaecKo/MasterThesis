@@ -1,20 +1,32 @@
 #!/usr/bin/env python3
 """
 Throughput vs Latency — Context 2 ramp-up.
-Bins data into coarse RPS buckets, then sorts points by latency (low to high)
-so the line flows naturally from the stable zone up into saturation.
+
+CONFIG:
+  SAMPLE_STEP  — keep only every Nth RPS step (e.g. 5 keeps steps 50,100,150...)
+  CONNECT_BY   — "latency" : sort points low-to-high latency before connecting
+               — "time"    : connect in chronological (step) order
 """
 
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import time 
 from pathlib import Path
 
 # | ================= Config ================= |
 
 RESULTS_DIR = Path("./all_results")
-BIN_SIZE    = 30     # aggregate every N req/s — increase for fewer, smoother points
 MIN_RPS     = 5.0
+
+# Keep one point every SAMPLE_STEP ramp steps.
+# With STEP_RPS=10 in your run: SAMPLE_STEP=5 → points at 50,100,150,...
+SAMPLE_STEP = 5
+
+# How to connect points:
+#   "latency"  → sort by p50 ascending (smooth natural curve, good for presentation)
+#   "time"     → connect in step order  (shows collapse going backward)
+CONNECT_BY = "latency"
 
 FILES = {
     "1 CPU":  "cpu1.csv",
@@ -36,7 +48,7 @@ MARKERS = {"1 CPU": "s",       "2 CPUs": "^",        "4 CPUs": "o"}
 LINEWIDTH   = 2.2
 MARKER_SIZE = 8
 
-# | ================= Load and bin ================= |
+# | ================= Load and process ================= |
 
 print("Loading data...")
 series = {}
@@ -50,23 +62,61 @@ for label, filename in FILES.items():
     agg = df[df["Name"] == "Aggregated"].copy()
     agg["rps"] = pd.to_numeric(agg["Requests/s"], errors="coerce")
     agg["p50"] = pd.to_numeric(agg["50%"],         errors="coerce")
-    agg = agg.dropna(subset=["rps", "p50"])
+    agg = (agg.dropna(subset=["rps", "p50"])
+              .sort_values("Timestamp")
+              .reset_index(drop=True))
     agg = agg[(agg["rps"] >= MIN_RPS) & (agg["p50"] > 0)]
 
-    # Bin by achieved RPS into coarse buckets
-    agg["bin"] = (agg["rps"] / BIN_SIZE).round() * BIN_SIZE
-    binned = (agg.groupby("bin")
-                 .agg(achieved_rps=("rps", "median"),
-                      p50=("p50", "median"))
-                 .reset_index(drop=True))
+    # Detect step boundaries from User Count changes
+    agg["step"] = (agg["User Count"] != agg["User Count"].shift()).cumsum()
 
-    # Sort by latency ascending — line flows naturally from stable to saturated
-    binned = binned.sort_values("p50").reset_index(drop=True)
+    # Per step: drop first 3 rows (transition), take median
+    rows = []
+    for step_id, grp in agg.groupby("step"):
+        grp = grp.iloc[3:]
+        if len(grp) < 2:
+            continue
+        rows.append({
+            "step":         step_id,
+            "achieved_rps": grp["rps"].median(),
+            "p50":          grp["p50"].median(),
+        })
+
+    binned = pd.DataFrame(rows).sort_values("step").reset_index(drop=True)
+
+    # Keep only every SAMPLE_STEP-th step
+    binned = binned.iloc[SAMPLE_STEP - 1::SAMPLE_STEP].reset_index(drop=True)
+
+    # Order for line connection
+    if CONNECT_BY == "latency":
+        binned = binned.sort_values(["p50", "achieved_rps"]).reset_index(drop=True)
+
+        # Remove points that go backwards in RPS before the peak —
+        # these are noise in the flat zone that cause zigzag.
+        # Strategy: keep only points where RPS >= all previous RPS values,
+        # until we reach the peak RPS. After the peak, keep everything
+        # (that's the real collapse/saturation zone we want to show).
+        peak_idx  = binned["achieved_rps"].idxmax()
+        pre_peak  = binned.iloc[:peak_idx + 1]
+        post_peak = binned.iloc[peak_idx + 1:]
+
+        # Forward pass: keep a point only if its RPS >= running max so far
+        keep = []
+        running_max = 0
+        for _, row in pre_peak.iterrows():
+            if row["achieved_rps"] >= running_max:
+                running_max = row["achieved_rps"]
+                keep.append(row)
+
+        pre_clean = pd.DataFrame(keep)
+        binned = pd.concat([pre_clean, post_peak]).reset_index(drop=True)
+    # "time" → already in step order
 
     series[label] = binned
     print(f"  {label}: {len(binned)} points | "
           f"peak RPS={binned['achieved_rps'].max():.0f} | "
-          f"max p50={binned['p50'].max():.0f} ms")
+          f"max p50={binned['p50'].max():.0f} ms  "
+          f"[connect_by={CONNECT_BY}]")
 
 # | ================= Plot ================= |
 
@@ -102,7 +152,9 @@ ax.set_xlabel("Achieved Throughput (req/s)", fontsize=13,
               color=TEXT_COLOR, labelpad=10)
 ax.set_ylabel("Median Latency p50 (ms)", fontsize=13,
               color=TEXT_COLOR, labelpad=10)
-ax.set_title("Context 2 — Latency vs Throughput (saturation curve)",
+
+connect_label = "sorted by latency" if CONNECT_BY == "latency" else "chronological order"
+ax.set_title(f"Context 2 — Latency vs Throughput  ({connect_label})",
              fontsize=15, fontweight="bold", color=TEXT_COLOR, pad=16)
 
 ax.legend(loc="upper left", frameon=True, framealpha=0.9,
@@ -111,7 +163,7 @@ ax.legend(loc="upper left", frameon=True, framealpha=0.9,
 
 plt.tight_layout(pad=2.0)
 
-out_path = RESULTS_DIR / "c2_rampup.png"
+out_path = RESULTS_DIR / f"{time.time()}_c2_rampup.png"
 plt.savefig(out_path, dpi=180, bbox_inches="tight", facecolor=BG_COLOR)
 print(f"\nSaved → {out_path}")
 plt.show()
