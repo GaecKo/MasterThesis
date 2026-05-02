@@ -1,0 +1,2 @@
+Method,Name,Error,Occurrences
+POST,ramp/mqtt,"CatchResponseError('status=502 body={""error"":""Failed to publish MQTT command: Too many publishes in progress""}')",6
