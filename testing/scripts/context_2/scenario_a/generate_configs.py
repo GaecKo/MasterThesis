@@ -19,23 +19,41 @@ import requests
 
 # | ================= User-provided input ================= |
 
-# Map each device ID to the list of commands it supports.
-# HTTP devices must start with "http_device_", MQTT with "mqtt_device_".
-DEVICE_COMMANDS: dict[str, list[str]] = {
-    "http_device_001": ["setBatteryOperation", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
-    "http_device_002": ["setBatteryOperation", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
-    "http_device_003": ["setBatteryOperation", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
-    "mqtt_device_004": ["setPower", "setMode", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
-    "mqtt_device_005": ["setPower", "setMode", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
-    "mqtt_device_006": ["setPower", "setMode", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
+# Map each device ID to its adapter type and list of commands.
+# adapter must be "http" or "mqtt" — device IDs can be any string.
+DEVICE_CONFIG: dict[str, dict] = {
+    "device_a5dee0dd-8d79-49d4-8db7-00f423829004": {
+        "adapter":  "http",
+        "commands": ["setBatteryOperation", "setChargeTarget", "setMaxCapacity"],
+    },
+    "device_56a59874-75ff-4076-a587-f722f3214668": {
+        "adapter":  "http",
+        "commands": ["setBatteryOperation", "setChargeTarget", "setMaxCapacity"],
+    },
+    "device_e72f9271-ebb9-426d-b1b8-b33d70a7b750": {
+        "adapter":  "http",
+        "commands": ["setBatteryOperation", "setChargeTarget", "setMaxCapacity"],
+    },
+    "device_9c12fe18-bd18-4506-b7ab-4460af97bae3": {
+        "adapter":  "mqtt",
+        "commands": ["setPower", "setMode", "setChargeTarget", "setMaxCapacity"],
+    },
+    "device_a8053ac3-8966-47c2-a6b0-d950a632dfc5": {
+        "adapter":  "mqtt",
+        "commands": ["setPower", "setMode", "setChargeTarget", "setMaxCapacity"],
+    },
+    "device_91b2610e-dd50-4d60-803b-420eca4dbf39": {
+        "adapter":  "mqtt",
+        "commands": ["setPower", "setMode", "setChargeTarget", "setMaxCapacity"],
+    },
 }
 
 # Map each backend ID to its plain-text API key.
 BACKEND_API_KEYS: dict[str, str] = {
-    "backend_001": "abc123...",
-    "backend_002": "abc123...",
-    "backend_003": "abc123...",
-    "backend_004": "abc123...",
+"backend_0ac63729-9e64-4c7f-8c77-46f9f5755166": "aPyDBQ9-zuCVC-wHPA161VI2zcgNutLntckj1F7by4I",
+"backend_052e1ef9-189d-4905-8827-e3185ea49d35": "oGBDK-aGWV4XAmF2GK1wzdSlsJfHRyJY2vRNRRY09PE",
+"backend_84a92f7d-a962-465e-94a4-721517b037b6": "wRSK9A8RJ3OqhfJ26hC1C146zzxdcp7upadRLcjQeoQ",
+"backend_589f04d4-b279-4e5c-b6f1-7d7faa70b113": "NhlXvYlKtDKD972qDGQV0CTAPrUrdXUagV9W4vxJH7w",
 }
 
 # | ================= Configuration ================= |
@@ -286,8 +304,8 @@ def main():
     size_range = SIZE_RANGES[args.size]
     print(f"[INFO] Payload size: {args.size} ({size_range[0]}-{size_range[1]} mappings)")
 
-    if not DEVICE_COMMANDS:
-        print("[ERROR] DEVICE_COMMANDS is empty — edit the script and retry.")
+    if not DEVICE_CONFIG:
+        print("[ERROR] DEVICE_CONFIG is empty — edit the script and retry.")
         sys.exit(1)
     if not BACKEND_API_KEYS:
         print("[ERROR] BACKEND_API_KEYS is empty — edit the script and retry.")
@@ -303,18 +321,25 @@ def main():
 
     configs = {}
     http_port_offset = 0
-    for device_id, commands in DEVICE_COMMANDS.items():
-        if device_id.startswith("http_device_"):
+    for device_id, device_info in DEVICE_CONFIG.items():
+        adapter  = device_info.get("adapter", "").lower()
+        commands = list(dict.fromkeys(device_info.get("commands", [])))  # deduplicate, preserve order
+
+        if not commands:
+            print(f"[ERROR] Device {device_id} has no commands.")
+            sys.exit(1)
+
+        if adapter == "http":
             port = HTTP_DEVICE_PORT_BASE + http_port_offset
             http_port_offset += 1
             http_device_ports[device_id] = port
             config = make_http_device_config(device_id, commands, port, size_range)
             print(f"[INFO] HTTP device {device_id} -> port {port}, {len(commands)} commands")
-        elif device_id.startswith("mqtt_device_"):
+        elif adapter == "mqtt":
             config = make_mqtt_device_config(device_id, commands, size_range)
             print(f"[INFO] MQTT device {device_id}, {len(commands)} commands")
         else:
-            print(f"[ERROR] Unknown device prefix for {device_id} — must start with http_device_ or mqtt_device_")
+            print(f"[ERROR] Unknown adapter '{adapter}' for {device_id} — must be 'http' or 'mqtt'")
             sys.exit(1)
 
         configs[device_id] = config

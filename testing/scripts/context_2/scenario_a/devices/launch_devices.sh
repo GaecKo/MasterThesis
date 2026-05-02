@@ -25,13 +25,13 @@ HTTP_IMAGE="${HTTP_IMAGE:-edgecontrol/http-device:latest}"
 MQTT_IMAGE="${MQTT_IMAGE:-edgecontrol/mqtt-device:latest}"
 
 # Gateway NUC — HTTP devices send telemetry here
-APISIX_IP="${APISIX_IP:-nuc4-pc.local}"
+APISIX_IP="${APISIX_IP:-192.168.50.4}"
 
 # Device NUC — used for health check logging inside the container
 HTTP_DEVICE_IP="${HTTP_DEVICE_IP:-nuc8-pc.local}"
 
 # Backend NUC — MQTT devices connect to Mosquitto here
-MQTT_BROKER_URL="${MQTT_BROKER_URL:-mqtts://nuc1-pc.local:8883}"
+MQTT_BROKER_URL="${MQTT_BROKER_URL:-mqtts://192.168.50.4:8883}"
 
 # Keep telemetry quiet during perf tests to avoid noise in measurements
 TELEMETRY_INTERVAL_MS="${TELEMETRY_INTERVAL_MS:-60000}"
@@ -53,7 +53,7 @@ require_summary() {
 require_certs() {
     [[ -f "$SCRIPT_DIR/device.crt"  ]] || die "device.crt not found in $SCRIPT_DIR"
     [[ -f "$SCRIPT_DIR/device.key"  ]] || die "device.key not found in $SCRIPT_DIR"
-    [[ -f "$SCRIPT_DIR/backend.crt" ]] || die "backend.crt not found in $SCRIPT_DIR"
+    [[ -f "$SCRIPT_DIR/apisix.crt" ]] || die "apisix.crt not found in $SCRIPT_DIR"
 }
 
 remove_if_exists() {
@@ -148,7 +148,7 @@ for dev_id, info in data['devices'].items():
                 -e "BROKER_URL=${MQTT_BROKER_URL}" \
                 -e "INTERVAL_MS=${TELEMETRY_INTERVAL_MS}" \
                 -e "API_KEY=${API_KEY}" \
-                -e "CA_CERT_PATH=/certs/backend.crt" \
+                -e "CA_CERT_PATH=/certs/apisix.crt" \
                 "$MQTT_IMAGE" > /dev/null
 
             log "    ✓ $container_name"

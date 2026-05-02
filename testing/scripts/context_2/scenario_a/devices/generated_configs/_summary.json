@@ -1,0 +1,299 @@
+{
+  "payload_size": "medium",
+  "payload_range": [
+    5,
+    15
+  ],
+  "devices": {
+    "device_a5dee0dd-8d79-49d4-8db7-00f423829004": {
+      "adapter": "http",
+      "commands": {
+        "setBatteryOperation": [
+          "environmentTag",
+          "dryRun",
+          "percentage",
+          "correlationId",
+          "operatorId",
+          "maxCurrent",
+          "frequency",
+          "forceExecution",
+          "timezone",
+          "priority",
+          "startAt",
+          "endAt"
+        ],
+        "setChargeTarget": [
+          "overrideExisting",
+          "timezone",
+          "priority",
+          "percentage",
+          "maxCurrent",
+          "regionCode",
+          "duration",
+          "source",
+          "reactivePower",
+          "startAt",
+          "endAt"
+        ],
+        "setMaxCapacity": [
+          "maxRate",
+          "environmentTag",
+          "siteId",
+          "auditTrailEnabled",
+          "apparentPower",
+          "source",
+          "overrideExisting",
+          "timezone",
+          "notifyOnComplete",
+          "reason",
+          "requestVersion",
+          "droopSetting",
+          "startAt",
+          "endAt"
+        ]
+      }
+    },
+    "device_56a59874-75ff-4076-a587-f722f3214668": {
+      "adapter": "http",
+      "commands": {
+        "setBatteryOperation": [
+          "targetSoC",
+          "duration",
+          "deadband",
+          "tenantId",
+          "correlationId",
+          "startAt",
+          "endAt"
+        ],
+        "setChargeTarget": [
+          "timezone",
+          "requestVersion",
+          "targetSoC",
+          "deadband",
+          "droopSetting",
+          "maxCurrent",
+          "reason",
+          "priority",
+          "correlationId",
+          "environmentTag",
+          "startAt",
+          "endAt"
+        ],
+        "setMaxCapacity": [
+          "operatorId",
+          "maxCurrent",
+          "reason",
+          "percentage",
+          "startAt",
+          "endAt"
+        ]
+      }
+    },
+    "device_e72f9271-ebb9-426d-b1b8-b33d70a7b750": {
+      "adapter": "http",
+      "commands": {
+        "setBatteryOperation": [
+          "dryRun",
+          "current",
+          "overrideExisting",
+          "regionCode",
+          "reason",
+          "duration",
+          "siteId",
+          "environmentTag",
+          "startAt",
+          "endAt"
+        ],
+        "setChargeTarget": [
+          "dryRun",
+          "droopSetting",
+          "source",
+          "assetIdentifiers",
+          "operatorId",
+          "current",
+          "auditTrailEnabled",
+          "percentage",
+          "maxRate",
+          "deadband",
+          "timezone",
+          "tenantId",
+          "startAt",
+          "endAt"
+        ],
+        "setMaxCapacity": [
+          "regionCode",
+          "activePower",
+          "chargeMode",
+          "startAt",
+          "endAt"
+        ]
+      }
+    },
+    "device_9c12fe18-bd18-4506-b7ab-4460af97bae3": {
+      "adapter": "mqtt",
+      "commands": {
+        "setPower": [
+          "forceExecution",
+          "chargeMode",
+          "deadband",
+          "minRate",
+          "frequency",
+          "priority",
+          "targetSoC",
+          "auditTrailEnabled",
+          "notifyOnComplete",
+          "maxRate",
+          "environmentTag",
+          "current",
+          "startAt",
+          "endAt"
+        ],
+        "setMode": [
+          "maxCurrent",
+          "siteId",
+          "reason",
+          "notifyOnComplete",
+          "assetIdentifiers",
+          "source",
+          "auditTrailEnabled",
+          "requestedBy",
+          "rampRate",
+          "priority",
+          "environmentTag",
+          "correlationId",
+          "startAt",
+          "endAt"
+        ],
+        "setChargeTarget": [
+          "priority",
+          "operatorId",
+          "frequency",
+          "rampRate",
+          "source",
+          "maxCurrent",
+          "auditTrailEnabled",
+          "correlationId",
+          "dryRun",
+          "duration",
+          "startAt",
+          "endAt"
+        ],
+        "setMaxCapacity": [
+          "duration",
+          "priority",
+          "maxCurrent",
+          "targetSoC",
+          "timezone",
+          "startAt",
+          "endAt"
+        ]
+      }
+    },
+    "device_a8053ac3-8966-47c2-a6b0-d950a632dfc5": {
+      "adapter": "mqtt",
+      "commands": {
+        "setPower": [
+          "timezone",
+          "environmentTag",
+          "forceExecution",
+          "startAt",
+          "endAt"
+        ],
+        "setMode": [
+          "dryRun",
+          "frequency",
+          "rampRate",
+          "tenantId",
+          "source",
+          "targetSoC",
+          "overrideExisting",
+          "startAt",
+          "endAt"
+        ],
+        "setChargeTarget": [
+          "tenantId",
+          "duration",
+          "rampRate",
+          "assetIdentifiers",
+          "maxCurrent",
+          "chargeMode",
+          "auditTrailEnabled",
+          "deadband",
+          "startAt",
+          "endAt"
+        ],
+        "setMaxCapacity": [
+          "frequency",
+          "deadband",
+          "chargeMode",
+          "maxCurrent",
+          "assetIdentifiers",
+          "regionCode",
+          "apparentPower",
+          "timezone",
+          "notifyOnComplete",
+          "targetSoC",
+          "correlationId",
+          "startAt",
+          "endAt"
+        ]
+      }
+    },
+    "device_91b2610e-dd50-4d60-803b-420eca4dbf39": {
+      "adapter": "mqtt",
+      "commands": {
+        "setPower": [
+          "reactivePower",
+          "siteId",
+          "reason",
+          "timezone",
+          "overrideExisting",
+          "startAt",
+          "endAt"
+        ],
+        "setMode": [
+          "voltage",
+          "targetSoC",
+          "apparentPower",
+          "siteId",
+          "startAt",
+          "endAt"
+        ],
+        "setChargeTarget": [
+          "operatorId",
+          "frequency",
+          "maxRate",
+          "droopSetting",
+          "maxCurrent",
+          "forceExecution",
+          "correlationId",
+          "voltage",
+          "assetIdentifiers",
+          "notifyOnComplete",
+          "startAt",
+          "endAt"
+        ],
+        "setMaxCapacity": [
+          "percentage",
+          "maxCurrent",
+          "timezone",
+          "maxRate",
+          "environmentTag",
+          "startAt",
+          "endAt"
+        ]
+      }
+    }
+  },
+  "backends": {
+    "backend_0ac63729-9e64-4c7f-8c77-46f9f5755166": "aPyDBQ9-zuCVC-wHPA161VI2zcgNutLntckj1F7by4I",
+    "backend_052e1ef9-189d-4905-8827-e3185ea49d35": "oGBDK-aGWV4XAmF2GK1wzdSlsJfHRyJY2vRNRRY09PE",
+    "backend_84a92f7d-a962-465e-94a4-721517b037b6": "wRSK9A8RJ3OqhfJ26hC1C146zzxdcp7upadRLcjQeoQ",
+    "backend_589f04d4-b279-4e5c-b6f1-7d7faa70b113": "NhlXvYlKtDKD972qDGQV0CTAPrUrdXUagV9W4vxJH7w"
+  },
+  "http_device_ports": {
+    "device_a5dee0dd-8d79-49d4-8db7-00f423829004": 8443,
+    "device_56a59874-75ff-4076-a587-f722f3214668": 8444,
+    "device_e72f9271-ebb9-426d-b1b8-b33d70a7b750": 8445
+  }
+}

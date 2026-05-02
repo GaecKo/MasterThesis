@@ -1,0 +1,214 @@
+{
+  "gatewayDeviceId": "device_a8053ac3-8966-47c2-a6b0-d950a632dfc5",
+  "adapter": "mqtt",
+  "queuing": {
+    "retryIntervalSeconds": 5,
+    "maxTimeToLiveSeconds": 40
+  },
+  "connection": {
+    "qos": 1,
+    "keepAliveInterval": 30,
+    "connectionTimeout": 10,
+    "cleanSession": true,
+    "reconnectDelay": 5
+  },
+  "subscriptions": [
+    {
+      "topic": "devices/device_a8053ac3-8966-47c2-a6b0-d950a632dfc5/telemetry",
+      "forwardToBackend": true
+    },
+    {
+      "topic": "devices/device_a8053ac3-8966-47c2-a6b0-d950a632dfc5/status",
+      "forwardToBackend": true
+    }
+  ],
+  "commands": {
+    "setPower": {
+      "name": "setPower",
+      "topic": "devices/device_a8053ac3-8966-47c2-a6b0-d950a632dfc5/commands",
+      "responseTopic": "devices/device_a8053ac3-8966-47c2-a6b0-d950a632dfc5/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setPower",
+        "operation": {},
+        "startAt": null,
+        "endAt": null,
+        "context": {
+          "timezone": null,
+          "environmentTag": null
+        },
+        "flags": {
+          "forceExecution": null
+        }
+      },
+      "mappings": {
+        "timezone": "context.timezone",
+        "environmentTag": "context.environmentTag",
+        "forceExecution": "flags.forceExecution",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+      "cleanup": {
+        "removeNulls": false,
+        "removeEmpty": false,
+        "emptyObjectToNull": false
+      }
+    },
+    "setMode": {
+      "name": "setMode",
+      "topic": "devices/device_a8053ac3-8966-47c2-a6b0-d950a632dfc5/commands",
+      "responseTopic": "devices/device_a8053ac3-8966-47c2-a6b0-d950a632dfc5/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setMode",
+        "operation": {
+          "dispatchPower": {
+            "frequency": null
+          },
+          "chargeToState": {
+            "rampRate": null,
+            "targetSoC": null
+          }
+        },
+        "startAt": null,
+        "endAt": null,
+        "flags": {
+          "dryRun": null,
+          "overrideExisting": null
+        },
+        "context": {
+          "tenantId": null
+        },
+        "metadata": {
+          "source": null
+        }
+      },
+      "mappings": {
+        "dryRun": "flags.dryRun",
+        "frequency": "operation.dispatchPower.frequency",
+        "rampRate": "operation.chargeToState.rampRate",
+        "tenantId": "context.tenantId",
+        "source": "metadata.source",
+        "targetSoC": "operation.chargeToState.targetSoC",
+        "overrideExisting": "flags.overrideExisting",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+      "cleanup": {
+        "removeNulls": false,
+        "removeEmpty": false,
+        "emptyObjectToNull": true
+      }
+    },
+    "setChargeTarget": {
+      "name": "setChargeTarget",
+      "topic": "devices/device_a8053ac3-8966-47c2-a6b0-d950a632dfc5/commands",
+      "responseTopic": "devices/device_a8053ac3-8966-47c2-a6b0-d950a632dfc5/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setChargeTarget",
+        "operation": {
+          "chargeToState": {
+            "rampRate": null,
+            "maxCurrent": null,
+            "chargeMode": null
+          },
+          "deliverFCR": {
+            "deadband": null
+          }
+        },
+        "startAt": null,
+        "endAt": null,
+        "context": {
+          "tenantId": null
+        },
+        "duration": null,
+        "assetIdentifiers": null,
+        "flags": {
+          "auditTrailEnabled": null
+        }
+      },
+      "mappings": {
+        "tenantId": "context.tenantId",
+        "duration": "duration",
+        "rampRate": "operation.chargeToState.rampRate",
+        "assetIdentifiers": "assetIdentifiers",
+        "maxCurrent": "operation.chargeToState.maxCurrent",
+        "chargeMode": "operation.chargeToState.chargeMode",
+        "auditTrailEnabled": "flags.auditTrailEnabled",
+        "deadband": "operation.deliverFCR.deadband",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+      "cleanup": {
+        "removeNulls": true,
+        "removeEmpty": false,
+        "emptyObjectToNull": true
+      }
+    },
+    "setMaxCapacity": {
+      "name": "setMaxCapacity",
+      "topic": "devices/device_a8053ac3-8966-47c2-a6b0-d950a632dfc5/commands",
+      "responseTopic": "devices/device_a8053ac3-8966-47c2-a6b0-d950a632dfc5/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setMaxCapacity",
+        "operation": {
+          "dispatchPower": {
+            "frequency": null,
+            "apparentPower": null
+          },
+          "deliverFCR": {
+            "deadband": null
+          },
+          "chargeToState": {
+            "chargeMode": null,
+            "maxCurrent": null,
+            "targetSoC": null
+          }
+        },
+        "startAt": null,
+        "endAt": null,
+        "assetIdentifiers": null,
+        "context": {
+          "regionCode": null,
+          "timezone": null
+        },
+        "flags": {
+          "notifyOnComplete": null
+        },
+        "metadata": {
+          "correlationId": null
+        }
+      },
+      "mappings": {
+        "frequency": "operation.dispatchPower.frequency",
+        "deadband": "operation.deliverFCR.deadband",
+        "chargeMode": "operation.chargeToState.chargeMode",
+        "maxCurrent": "operation.chargeToState.maxCurrent",
+        "assetIdentifiers": "assetIdentifiers",
+        "regionCode": "context.regionCode",
+        "apparentPower": "operation.dispatchPower.apparentPower",
+        "timezone": "context.timezone",
+        "notifyOnComplete": "flags.notifyOnComplete",
+        "targetSoC": "operation.chargeToState.targetSoC",
+        "correlationId": "metadata.correlationId",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+      "cleanup": {
+        "removeNulls": false,
+        "removeEmpty": true,
+        "emptyObjectToNull": true
+      }
+    }
+  }
+}

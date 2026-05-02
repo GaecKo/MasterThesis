@@ -1,0 +1,171 @@
+{
+  "gatewayDeviceId": "device_e72f9271-ebb9-426d-b1b8-b33d70a7b750",
+  "adapter": "http",
+  "queuing": {
+    "retryIntervalSeconds": 5,
+    "maxTimeToLiveSeconds": 40
+  },
+  "commands": {
+    "setBatteryOperation": {
+      "name": "setBatteryOperation",
+      "endpoint": "https://nuc8-pc.local:8445/v2/schedule/",
+      "method": "POST",
+      "timeouts": {
+        "connect": 2,
+        "request": 10
+      },
+      "payloadTemplate": {
+        "schedule": [
+          {
+            "type": "setBatteryOperation",
+            "operation": {
+              "dispatchPower": {
+                "current": null
+              }
+            },
+            "startAt": null,
+            "endAt": null,
+            "duration": null
+          }
+        ],
+        "assetIdentifiers": null,
+        "flags": {
+          "dryRun": null,
+          "overrideExisting": null
+        },
+        "context": {
+          "regionCode": null,
+          "siteId": null,
+          "environmentTag": null
+        },
+        "metadata": {
+          "reason": null
+        }
+      },
+      "mappings": {
+        "dryRun": "flags.dryRun",
+        "current": "schedule[0].operation.dispatchPower.current",
+        "overrideExisting": "flags.overrideExisting",
+        "regionCode": "context.regionCode",
+        "reason": "metadata.reason",
+        "duration": "schedule[0].duration",
+        "siteId": "context.siteId",
+        "environmentTag": "context.environmentTag",
+        "startAt": "schedule[0].startAt",
+        "endAt": "schedule[0].endAt"
+      },
+      "cleanup": {
+        "emptyObjectToNull": false,
+        "removeNulls": true,
+        "removeEmpty": true
+      }
+    },
+    "setChargeTarget": {
+      "name": "setChargeTarget",
+      "endpoint": "https://nuc8-pc.local:8445/v2/schedule/",
+      "method": "POST",
+      "timeouts": {
+        "connect": 2,
+        "request": 10
+      },
+      "payloadTemplate": {
+        "schedule": [
+          {
+            "type": "setChargeTarget",
+            "operation": {
+              "deliverFCR": {
+                "droopSetting": null,
+                "maxRate": null,
+                "deadband": null
+              },
+              "dispatchPower": {
+                "current": null
+              },
+              "chargeToState": {
+                "percentage": null
+              }
+            },
+            "startAt": null,
+            "endAt": null
+          }
+        ],
+        "assetIdentifiers": null,
+        "flags": {
+          "dryRun": null,
+          "auditTrailEnabled": null
+        },
+        "metadata": {
+          "source": null
+        },
+        "context": {
+          "operatorId": null,
+          "timezone": null,
+          "tenantId": null
+        }
+      },
+      "mappings": {
+        "dryRun": "flags.dryRun",
+        "droopSetting": "schedule[0].operation.deliverFCR.droopSetting",
+        "source": "metadata.source",
+        "assetIdentifiers": "assetIdentifiers",
+        "operatorId": "context.operatorId",
+        "current": "schedule[0].operation.dispatchPower.current",
+        "auditTrailEnabled": "flags.auditTrailEnabled",
+        "percentage": "schedule[0].operation.chargeToState.percentage",
+        "maxRate": "schedule[0].operation.deliverFCR.maxRate",
+        "deadband": "schedule[0].operation.deliverFCR.deadband",
+        "timezone": "context.timezone",
+        "tenantId": "context.tenantId",
+        "startAt": "schedule[0].startAt",
+        "endAt": "schedule[0].endAt"
+      },
+      "cleanup": {
+        "emptyObjectToNull": true,
+        "removeNulls": true,
+        "removeEmpty": true
+      }
+    },
+    "setMaxCapacity": {
+      "name": "setMaxCapacity",
+      "endpoint": "https://nuc8-pc.local:8445/v2/schedule/",
+      "method": "POST",
+      "timeouts": {
+        "connect": 2,
+        "request": 10
+      },
+      "payloadTemplate": {
+        "schedule": [
+          {
+            "type": "setMaxCapacity",
+            "operation": {
+              "dispatchPower": {
+                "activePower": null
+              },
+              "chargeToState": {
+                "chargeMode": null
+              }
+            },
+            "startAt": null,
+            "endAt": null
+          }
+        ],
+        "assetIdentifiers": null,
+        "context": {
+          "regionCode": null
+        }
+      },
+      "mappings": {
+        "regionCode": "context.regionCode",
+        "activePower": "schedule[0].operation.dispatchPower.activePower",
+        "chargeMode": "schedule[0].operation.chargeToState.chargeMode",
+        "startAt": "schedule[0].startAt",
+        "endAt": "schedule[0].endAt"
+      },
+      "cleanup": {
+        "emptyObjectToNull": true,
+        "removeNulls": false,
+        "removeEmpty": true
+      }
+    }
+  }
+}
