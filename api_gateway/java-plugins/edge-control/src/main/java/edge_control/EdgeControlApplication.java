@@ -16,6 +16,8 @@ public class EdgeControlApplication {
 
     public static void main(String[] args) {
         logger.info("EdgeControlApplication is starting ...");
+        logger.info("Available processors: " + Runtime.getRuntime().availableProcessors());
+        
         logger.disable();
         new SpringApplicationBuilder(EdgeControlApplication.class)
                 .web(WebApplicationType.NONE)
