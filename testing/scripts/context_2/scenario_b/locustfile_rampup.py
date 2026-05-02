@@ -47,7 +47,10 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # | ================= User-provided backend API keys ================= |
 
 BACKEND_API_KEYS: dict[str, str] = {
-    # "backend_<uuid>": "<api_key>",
+    "backend_0ac63729-9e64-4c7f-8c77-46f9f5755166": "aPyDBQ9-zuCVC-wHPA161VI2zcgNutLntckj1F7by4I",
+    "backend_052e1ef9-189d-4905-8827-e3185ea49d35": "oGBDK-aGWV4XAmF2GK1wzdSlsJfHRyJY2vRNRRY09PE",
+    "backend_84a92f7d-a962-465e-94a4-721517b037b6": "wRSK9A8RJ3OqhfJ26hC1C146zzxdcp7upadRLcjQeoQ",
+    "backend_589f04d4-b279-4e5c-b6f1-7d7faa70b113": "NhlXvYlKtDKD972qDGQV0CTAPrUrdXUagV9W4vxJH7w",
 }
 
 # | ================= Load test plan from summary ================= |
@@ -102,10 +105,14 @@ STEP_DURATION_S = float(os.environ.get("STEP_DURATION_S", "30"))
 # Keep PER_USER_RPS small so we can hit low RPS targets with at least a few users.
 PER_USER_RPS = float(os.environ.get("PER_USER_RPS", "1.0"))
 
-HTTP_WEIGHT = max(len(HTTP_PLAN), 1)
-MQTT_WEIGHT = max(len(MQTT_PLAN), 1)
+# Weight by device count, not plan size, to get equal HTTP/MQTT split
+HTTP_WEIGHT = max(sum(1 for d in DEVICES.values() if d["adapter"] == "http"), 1)
+MQTT_WEIGHT = max(sum(1 for d in DEVICES.values() if d["adapter"] == "mqtt"), 1)
 
 # | ================= Ramp-up shape ================= |
+
+# Module-level start time — more reliable than a class variable across Locust internals
+_shape_start_time: float = None
 
 class RampUpShape(LoadTestShape):
     """
@@ -120,21 +127,19 @@ class RampUpShape(LoadTestShape):
         Called every second by Locust. Returns (user_count, spawn_rate) for
         the current moment, or None to stop the test.
         """
-        elapsed = self.get_current_run_time()
+        global _shape_start_time
+        if _shape_start_time is None:
+            _shape_start_time = time.perf_counter()
 
-        # Which step are we in?
-        step_index  = int(elapsed // STEP_DURATION_S)
-        target_rps  = START_RPS + step_index * STEP_RPS
+        elapsed    = time.perf_counter() - _shape_start_time
+        step_index = int(elapsed // STEP_DURATION_S)
+        target_rps = START_RPS + step_index * STEP_RPS
 
         if target_rps > END_RPS:
-            # All steps complete — stop the test
             return None
 
-        # Number of users needed to achieve target_rps with constant_throughput
-        user_count  = max(1, round(target_rps / PER_USER_RPS))
-
-        # Spawn all users for the new step at once so the step starts cleanly
-        spawn_rate  = user_count
+        user_count = max(1, round(target_rps / PER_USER_RPS))
+        spawn_rate = max(1, user_count)   # spawn all at once for clean step start
 
         return user_count, spawn_rate
 

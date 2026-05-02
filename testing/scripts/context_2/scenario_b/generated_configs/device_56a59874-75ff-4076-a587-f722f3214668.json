@@ -1,0 +1,160 @@
+{
+  "gatewayDeviceId": "device_56a59874-75ff-4076-a587-f722f3214668",
+  "adapter": "http",
+  "queuing": {
+    "retryIntervalSeconds": 5,
+    "maxTimeToLiveSeconds": 40
+  },
+  "commands": {
+    "setBatteryOperation": {
+      "name": "setBatteryOperation",
+      "endpoint": "https://nuc8-pc.local:8444/v2/schedule/",
+      "method": "POST",
+      "timeouts": {
+        "connect": 2,
+        "request": 10
+      },
+      "payloadTemplate": {
+        "schedule": [
+          {
+            "type": "setBatteryOperation",
+            "operation": {
+              "chargeToState": {
+                "targetSoC": null
+              },
+              "deliverFCR": {
+                "deadband": null
+              }
+            },
+            "startAt": null,
+            "endAt": null,
+            "duration": null
+          }
+        ],
+        "assetIdentifiers": null,
+        "context": {
+          "tenantId": null
+        },
+        "metadata": {
+          "correlationId": null
+        }
+      },
+      "mappings": {
+        "targetSoC": "schedule[0].operation.chargeToState.targetSoC",
+        "duration": "schedule[0].duration",
+        "deadband": "schedule[0].operation.deliverFCR.deadband",
+        "tenantId": "context.tenantId",
+        "correlationId": "metadata.correlationId",
+        "startAt": "schedule[0].startAt",
+        "endAt": "schedule[0].endAt"
+      },
+      "cleanup": {
+        "emptyObjectToNull": false,
+        "removeNulls": false,
+        "removeEmpty": false
+      }
+    },
+    "setChargeTarget": {
+      "name": "setChargeTarget",
+      "endpoint": "https://nuc8-pc.local:8444/v2/schedule/",
+      "method": "POST",
+      "timeouts": {
+        "connect": 2,
+        "request": 10
+      },
+      "payloadTemplate": {
+        "schedule": [
+          {
+            "type": "setChargeTarget",
+            "operation": {
+              "chargeToState": {
+                "targetSoC": null,
+                "maxCurrent": null
+              },
+              "deliverFCR": {
+                "deadband": null,
+                "droopSetting": null
+              }
+            },
+            "startAt": null,
+            "endAt": null
+          }
+        ],
+        "assetIdentifiers": null,
+        "context": {
+          "timezone": null,
+          "environmentTag": null
+        },
+        "metadata": {
+          "requestVersion": null,
+          "reason": null,
+          "priority": null,
+          "correlationId": null
+        }
+      },
+      "mappings": {
+        "timezone": "context.timezone",
+        "requestVersion": "metadata.requestVersion",
+        "targetSoC": "schedule[0].operation.chargeToState.targetSoC",
+        "deadband": "schedule[0].operation.deliverFCR.deadband",
+        "droopSetting": "schedule[0].operation.deliverFCR.droopSetting",
+        "maxCurrent": "schedule[0].operation.chargeToState.maxCurrent",
+        "reason": "metadata.reason",
+        "priority": "metadata.priority",
+        "correlationId": "metadata.correlationId",
+        "environmentTag": "context.environmentTag",
+        "startAt": "schedule[0].startAt",
+        "endAt": "schedule[0].endAt"
+      },
+      "cleanup": {
+        "emptyObjectToNull": false,
+        "removeNulls": false,
+        "removeEmpty": true
+      }
+    },
+    "setMaxCapacity": {
+      "name": "setMaxCapacity",
+      "endpoint": "https://nuc8-pc.local:8444/v2/schedule/",
+      "method": "POST",
+      "timeouts": {
+        "connect": 2,
+        "request": 10
+      },
+      "payloadTemplate": {
+        "schedule": [
+          {
+            "type": "setMaxCapacity",
+            "operation": {
+              "chargeToState": {
+                "maxCurrent": null,
+                "percentage": null
+              }
+            },
+            "startAt": null,
+            "endAt": null
+          }
+        ],
+        "assetIdentifiers": null,
+        "context": {
+          "operatorId": null
+        },
+        "metadata": {
+          "reason": null
+        }
+      },
+      "mappings": {
+        "operatorId": "context.operatorId",
+        "maxCurrent": "schedule[0].operation.chargeToState.maxCurrent",
+        "reason": "metadata.reason",
+        "percentage": "schedule[0].operation.chargeToState.percentage",
+        "startAt": "schedule[0].startAt",
+        "endAt": "schedule[0].endAt"
+      },
+      "cleanup": {
+        "emptyObjectToNull": true,
+        "removeNulls": true,
+        "removeEmpty": true
+      }
+    }
+  }
+}

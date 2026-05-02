@@ -1,0 +1,237 @@
+{
+  "gatewayDeviceId": "device_9c12fe18-bd18-4506-b7ab-4460af97bae3",
+  "adapter": "mqtt",
+  "queuing": {
+    "retryIntervalSeconds": 5,
+    "maxTimeToLiveSeconds": 40
+  },
+  "connection": {
+    "qos": 1,
+    "keepAliveInterval": 30,
+    "connectionTimeout": 10,
+    "cleanSession": true,
+    "reconnectDelay": 5
+  },
+  "subscriptions": [
+    {
+      "topic": "devices/device_9c12fe18-bd18-4506-b7ab-4460af97bae3/telemetry",
+      "forwardToBackend": true
+    },
+    {
+      "topic": "devices/device_9c12fe18-bd18-4506-b7ab-4460af97bae3/status",
+      "forwardToBackend": true
+    }
+  ],
+  "commands": {
+    "setPower": {
+      "name": "setPower",
+      "topic": "devices/device_9c12fe18-bd18-4506-b7ab-4460af97bae3/commands",
+      "responseTopic": "devices/device_9c12fe18-bd18-4506-b7ab-4460af97bae3/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setPower",
+        "operation": {
+          "chargeToState": {
+            "chargeMode": null,
+            "targetSoC": null
+          },
+          "deliverFCR": {
+            "deadband": null,
+            "minRate": null,
+            "maxRate": null
+          },
+          "dispatchPower": {
+            "frequency": null,
+            "current": null
+          }
+        },
+        "startAt": null,
+        "endAt": null,
+        "flags": {
+          "forceExecution": null,
+          "auditTrailEnabled": null,
+          "notifyOnComplete": null
+        },
+        "metadata": {
+          "priority": null
+        },
+        "context": {
+          "environmentTag": null
+        }
+      },
+      "mappings": {
+        "forceExecution": "flags.forceExecution",
+        "chargeMode": "operation.chargeToState.chargeMode",
+        "deadband": "operation.deliverFCR.deadband",
+        "minRate": "operation.deliverFCR.minRate",
+        "frequency": "operation.dispatchPower.frequency",
+        "priority": "metadata.priority",
+        "targetSoC": "operation.chargeToState.targetSoC",
+        "auditTrailEnabled": "flags.auditTrailEnabled",
+        "notifyOnComplete": "flags.notifyOnComplete",
+        "maxRate": "operation.deliverFCR.maxRate",
+        "environmentTag": "context.environmentTag",
+        "current": "operation.dispatchPower.current",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+      "cleanup": {
+        "removeNulls": true,
+        "removeEmpty": true,
+        "emptyObjectToNull": false
+      }
+    },
+    "setMode": {
+      "name": "setMode",
+      "topic": "devices/device_9c12fe18-bd18-4506-b7ab-4460af97bae3/commands",
+      "responseTopic": "devices/device_9c12fe18-bd18-4506-b7ab-4460af97bae3/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setMode",
+        "operation": {
+          "chargeToState": {
+            "maxCurrent": null,
+            "rampRate": null
+          }
+        },
+        "startAt": null,
+        "endAt": null,
+        "context": {
+          "siteId": null,
+          "environmentTag": null
+        },
+        "metadata": {
+          "reason": null,
+          "source": null,
+          "requestedBy": null,
+          "priority": null,
+          "correlationId": null
+        },
+        "flags": {
+          "notifyOnComplete": null,
+          "auditTrailEnabled": null
+        },
+        "assetIdentifiers": null
+      },
+      "mappings": {
+        "maxCurrent": "operation.chargeToState.maxCurrent",
+        "siteId": "context.siteId",
+        "reason": "metadata.reason",
+        "notifyOnComplete": "flags.notifyOnComplete",
+        "assetIdentifiers": "assetIdentifiers",
+        "source": "metadata.source",
+        "auditTrailEnabled": "flags.auditTrailEnabled",
+        "requestedBy": "metadata.requestedBy",
+        "rampRate": "operation.chargeToState.rampRate",
+        "priority": "metadata.priority",
+        "environmentTag": "context.environmentTag",
+        "correlationId": "metadata.correlationId",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+      "cleanup": {
+        "removeNulls": false,
+        "removeEmpty": true,
+        "emptyObjectToNull": true
+      }
+    },
+    "setChargeTarget": {
+      "name": "setChargeTarget",
+      "topic": "devices/device_9c12fe18-bd18-4506-b7ab-4460af97bae3/commands",
+      "responseTopic": "devices/device_9c12fe18-bd18-4506-b7ab-4460af97bae3/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setChargeTarget",
+        "operation": {
+          "dispatchPower": {
+            "frequency": null
+          },
+          "chargeToState": {
+            "rampRate": null,
+            "maxCurrent": null
+          }
+        },
+        "startAt": null,
+        "endAt": null,
+        "metadata": {
+          "priority": null,
+          "source": null,
+          "correlationId": null
+        },
+        "context": {
+          "operatorId": null
+        },
+        "flags": {
+          "auditTrailEnabled": null,
+          "dryRun": null
+        },
+        "duration": null
+      },
+      "mappings": {
+        "priority": "metadata.priority",
+        "operatorId": "context.operatorId",
+        "frequency": "operation.dispatchPower.frequency",
+        "rampRate": "operation.chargeToState.rampRate",
+        "source": "metadata.source",
+        "maxCurrent": "operation.chargeToState.maxCurrent",
+        "auditTrailEnabled": "flags.auditTrailEnabled",
+        "correlationId": "metadata.correlationId",
+        "dryRun": "flags.dryRun",
+        "duration": "duration",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+      "cleanup": {
+        "removeNulls": false,
+        "removeEmpty": false,
+        "emptyObjectToNull": true
+      }
+    },
+    "setMaxCapacity": {
+      "name": "setMaxCapacity",
+      "topic": "devices/device_9c12fe18-bd18-4506-b7ab-4460af97bae3/commands",
+      "responseTopic": "devices/device_9c12fe18-bd18-4506-b7ab-4460af97bae3/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setMaxCapacity",
+        "operation": {
+          "chargeToState": {
+            "maxCurrent": null,
+            "targetSoC": null
+          }
+        },
+        "startAt": null,
+        "endAt": null,
+        "duration": null,
+        "metadata": {
+          "priority": null
+        },
+        "context": {
+          "timezone": null
+        }
+      },
+      "mappings": {
+        "duration": "duration",
+        "priority": "metadata.priority",
+        "maxCurrent": "operation.chargeToState.maxCurrent",
+        "targetSoC": "operation.chargeToState.targetSoC",
+        "timezone": "context.timezone",
+        "startAt": "startAt",
+        "endAt": "endAt"
+      },
+      "cleanup": {
+        "removeNulls": true,
+        "removeEmpty": false,
+        "emptyObjectToNull": true
+      }
+    }
+  }
+}

@@ -8,8 +8,7 @@
 #   ./run_test_rampup.sh <scenario_name> <payload_size>
 #
 # Example:
-#   START_RPS=10 END_RPS=300 STEP_RPS=10 STEP_DURATION_S=30 \
-#       ./run_test_rampup.sh context2_full medium
+#   START_RPS=10 END_RPS=300 STEP_RPS=10 STEP_DURATION_S=30 ./run_test_rampup.sh c2_scenario_a medium
 #
 # Ramp-up parameters (all via env vars):
 #   START_RPS         First step RPS (default: 10)
@@ -24,7 +23,7 @@ set -euo pipefail
 # | ================= Configuration ================= |
 
 GATEWAY_SSH_HOST="${GATEWAY_SSH_HOST:-nuc4@nuc4-pc.local}"
-TARGET_HOST="${TARGET_HOST:-https://nuc4-pc.local:9443}"
+TARGET_HOST="${TARGET_HOST:-http://192.168.50.4:9080}"
 CONTAINERS="${CONTAINERS:-apisix apisix-etcd}"
 STATS_INTERVAL="${STATS_INTERVAL:-2}"
 LOCUST_FILE="${LOCUST_FILE:-locustfile_rampup.py}"
@@ -114,7 +113,6 @@ echo "[rampup] Starting ramp-up test (LoadTestShape controls duration)..."
 
 START_RPS="$START_RPS" END_RPS="$END_RPS" STEP_RPS="$STEP_RPS" \
 STEP_DURATION_S="$STEP_DURATION_S" PER_USER_RPS="$PER_USER_RPS" \
-RESULTS_DIR="$RESULTS_DIR" \
     locust -f "$LOCUST_FILE" \
         --host "$TARGET_HOST" \
         -u "$MAX_USERS" -r "$MAX_USERS" \
