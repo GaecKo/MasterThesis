@@ -240,6 +240,8 @@ _raw_csv_lock   = threading.Lock()
 
 @events.init.add_listener
 def init_raw_csv(environment, **kwargs):
+    if True:
+        return 
     global _raw_csv_path, _raw_csv_file, _raw_csv_writer
     results_dir   = os.environ.get("RESULTS_DIR", ".")
     _raw_csv_path = os.path.join(results_dir, "raw_latencies.csv")
