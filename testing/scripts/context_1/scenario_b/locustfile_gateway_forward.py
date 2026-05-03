@@ -33,6 +33,8 @@ import uuid
 
 import gevent
 import urllib3
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import paho.mqtt.client as mqtt
 from locust import HttpUser, User, constant_throughput, events, task
 
@@ -163,9 +165,14 @@ class MqttDirectUser(User):
         self._pending_lock = threading.Lock()
         self._connected    = False
 
+        # Unique response topic per user — each ack is routed only to the
+        # user that sent the command, eliminating fan-out overhead
+        self._user_id        = str(uuid.uuid4())[:8]
+        self._response_topic = f"locust/responses/{self._user_id}"
+
         self._client = mqtt.Client(
             callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
-            client_id=f"locust_gw_{id(self)}",
+            client_id=f"locust_gw_{self._user_id}",
             protocol=mqtt.MQTTv311)
         self._client.tls_set(ca_certs=MQTT_CA_CERT_PATH, tls_version=ssl.PROTOCOL_TLS_CLIENT)
         self._client.on_connect = self._on_connect
@@ -187,8 +194,7 @@ class MqttDirectUser(User):
         if reason_code != 0:
             print(f"[locust/mqtt] Connection failed: {reason_code}")
             return
-        for topic in MQTT_RESPONSE_TOPICS.values():
-            client.subscribe(topic, qos=1)
+        client.subscribe(self._response_topic, qos=0)
         self._connected = True
 
     def _on_message(self, client, userdata, msg):
@@ -210,9 +216,9 @@ class MqttDirectUser(User):
     def publish_to_device(self):
         device_id, command_topic = next_mqtt_device()
         correlation_id = str(uuid.uuid4())
-        payload_bytes  = json.dumps(
-            build_medium_payload(device_id, "setPower", correlation_id)
-        ).encode()
+        payload = build_medium_payload(device_id, "setPower", correlation_id)
+        payload["responseTopic"] = self._response_topic
+        payload_bytes = json.dumps(payload).encode()
 
         entry = {"start_ns": time.perf_counter_ns(), "elapsed_ms": None,
                  "response_length": 0, "done": False}
@@ -254,6 +260,11 @@ _raw_csv_lock   = threading.Lock()
 @events.init.add_listener
 def init_raw_csv(environment, **kwargs):
     global _raw_csv_path, _raw_csv_file, _raw_csv_writer
+    # Only record raw latencies during the capture phase, not warmup.
+    # run_test.sh sets CAPTURE_PHASE=true only for the capture invocation.
+    if os.environ.get("CAPTURE_PHASE", "false").lower() != "true":
+        print("[locust] Warmup phase — raw latency recording disabled")
+        return
     results_dir = os.environ.get("RESULTS_DIR", ".")
     _raw_csv_path = os.path.join(results_dir, "raw_latencies.csv")
     _raw_csv_file = open(_raw_csv_path, "w", newline="")
