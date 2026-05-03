@@ -11,6 +11,7 @@ CONFIG:
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import time 
 from pathlib import Path
 
 # | ================= Config ================= |
@@ -20,7 +21,7 @@ MIN_RPS     = 5.0
 
 # Keep one point every SAMPLE_STEP ramp steps.
 # With STEP_RPS=10 in your run: SAMPLE_STEP=5 → points at 50,100,150,...
-SAMPLE_STEP = 5
+SAMPLE_STEP = 2
 
 # How to connect points:
 #   "latency"  → sort by p50 ascending (smooth natural curve, good for presentation)
@@ -88,7 +89,27 @@ for label, filename in FILES.items():
 
     # Order for line connection
     if CONNECT_BY == "latency":
-        binned = binned.sort_values("p50").reset_index(drop=True)
+        binned = binned.sort_values(["p50", "achieved_rps"]).reset_index(drop=True)
+
+        # Remove points that go backwards in RPS before the peak —
+        # these are noise in the flat zone that cause zigzag.
+        # Strategy: keep only points where RPS >= all previous RPS values,
+        # until we reach the peak RPS. After the peak, keep everything
+        # (that's the real collapse/saturation zone we want to show).
+        peak_idx  = binned["achieved_rps"].idxmax()
+        pre_peak  = binned.iloc[:peak_idx + 1]
+        post_peak = binned.iloc[peak_idx + 1:]
+
+        # Forward pass: keep a point only if its RPS >= running max so far
+        keep = []
+        running_max = 0
+        for _, row in pre_peak.iterrows():
+            if row["achieved_rps"] >= running_max:
+                running_max = row["achieved_rps"]
+                keep.append(row)
+
+        pre_clean = pd.DataFrame(keep)
+        binned = pd.concat([pre_clean, post_peak]).reset_index(drop=True)
     # "time" → already in step order
 
     series[label] = binned
@@ -142,7 +163,7 @@ ax.legend(loc="upper left", frameon=True, framealpha=0.9,
 
 plt.tight_layout(pad=2.0)
 
-out_path = RESULTS_DIR / "c2_rampup.png"
+out_path = RESULTS_DIR / f"{time.time()}_c2_rampup.png"
 plt.savefig(out_path, dpi=180, bbox_inches="tight", facecolor=BG_COLOR)
 print(f"\nSaved → {out_path}")
 plt.show()
