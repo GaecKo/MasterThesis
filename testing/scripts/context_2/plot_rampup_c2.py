@@ -21,7 +21,7 @@ MIN_RPS     = 5.0
 
 # Keep one point every SAMPLE_STEP ramp steps.
 # With STEP_RPS=10 in your run: SAMPLE_STEP=5 → points at 50,100,150,...
-SAMPLE_STEP = 2
+SAMPLE_STEP = 5
 
 # How to connect points:
 #   "latency"  → sort by p50 ascending (smooth natural curve, good for presentation)
