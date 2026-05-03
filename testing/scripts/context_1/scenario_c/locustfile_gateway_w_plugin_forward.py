@@ -9,6 +9,10 @@ MQTT devices:
   Direct to broker, same as scenario A. The gateway adds no value for MQTT
   without the plugin, so this gives a stable baseline for comparison with D.
 
+  Uses threading.Event + gevent hub callback instead of a polling loop —
+  the greenlet blocks cooperatively on event.wait() without burning CPU or
+  depending on gevent scheduler timing for measurement accuracy.
+
 Run:
     LOCUST_FILE=locustfile_gateway_forward.py ./run_test.sh scenarioB 50 medium
 
@@ -27,6 +31,7 @@ import time
 import uuid
 
 import gevent
+import gevent.event
 import urllib3
 import paho.mqtt.client as mqtt
 from locust import HttpUser, User, constant_throughput, events, task
@@ -139,8 +144,15 @@ def next_mqtt_device() -> tuple[str, str]:
 
 class MqttDirectUser(User):
     """
-    Direct MQTT to broker — unchanged from scenario A.
+    Direct MQTT to broker — same path as scenario A.
     Each user uses a unique personal response topic to avoid fan-out overhead.
+
+    Waiting strategy: instead of a polling loop with gevent.sleep(), we create
+    a gevent.event.Event() per request and wait on it cooperatively. When the
+    ack arrives in paho's OS thread (_on_message), we schedule event.set() on
+    the gevent hub via run_callback() — the only thread-safe way to signal a
+    gevent greenlet from a real OS thread. This removes scheduler dependency
+    from latency measurements entirely.
     """
     wait_time = constant_throughput(PER_USER_RPS)
     weight    = MQTT_WEIGHT
@@ -150,8 +162,6 @@ class MqttDirectUser(User):
         self._pending_lock = threading.Lock()
         self._connected    = False
 
-        # Unique response topic per user — each ack is routed only to the
-        # user that sent the command, eliminating fan-out overhead
         self._user_id        = str(uuid.uuid4())[:8]
         self._response_topic = f"locust/responses/{self._user_id}"
 
@@ -183,17 +193,28 @@ class MqttDirectUser(User):
         self._connected = True
 
     def _on_message(self, client, userdata, msg):
+        """
+        Called from paho's real OS thread. Records elapsed time immediately
+        (accurate timestamp), then schedules event.set() on the gevent hub
+        so the waiting greenlet unblocks on the next gevent loop iteration.
+        run_callback() is the only thread-safe bridge from OS thread → gevent.
+        """
         try:
             data           = json.loads(msg.payload.decode())
             correlation_id = data.get("correlationId")
             if not correlation_id:
                 return
+
             with self._pending_lock:
                 entry = self._pending.pop(correlation_id, None)
+
             if entry:
+                # Record elapsed time here in the OS thread — most accurate
                 entry["elapsed_ms"]      = (time.perf_counter_ns() - entry["start_ns"]) / 1_000_000
                 entry["response_length"] = len(msg.payload)
-                entry["done"]            = True
+                # Schedule event.set() on the gevent hub — thread-safe signal
+                gevent.get_hub().loop.run_callback(entry["event"].set)
+
         except Exception:
             pass
 
@@ -205,24 +226,29 @@ class MqttDirectUser(User):
         payload["responseTopic"] = self._response_topic
         payload_bytes = json.dumps(payload).encode()
 
-        entry = {"start_ns": time.perf_counter_ns(), "elapsed_ms": None,
-                 "response_length": 0, "done": False}
+        # gevent.event.Event — cooperative, greenlet-safe
+        ev = gevent.event.Event()
+        entry = {
+            "start_ns":       time.perf_counter_ns(),
+            "elapsed_ms":     None,
+            "response_length": 0,
+            "event":           ev,
+        }
+
         with self._pending_lock:
             self._pending[correlation_id] = entry
 
         self._client.publish(command_topic, payload_bytes, qos=1)
 
-        deadline = time.perf_counter() + MQTT_RESPONSE_TIMEOUT_S
-        while time.perf_counter() < deadline:
-            gevent.sleep(0.002)
-            if entry["done"]:
-                break
+        # Block cooperatively — yields to gevent loop, unblocks when
+        # run_callback fires event.set() or timeout expires
+        received = ev.wait(timeout=MQTT_RESPONSE_TIMEOUT_S)
 
-        received   = entry["done"]
-        elapsed_ms = entry["elapsed_ms"] if received else MQTT_RESPONSE_TIMEOUT_S * 1000
         if not received:
             with self._pending_lock:
                 self._pending.pop(correlation_id, None)
+
+        elapsed_ms = entry["elapsed_ms"] if received else MQTT_RESPONSE_TIMEOUT_S * 1000
 
         events.request.fire(
             request_type="MQTT",
