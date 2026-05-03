@@ -177,7 +177,7 @@ class MqttDirectUser(User):
 
         deadline = time.perf_counter() + 15
         while not self._connected and time.perf_counter() < deadline:
-            gevent.sleep(0.05)
+            gevent.sleep(0.002)
         if not self._connected:
             raise Exception(f"MQTT connection timeout for user {id(self)}")
 
