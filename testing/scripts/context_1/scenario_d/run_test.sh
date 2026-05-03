@@ -24,8 +24,8 @@ GATEWAY_SSH_HOST="${GATEWAY_SSH_HOST:-nuc4@nuc4-pc.local}"
 TARGET_HOST="${TARGET_HOST:-https://nuc4-pc.local:9443}"
 CONTAINERS="${CONTAINERS:-apisix apisix-etcd}"
 
-WARMUP_SECONDS="${WARMUP_SECONDS:-120}"     # 2 minutes
-CAPTURE_SECONDS="${CAPTURE_SECONDS:-900}"   # 15 minutes
+WARMUP_SECONDS="${WARMUP_SECONDS:-10}"     # 2 minutes
+CAPTURE_SECONDS="${CAPTURE_SECONDS:-30}"   # 15 minutes
 STATS_INTERVAL="${STATS_INTERVAL:-2}"       # seconds between docker stats polls
 
 # Base number of virtual users. More users = higher achievable throughput.

@@ -38,12 +38,12 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Map each device ID to the list of commands it supports.
 # Must match what was uploaded via generate_configs.py.
 DEVICE_COMMANDS: dict[str, list[str]] = {
-    "http_device_001": ["setBatteryOperation"],
-    "http_device_002": ["setBatteryOperation"],
-    "http_device_003": ["setBatteryOperation"],
-    "mqtt_device_004": ["setPower"],
-    "mqtt_device_005": ["setPower"],
-    "mqtt_device_006": ["setPower"],
+    "http_device_001": ["setBatteryOperation", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
+    "http_device_002": ["setBatteryOperation", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
+    "http_device_003": ["setBatteryOperation", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
+    "mqtt_device_004": ["setPower", "setMode", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
+    "mqtt_device_005": ["setPower", "setMode", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
+    "mqtt_device_006": ["setPower", "setMode", "setChargeTarget", "setMaxCapacity", "setMaxCapacity", "setMaxCapacity"],
 }
 
 # MQTT broker — for correlationId round-trip timing
