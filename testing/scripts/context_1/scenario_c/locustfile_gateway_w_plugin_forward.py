@@ -214,7 +214,7 @@ class MqttDirectUser(User):
 
         deadline = time.perf_counter() + MQTT_RESPONSE_TIMEOUT_S
         while time.perf_counter() < deadline:
-            gevent.sleep(0.0005)
+            gevent.sleep(0.002)
             if entry["done"]:
                 break
 
