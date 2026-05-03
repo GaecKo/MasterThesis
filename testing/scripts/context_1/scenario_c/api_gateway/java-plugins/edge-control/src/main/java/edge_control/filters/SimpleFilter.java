@@ -9,8 +9,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import edge_control.EdgeControlApplication;
+
 @Component
 public class SimpleFilter implements PluginFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(SimpleFilter.class);
+
+    SimpleFilter() {
+        logger.warn("Simple Filter running...");
+    }
 
     @Override
     public String name() {
@@ -23,6 +31,7 @@ public class SimpleFilter implements PluginFilter {
                        PluginFilterChain chain) {
         
         String body = request.getBody();
+        logger.warn("Packet received in Simple Filter, path: " + request.getPath());
 
         chain.filter(request, response);
     }
