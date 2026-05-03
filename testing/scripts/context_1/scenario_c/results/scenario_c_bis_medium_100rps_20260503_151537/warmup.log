@@ -1,0 +1,27 @@
+[2026-05-03 15:15:37,905] nuc1-pc/INFO/locust.main: Starting Locust 2.43.4
+[2026-05-03 15:15:37,906] nuc1-pc/INFO/locust.main: Run time limit set to 120 seconds
+[2026-05-03 15:15:37,906] nuc1-pc/INFO/locust.runners: Ramping to 50 users at a rate of 50.00 per second
+[2026-05-03 15:15:37,911] nuc1-pc/INFO/locust.runners: All users spawned: {"HttpGatewayUser": 25, "MqttDirectUser": 25} (50 total users)
+[2026-05-03 15:17:37,719] nuc1-pc/INFO/locust.main: --run-time limit reached, shutting down
+[2026-05-03 15:17:38,474] nuc1-pc/INFO/locust.main: Shutting down (exit code 0)
+Type     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+POST     gateway/http                                                                    6000     0(0.00%) |     20      10     306     19 |   50.18        0.00
+MQTT     gateway/mqtt                                                                    6000     0(0.00%) |     25       6      98     16 |   50.18        0.00
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+         Aggregated                                                                     12000     0(0.00%) |     22       6     306     18 |  100.36        0.00
+
+Response time percentiles (approximated)
+Type     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+POST     gateway/http                                                                           19     21     22     22     24     26     32     38    300    310    310   6000
+MQTT     gateway/mqtt                                                                           16     18     50     51     52     53     54     55     94     98     98   6000
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+         Aggregated                                                                             18     20     22     24     51     52     53     54    290    310    310  12000
+
+[locust] Warmup phase — raw latency recording disabled
+[locust/gw-forward] HTTP devices : ['http_device_001', 'http_device_002', 'http_device_003']
+[locust/gw-forward] HTTP route   : /device/<id> via https://nuc4-pc.local:9443
+[locust/gw-forward] MQTT devices : ['mqtt_device_004', 'mqtt_device_005', 'mqtt_device_006'] (direct)
+[locust/gw-forward] Target 100.0 req/s via 50 users
+[locust/gw-forward] Test stopped.
