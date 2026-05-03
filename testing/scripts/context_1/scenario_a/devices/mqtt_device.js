@@ -4,7 +4,7 @@ const fs   = require('fs');
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const DEVICE_ID   = process.env.DEVICE_ID   || 'mqtt_device_001';
-const BROKER_URL  = process.env.BROKER_URL  || 'mqtts://nuc1-pc.local:8883';
+const BROKER_URL  = process.env.BROKER_URL  || 'mqtts://192.168.50.1:8883';
 const INTERVAL_MS = parseInt(process.env.INTERVAL_MS || '60000', 10);
 const API_KEY     = process.env.API_KEY     || '';
 
@@ -109,7 +109,7 @@ client.on('message', (topic, message) => {
     payload:       { status: 'received' },
   });
 
-  client.publish(responseTopic, ack, { qos: 1 }, (err) => {
+  client.publish(responseTopic, ack, { qos: 0 }, (err) => {
     if (err) error('Failed to publish ack:', err.message);
     // else     ok(`→ ack sent to ${responseTopic} [correlationId=${correlationId}]`);
   });
