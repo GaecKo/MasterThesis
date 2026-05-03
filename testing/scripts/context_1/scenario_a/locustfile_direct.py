@@ -49,9 +49,9 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # HTTP devices: device_id -> full URL to POST to
 HTTP_DEVICES: dict[str, str] = {
-    "http_device_001": "https://nuc8-pc.local:8443/v2/schedule/",
-    "http_device_002": "https://nuc8-pc.local:8444/v2/schedule/",
-    "http_device_003": "https://nuc8-pc.local:8445/v2/schedule/",
+    "http_device_001": "https://192.168.50.8:8443/v2/schedule/",
+    "http_device_002": "https://192.168.50.8:8444/v2/schedule/",
+    "http_device_003": "https://192.168.50.8:8445/v2/schedule/",
 }
 
 # MQTT devices: device_id -> command topic to publish on
@@ -71,7 +71,7 @@ MQTT_RESPONSE_TOPICS: dict[str, str] = {
 # | ================= MQTT broker config ================= |
 
 # Mosquitto runs on the backend NUC for scenario A
-MQTT_BROKER_HOST = "nuc1-pc.local"
+MQTT_BROKER_HOST = "192.168.50.1"
 MQTT_BROKER_PORT = 8883
 
 # CA cert for verifying the broker's self-signed TLS certificate.
@@ -154,22 +154,9 @@ class HttpDeviceUser(HttpUser):
     wait_time = constant_throughput(PER_USER_RPS)
     weight    = HTTP_WEIGHT
 
-    def on_start(self):
-        # Pin this user to one device for the entire test run
-        self._device_id, self._url = assign_http_device()
-
-        # Persistent TLS adapter — one warm connection per user
-        adapter = HTTPAdapter(
-            pool_connections=1,
-            pool_maxsize=1,
-            max_retries=Retry(total=0),
-        )
-        self.client.mount("https://", adapter)
-        self.client.mount("http://",  adapter)
-
     @task
     def post_to_device(self):
-        device_id, url = self._device_id, self._url
+        device_id, url = assign_http_device()
         correlation_id = str(uuid.uuid4())
         payload = build_medium_payload(device_id, "setBatteryOperation", correlation_id)
 
@@ -207,20 +194,22 @@ class MqttDeviceUser(User):
     weight    = MQTT_WEIGHT
 
     def on_start(self):
-        # pending maps correlationId -> {"start_ns": int, "elapsed_ms": float|None, "done": bool}
-        # Uses polling with gevent.sleep() instead of threading.Event because
-        # paho's loop_start() runs in a real OS thread, and setting a gevent
-        # event from a real thread is occasionally unreliable under load.
         self._pending: dict[str, dict] = {}
         self._pending_lock = threading.Lock()
-        self._connected = False   # set True by _on_connect once broker confirms
+        self._connected = False
+
+        # Unique response topic per user — eliminates fan-out overhead.
+        # With shared device topics, every ack is delivered to all 50 users;
+        # each must parse and discard 49 out of 50 messages. A personal topic
+        # means each ack is routed only to the one user that sent the command.
+        self._user_id        = str(uuid.uuid4())[:8]
+        self._response_topic = f"locust/responses/{self._user_id}"
 
         self._client = mqtt.Client(
             callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
-            client_id=f"locust_direct_{id(self)}",
+            client_id=f"locust_direct_{self._user_id}",
             protocol=mqtt.MQTTv311)
 
-        # TLS — verify broker cert using backend.crt as CA
         self._client.tls_set(
             ca_certs=MQTT_CA_CERT_PATH,
             tls_version=ssl.PROTOCOL_TLS_CLIENT)
@@ -230,12 +219,9 @@ class MqttDeviceUser(User):
         self._client.connect(MQTT_BROKER_HOST, MQTT_BROKER_PORT, keepalive=30)
         self._client.loop_start()
 
-        # Block until connected and subscribed before allowing the first task
-        # to run. Without this, a user can publish before _on_connect fires,
-        # the device responds but nobody is subscribed yet, causing a timeout.
         deadline = time.perf_counter() + 15
         while not self._connected and time.perf_counter() < deadline:
-            gevent.sleep(0.05)
+            gevent.sleep(0.0005)
         if not self._connected:
             raise Exception(f"MQTT connection timeout for user {id(self)}")
 
@@ -244,16 +230,11 @@ class MqttDeviceUser(User):
         self._client.disconnect()
 
     def _on_connect(self, client, userdata, connect_flags, reason_code, properties):
-        # reason_code is a ReasonCode object in VERSION2; 0 means success
         if reason_code != 0:
             print(f"[locust/mqtt] Connection failed reason_code={reason_code}")
             return
-        # Subscribe to every response topic so this user can receive acks
-        # for whichever device it happens to send to
-        for response_topic in MQTT_RESPONSE_TOPICS.values():
-            client.subscribe(response_topic, qos=1)
-        # Signal on_start that the connection and subscriptions are ready.
-        # Tasks will not run until this is set.
+        # Subscribe only to this user's personal response topic
+        client.subscribe(self._response_topic, qos=0)
         self._connected = True
 
     def _on_message(self, client, userdata, msg):
@@ -282,9 +263,10 @@ class MqttDeviceUser(User):
     def publish_to_device(self):
         device_id, command_topic = next_mqtt_device()
         correlation_id = str(uuid.uuid4())
-        payload_bytes  = json.dumps(
-            build_medium_payload(device_id, "setPower", correlation_id)
-        ).encode()
+        # Override responseTopic with this user's personal topic
+        payload = build_medium_payload(device_id, "setPower", correlation_id)
+        payload["responseTopic"] = self._response_topic
+        payload_bytes = json.dumps(payload).encode()
 
         entry = {"start_ns": time.perf_counter_ns(), "elapsed_ms": None,
                  "response_length": 0, "done": False}

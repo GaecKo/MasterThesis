@@ -53,7 +53,7 @@ fi
 SCENARIO="$1"
 TARGET_RPS="$2"
 PAYLOAD_SIZE="$3"
-
+SKIP_DOCKER_STATS="true"
 if [[ "$PAYLOAD_SIZE" != "medium" && "$PAYLOAD_SIZE" != "large" ]]; then
     echo "[ERROR] payload_size must be 'medium' or 'large'"
     exit 1

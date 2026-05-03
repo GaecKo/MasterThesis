@@ -1,0 +1,28 @@
+[2026-05-03 13:50:10,352] nuc1-pc/INFO/locust.main: Starting Locust 2.43.4
+[2026-05-03 13:50:10,352] nuc1-pc/INFO/locust.main: Run time limit set to 120 seconds
+[2026-05-03 13:50:10,353] nuc1-pc/INFO/locust.runners: Ramping to 50 users at a rate of 50.00 per second
+[2026-05-03 13:50:10,357] nuc1-pc/INFO/locust.runners: All users spawned: {"HttpDeviceUser": 25, "MqttDeviceUser": 25} (50 total users)
+[2026-05-03 13:52:10,156] nuc1-pc/INFO/locust.main: --run-time limit reached, shutting down
+[2026-05-03 13:52:10,889] nuc1-pc/INFO/locust.main: Shutting down (exit code 0)
+Type     Name                                                                          # reqs      # fails |    Avg     Min     Max    Med |   req/s  failures/s
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+POST     direct/http                                                                     6000     0(0.00%) |     19       9     284     16 |   50.20        0.00
+MQTT     direct/mqtt                                                                     6000     0(0.00%) |     23       7     233     17 |   50.20        0.00
+--------|----------------------------------------------------------------------------|-------|-------------|-------|-------|-------|-------|--------|-----------
+         Aggregated                                                                     12000     0(0.00%) |     21       7     284     17 |  100.39        0.00
+
+Response time percentiles (approximated)
+Type     Name                                                                                  50%    66%    75%    80%    90%    95%    98%    99%  99.9% 99.99%   100% # reqs
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+POST     direct/http                                                                            16     18     19     20     21     22     30    240    280    280    280   6000
+MQTT     direct/mqtt                                                                            17     18     18     19     52     53     55     59    190    230    230   6000
+--------|--------------------------------------------------------------------------------|--------|------|------|------|------|------|------|------|------|------|------|------
+         Aggregated                                                                             17     18     19     20     23     52     54     80    280    280    280  12000
+
+[locust] Warmup phase — raw latency recording disabled
+[locust/direct] HTTP devices : ['http_device_001', 'http_device_002', 'http_device_003']
+[locust/direct] MQTT devices : ['mqtt_device_004', 'mqtt_device_005', 'mqtt_device_006']
+[locust/direct] MQTT broker  : 192.168.50.1:8883 (TLS)
+[locust/direct] CA cert      : ./backend.crt
+[locust/direct] Target 100.0 req/s via 50 users (2.000 req/s each)
+[locust/direct] Test stopped.
