@@ -3,6 +3,8 @@ package edge_control;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Entry point for the EdgeControl Java plugin runner.
@@ -11,10 +13,12 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 @SpringBootApplication(scanBasePackages = {"edge_control", "org.apache.apisix.plugin.runner"})
 public class EdgeControlApplication {
 
+    private static final Logger logger = LoggerFactory.getLogger(EdgeControlApplication.class);
+
     // private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
     public static void main(String[] args) {
-        // logger.info("EdgeControlApplication is starting ...");
+        logger.warn("EdgeControlApplication is starting ...");
         new SpringApplicationBuilder(EdgeControlApplication.class)
                 .web(WebApplicationType.NONE)
                 .run(args);
