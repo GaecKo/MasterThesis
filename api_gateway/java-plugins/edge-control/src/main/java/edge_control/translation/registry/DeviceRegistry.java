@@ -1,5 +1,6 @@
 package edge_control.translation.registry;
 
+import edge_control.auth.tokens.GatewayTokensRegistry;
 import edge_control.database.DevicesTranslationConfigRepository;
 import edge_control.translation.adapter.AdapterFactory;
 import edge_control.translation.adapter.DeviceAdapter;
@@ -7,6 +8,7 @@ import edge_control.translation.config.DeviceConfig;
 import edge_control.exceptions.EdgeControlException;
 import edge_control.logger.EdgeControlLogger;
 import edge_control.translation.queuing.QueueRegistry;
+import org.json.JSONObject;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,11 +38,19 @@ public class DeviceRegistry {
             new DevicesTranslationConfigRepository();
 
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
+    private static GatewayTokensRegistry tokensRegistry;
+
 
     private DeviceRegistry() {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         // TODO: make the refresh interval configurable
         scheduler.scheduleAtFixedRate(this::refresh, 5, 5, TimeUnit.SECONDS);
+
+        try {
+            tokensRegistry = GatewayTokensRegistry.getInstance();
+        } catch (EdgeControlException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -124,10 +134,22 @@ public class DeviceRegistry {
      * @throws EdgeControlException If the rebuild fails
      */
     public synchronized void upsert(DeviceConfig config) throws EdgeControlException {
+        // get security object and delete from init config
+        JSONObject deviceSecurity = config.getConfig().getJSONObject("security");
+        config.getConfig().remove("security");
+
+        // load security in token registry
+        if (deviceSecurity != null) {
+            // can fail: but handled at outer scope by Manager
+            tokensRegistry.upsertToken(config.getDeviceId(), deviceSecurity);
+        }
+
+        // save config (without security)
         repository.save(config);
         try {
             rebuild(config);
         } catch (EdgeControlException e) {
+            // hold consistent state by deleting failed built config
             delete(config.getDeviceId());
             throw e;
         }

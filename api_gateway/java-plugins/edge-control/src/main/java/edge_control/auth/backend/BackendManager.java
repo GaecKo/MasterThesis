@@ -27,7 +27,7 @@ public class BackendManager {
     private final BackendAuthorizationsRepository  backendAuthorizations = new BackendAuthorizationsRepository();
     private final DeviceConfigRepository           deviceConfig          = new DeviceConfigRepository();
     private final AuthRegistry                     authRegistry          = AuthRegistry.getInstance();
-    private final GatewayTokensRegistry            gatewayTokensRegistry  = GatewayTokensRegistry.getInstance();
+    private final GatewayTokensRegistry            gatewayTokensRegistry = GatewayTokensRegistry.getInstance();
 
     private BackendManager() throws EdgeControlException {
         logger.info("BackendManager initialized");
