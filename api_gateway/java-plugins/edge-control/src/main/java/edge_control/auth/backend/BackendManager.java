@@ -1,11 +1,15 @@
 package edge_control.auth.backend;
 
 import edge_control.auth.AuthRegistry;
+import edge_control.auth.tokens.GatewayTokensRegistry;
 import edge_control.database.BackendAuthorizationsRepository;
 import edge_control.database.BackendConfigRepository;
 import edge_control.database.DeviceConfigRepository;
+import edge_control.database.GatewayTokensRepository;
+import edge_control.exceptions.EdgeControlException;
 import edge_control.logger.EdgeControlLogger;
 import org.bson.Document;
+import org.json.JSONObject;
 
 import java.util.List;
 
@@ -23,15 +27,16 @@ public class BackendManager {
     private final BackendAuthorizationsRepository  backendAuthorizations = new BackendAuthorizationsRepository();
     private final DeviceConfigRepository           deviceConfig          = new DeviceConfigRepository();
     private final AuthRegistry                     authRegistry          = AuthRegistry.getInstance();
+    private final GatewayTokensRegistry            gatewayTokensRegistry  = GatewayTokensRegistry.getInstance();
 
-    private BackendManager() {
+    private BackendManager() throws EdgeControlException {
         logger.info("BackendManager initialized");
     }
 
     /**
      * Returns the singleton instance, creating it on first call.
      */
-    public static synchronized BackendManager getInstance() {
+    public static synchronized BackendManager getInstance() throws EdgeControlException {
         if (instance == null) {
             instance = new BackendManager();
         }
@@ -47,8 +52,17 @@ public class BackendManager {
      * @return Document with 'gatewayBackendId', 'apiKey', and 'message'
      */
     public Document createBackend(String body) {
+        Document parsedBody = Document.parse(body);
+        Document securityBody = parsedBody.get("security", Document.class);
+
+        parsedBody.remove("security");
         BackendConfigRepository.BackendCreationResult result =
-                backendConfig.createBackendConfig(Document.parse(body));
+                backendConfig.createBackendConfig(parsedBody);
+
+        if (securityBody != null) {
+            JSONObject securityObject = new JSONObject(securityBody);
+            gatewayTokensRegistry.upsertToken(result.gatewayBackendId(), securityObject);
+        }
 
         logger.info("Created backend with ID: " + result.gatewayBackendId());
 

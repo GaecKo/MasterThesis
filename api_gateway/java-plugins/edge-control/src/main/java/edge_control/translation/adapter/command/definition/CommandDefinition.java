@@ -40,4 +40,12 @@ public interface CommandDefinition {
 
     /** @return True if empty objects should be converted to null before cleanup */
     boolean emptyObjectToNull();
+
+    /**
+     * Optional outbound security type declared on the command config.
+     * Returns null when no security is configured for the command.
+     */
+    default String getSecurity() {
+        return null;
+    }
 }

@@ -6,3 +6,4 @@ api_gateway/conf/server.*
 **/**.crt
 **/**.key
 **/**.DS_Store
+token_encryption_key.txt

@@ -4,6 +4,7 @@ import edge_control.RequestHandler;
 import edge_control.auth.AuthenticationManager;
 import edge_control.auth.backend.BackendManager;
 import edge_control.auth.device.DeviceManager;
+import edge_control.exceptions.EdgeControlException;
 import edge_control.exceptions.ExceptionHandler;
 import edge_control.exceptions.IllegalOperation;
 import edge_control.logger.EdgeControlLogger;
@@ -28,7 +29,15 @@ public class OnboardingFilter implements PluginFilter {
 
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
-    private static final BackendManager backendManager = BackendManager.getInstance();
+    private static final BackendManager backendManager;
+
+    static {
+        try {
+            backendManager = BackendManager.getInstance();
+        } catch (EdgeControlException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     private static final DeviceManager deviceManager = DeviceManager.getInstance();
 
