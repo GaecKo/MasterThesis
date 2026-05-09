@@ -61,7 +61,16 @@ public class BackendManager {
 
         if (securityBody != null) {
             JSONObject securityObject = new JSONObject(securityBody);
-            gatewayTokensRegistry.upsertToken(result.gatewayBackendId(), securityObject);
+            try {
+                gatewayTokensRegistry.upsertToken(result.gatewayBackendId(), securityObject);
+            } catch (EdgeControlException e) {
+                Document response = new Document();
+                response.put("status", "error");
+                response.put("gatewayBackendId", result.gatewayBackendId());
+                response.put("reason", e.getMessage());
+                return response;
+            }
+
         }
 
         logger.info("Created backend with ID: " + result.gatewayBackendId());

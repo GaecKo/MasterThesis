@@ -1,6 +1,7 @@
 package edge_control.auth.tokens;
 
 import edge_control.database.GatewayTokensRepository;
+import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.exceptions.EdgeControlException;
 import edge_control.logger.EdgeControlLogger;
 import org.bson.Document;
@@ -42,41 +43,27 @@ public class GatewayTokensRegistry {
      * @param securityObject JSON string containing 'gatewayId' and 'token'
      * @return Document with 'status' and 'message'
      */
-    public Document upsertToken(String gatewayId, JSONObject securityObject) {
+    public void upsertToken(String gatewayId, JSONObject securityObject) throws EdgeControlException {
         Document responseDoc = new Document();
 
         String token = securityObject.optString("token", null);
         String type = securityObject.optString("type", null);
         String expiracyDate = securityObject.optString("expiracyDate", "N/A");
 
-        if (gatewayId == null || gatewayId.isBlank()) {
-            responseDoc.put("status", "failure");
-            responseDoc.put("message", "gatewayId is required");
-            return responseDoc;
-        }
+
         if (token == null || token.isBlank()) {
-            responseDoc.put("status", "failure");
-            responseDoc.put("message", "security.token is required");
-            return responseDoc;
+            throw new CorruptedConfiguration("Token is null or blank for field 'security.token'");
         }
         if (type == null || type.isBlank()) {
-            responseDoc.put("status", "failure");
-            responseDoc.put("message", "security.type is required");
-            return responseDoc;
+            throw new CorruptedConfiguration("Type is null or blank for field 'security.type'");
         }
 
         try {
             repository.save(gatewayId, type, token, expiracyDate);
             tokenCache.put(gatewayId, new TokenResponse(type, token));
-            responseDoc.put("status", "success");
-            responseDoc.put("message", "Token stored successfully.");
-            responseDoc.put("gatewayId", gatewayId);
         } catch (EdgeControlException e) {
-            responseDoc.put("status", "failure");
-            responseDoc.put("message", e.getMessage());
+            throw new EdgeControlException("Error while saving token in repository: " + e.getMessage());
         }
-
-        return responseDoc;
     }
     /**
      * Retrieves the decrypted token for a gateway.
@@ -96,4 +83,10 @@ public class GatewayTokensRegistry {
         }
         return null;
     }
+
+    public boolean deleteTokenEntry(String gatewayId) throws EdgeControlException {
+        // TODO
+        return true;
+    }
+
 }
