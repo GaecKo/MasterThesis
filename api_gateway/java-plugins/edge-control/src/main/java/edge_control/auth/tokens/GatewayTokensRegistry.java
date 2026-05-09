@@ -20,8 +20,9 @@ public class GatewayTokensRegistry {
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
 
     private final GatewayTokensRepository repository = new GatewayTokensRepository();
+    private final GatewayTokensCrypto crypto = new GatewayTokensCrypto();
 
-    private final Map<String, TokenResponse> tokenCache = new ConcurrentHashMap<>();
+    private final Map<String, EncryptedToken> tokenCache = new ConcurrentHashMap<>();
 
     private GatewayTokensRegistry() throws EdgeControlException {
         logger.info("GatewayTokensManager initialized");
@@ -59,8 +60,10 @@ public class GatewayTokensRegistry {
         }
 
         try {
-            repository.save(gatewayId, type, token, expiracyDate);
-            tokenCache.put(gatewayId, new TokenResponse(type, token));
+            // encrypt token, save in repo, and put in cache
+            String encryptedToken = crypto.encrypt(token);
+            repository.save(gatewayId, type, encryptedToken, expiracyDate);
+            tokenCache.put(gatewayId, new EncryptedToken(type, encryptedToken));
         } catch (EdgeControlException e) {
             throw new EdgeControlException("Error while saving token in repository: " + e.getMessage());
         }
@@ -73,15 +76,21 @@ public class GatewayTokensRegistry {
      * @throws EdgeControlException If decryption fails or key is missing
      */
     public TokenResponse getDecryptedTokenByGatewayId(String gatewayId) throws EdgeControlException {
-        TokenResponse cached = tokenCache.get(gatewayId);
-        if (cached != null) return cached;
-
-        TokenResponse response = repository.findDecryptedTokenByGatewayId(gatewayId);
-        if (response != null) {
-            tokenCache.put(gatewayId, response);
-            return response;
+        EncryptedToken cached = tokenCache.get(gatewayId);
+        if (cached != null) {
+            String decryptedToken = crypto.decrypt(cached.encryptedToken());
+            return new TokenResponse(cached.type(), decryptedToken);
         }
-        return null;
+
+        Document doc = repository.findByGatewayId(gatewayId);
+        if (doc == null) return null;
+
+        String encryptedToken = doc.getString("token");
+        if (encryptedToken == null) return null;
+
+        String type = doc.getString("type");
+        tokenCache.put(gatewayId, new EncryptedToken(type, encryptedToken));
+        return new TokenResponse(type, crypto.decrypt(encryptedToken));
     }
 
     public boolean deleteTokenEntry(String gatewayId) throws EdgeControlException {
@@ -89,4 +98,6 @@ public class GatewayTokensRegistry {
         return true;
     }
 
+
+    private record EncryptedToken(String type, String encryptedToken) {}
 }
