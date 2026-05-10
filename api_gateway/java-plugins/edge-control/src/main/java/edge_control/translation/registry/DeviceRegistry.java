@@ -205,6 +205,7 @@ public class DeviceRegistry {
     public boolean delete(String gatewayDeviceId) throws EdgeControlException {
         // Delete from DB first so the next refresh does not re-add it
         boolean deleted = repository.delete(gatewayDeviceId);
+        tokensRegistry.deleteTokenEntry(gatewayDeviceId);
         remove(gatewayDeviceId);
         queueRegistry.remove(gatewayDeviceId);
         return deleted;
