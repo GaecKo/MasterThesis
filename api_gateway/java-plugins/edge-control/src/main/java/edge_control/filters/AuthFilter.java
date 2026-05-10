@@ -112,7 +112,10 @@ public class AuthFilter implements PluginFilter {
             return;
         }
 
-        logger.info("Authentication successful for API key: " + request.getHeader("apikey") + " | Result: " + gatewayId);
+        logger.info("Authentication successful for: " + gatewayId);
+
+        // remove apikey header from request
+        request.getHeaders().remove("apikey");
 
         JSONObject body = new JSONObject(request.getBody());
 
