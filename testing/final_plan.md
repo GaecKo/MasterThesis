@@ -23,7 +23,7 @@ The factors we will make vary throughout the context and scenarios
 | :-------------: |
 | {Medium, Large} |
 
-### Architecture related 
+## Architecture related 
 | API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Device Mockup | Security Enabled |
 | :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | :-----------: | :--------------: |
 | T/F         | T/F            | T/F                 | T/F             | T/F                 | T/F           | T/F              |

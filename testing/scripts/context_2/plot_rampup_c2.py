@@ -29,9 +29,9 @@ SAMPLE_STEP = 5
 CONNECT_BY = "latency"
 
 FILES = {
-    "1 CPU":  "a_cpu1.csv",
-    "2 CPUs": "a_cpu2.csv",
-    "4 CPUs": "a_cpu4.csv",
+    "1 CPU":  "b_cpu1.csv",
+    "2 CPUs": "b_cpu2.csv",
+    "4 CPUs": "b_cpu4.csv",
 }
 
 # | ================= Palette ================= |
