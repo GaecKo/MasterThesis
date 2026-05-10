@@ -84,16 +84,12 @@ public class GatewayTokensRepository {
      *
      * @param gatewayId Gateway ID to delete
      * @return True if a document was found and deleted, false otherwise
-     * @throws EdgeControlException If gatewayId is missing
      */
-    public boolean delete(String gatewayId) throws EdgeControlException {
+    public boolean delete(String gatewayId) {
         if (gatewayId == null || gatewayId.isBlank()) {
-            throw new EdgeControlException("gatewayId must be provided when deleting a token");
+            return false;
         }
         DeleteResult result = collection.deleteOne(Filters.eq("gatewayId", gatewayId));
         return result.getDeletedCount() > 0;
     }
-
-    // | ================= Crypto operations ================= |
-    // Crypto handled by GatewayTokensCrypto
 }

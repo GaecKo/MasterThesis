@@ -117,20 +117,28 @@ public class BackendManager {
 
         boolean authzSuccess  = backendAuthorizations.deleteBackendAuthorization(parsed);
         boolean configSuccess = backendConfig.deleteBackendConfig(parsed);
+        boolean tokenSuccess = gatewayTokensRegistry.deleteTokenEntry(parsed.getString("gatewayBackendId"));
+
+        String tokenMessage;
+        if (tokenSuccess) {
+            tokenMessage = "Backend tokens deleted successfully";
+        } else {
+            tokenMessage = "No backend tokens to delete.";
+        }
 
         Document responseDoc = new Document();
         if (authzSuccess && configSuccess) {
             responseDoc.put("status",  "success");
-            responseDoc.put("message", "Deleted the backend configuration and all related authorizations.");
+            responseDoc.put("message", "Deleted the backend configuration and all related authorizations. " + tokenMessage);
         } else if (!authzSuccess && !configSuccess) {
             responseDoc.put("status",  "failure");
-            responseDoc.put("message", "Failed to delete backend configuration and related authorizations. Backend may not exist or invalid request format.");
+            responseDoc.put("message", "Failed to delete backend configuration and related authorizations. Backend may not exist or invalid request format. " + tokenMessage);
         } else if (!authzSuccess) {
             responseDoc.put("status",  "partial_failure");
-            responseDoc.put("message", "Failed to delete related authorizations. Backend configuration deleted successfully.");
+            responseDoc.put("message", "Failed to delete related authorizations. Backend configuration deleted successfully. " + tokenMessage);
         } else {
             responseDoc.put("status",  "partial_failure");
-            responseDoc.put("message", "Failed to delete backend configuration. Related authorizations deleted successfully.");
+            responseDoc.put("message", "Failed to delete backend configuration. Related authorizations deleted successfully. " + tokenMessage);
         }
         return responseDoc;
     }

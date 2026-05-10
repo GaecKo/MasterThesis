@@ -45,7 +45,6 @@ public class GatewayTokensRegistry {
      * @return Document with 'status' and 'message'
      */
     public void upsertToken(String gatewayId, JSONObject securityObject) throws EdgeControlException {
-        Document responseDoc = new Document();
 
         String token = securityObject.optString("token", null);
         String type = securityObject.optString("type", null);
@@ -93,9 +92,8 @@ public class GatewayTokensRegistry {
         return new TokenResponse(type, crypto.decrypt(encryptedToken));
     }
 
-    public boolean deleteTokenEntry(String gatewayId) throws EdgeControlException {
-        // TODO
-        return true;
+    public boolean deleteTokenEntry(String gatewayId) {
+        return repository.delete(gatewayId);
     }
 
 
