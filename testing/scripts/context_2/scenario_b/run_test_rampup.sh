@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
 # ============================================================================
-# Runs a ramp-up test for context 2.
-# The LoadTestShape in locustfile_rampup.py controls the duration —
-# this script just starts it, collects docker stats, and aggregates results.
+# Runs a ramp-up test for context 2, with optional distributed Locust workers.
 #
 # Usage:
 #   ./run_test_rampup.sh <scenario_name> <payload_size>
 #
-# Example:
-#   START_RPS=10 END_RPS=300 STEP_RPS=10 STEP_DURATION_S=30 ./run_test_rampup.sh c2_scenario_a medium
+# Example (single process):
+#   START_RPS=10 END_RPS=2000 STEP_RPS=50 STEP_DURATION_S=20 \
+#       ./run_test_rampup.sh context2_full medium
 #
-# Ramp-up parameters (all via env vars):
+# Example (distributed, 3 workers — one per core):
+#   NUM_WORKERS=3 START_RPS=10 END_RPS=4000 STEP_RPS=50 STEP_DURATION_S=20 \
+#       ./run_test_rampup.sh context2_full medium
+#
+# Env vars:
+#   NUM_WORKERS       Number of Locust worker processes (default: 1 = no master/worker split)
 #   START_RPS         First step RPS (default: 10)
 #   END_RPS           Last step RPS (default: 300)
 #   STEP_RPS          RPS increment per step (default: 10)
@@ -30,19 +34,17 @@ LOCUST_FILE="${LOCUST_FILE:-locustfile_rampup.py}"
 MASTER_CSV="${MASTER_CSV:-./results/rampup_runs.csv}"
 SKIP_DOCKER_STATS="${SKIP_DOCKER_STATS:-false}"
 
-# Ramp-up shape params — passed through to Locust via env
 START_RPS="${START_RPS:-10}"
 END_RPS="${END_RPS:-300}"
 STEP_RPS="${STEP_RPS:-10}"
 STEP_DURATION_S="${STEP_DURATION_S:-30}"
 PER_USER_RPS="${PER_USER_RPS:-1.0}"
+NUM_WORKERS="${NUM_WORKERS:-1}"   # > 1 enables distributed mode
 
 # | ================= Args ================= |
 
 if [[ $# -lt 2 ]]; then
     echo "Usage: $0 <scenario_name> <payload_size>"
-    echo "  scenario_name   e.g. 'context2_full'"
-    echo "  payload_size    'medium' or 'large'"
     exit 1
 fi
 
@@ -71,6 +73,7 @@ echo " Ramp:            $START_RPS → $END_RPS req/s (step: $STEP_RPS)"
 echo " Step duration:   ${STEP_DURATION_S}s × $STEPS steps = ${TOTAL_S}s total"
 echo " Max users:       $MAX_USERS"
 echo " Per-user RPS:    $PER_USER_RPS"
+echo " Workers:         $NUM_WORKERS $([ "$NUM_WORKERS" -gt 1 ] && echo "(distributed)" || echo "(single process)")"
 echo " Target host:     $TARGET_HOST"
 echo " Docker stats:    $([ "$SKIP_DOCKER_STATS" = "true" ] && echo "disabled" || echo "$GATEWAY_SSH_HOST")"
 echo " Results dir:     $RESULTS_DIR"
@@ -94,8 +97,14 @@ if [[ "$SKIP_DOCKER_STATS" != "true" ]]; then
     STATS_PID=$!
 fi
 
+WORKER_PIDS=()
+
 cleanup() {
     echo ""
+    # Kill workers
+    for pid in "${WORKER_PIDS[@]:-}"; do
+        kill "$pid" 2>/dev/null || true
+    done
     if [[ -n "$STATS_PID" ]]; then
         echo "[rampup] Stopping stats collection..."
         kill "$STATS_PID" 2>/dev/null || true
@@ -106,27 +115,77 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+# | ================= Common env for all Locust processes ================= |
+
+LOCUST_ENV=(
+    START_RPS="$START_RPS"
+    END_RPS="$END_RPS"
+    STEP_RPS="$STEP_RPS"
+    STEP_DURATION_S="$STEP_DURATION_S"
+    PER_USER_RPS="$PER_USER_RPS"
+    RESULTS_DIR="$RESULTS_DIR"
+)
+
 # | ================= Run ================= |
 
 echo ""
-echo "[rampup] Starting ramp-up test (LoadTestShape controls duration)..."
 
-START_RPS="$START_RPS" END_RPS="$END_RPS" STEP_RPS="$STEP_RPS" \
-STEP_DURATION_S="$STEP_DURATION_S" PER_USER_RPS="$PER_USER_RPS" \
-    locust -f "$LOCUST_FILE" \
-        --host "$TARGET_HOST" \
-        -u "$MAX_USERS" -r "$MAX_USERS" \
-        --headless \
-        --csv "$LOCUST_CSV_PREFIX" \
-        --csv-full-history \
-        2>&1 | tee "$RUN_LOG" || true
+if [[ "$NUM_WORKERS" -le 1 ]]; then
+    # ---- Single process mode (original behaviour) ----
+    echo "[rampup] Starting single-process ramp-up test..."
+
+    env "${LOCUST_ENV[@]}" \
+        locust -f "$LOCUST_FILE" \
+            --host "$TARGET_HOST" \
+            -u "$MAX_USERS" -r "$MAX_USERS" \
+            --headless \
+            --csv "$LOCUST_CSV_PREFIX" \
+            --csv-full-history \
+            2>&1 | tee "$RUN_LOG" || true
+
+else
+    # ---- Distributed mode ----
+    # Master: holds the LoadTestShape, collects stats, writes CSV.
+    # Workers: each runs its own gevent loop on a separate core.
+    echo "[rampup] Starting distributed ramp-up test ($NUM_WORKERS workers)..."
+
+    # Start workers in background first (master waits for them)
+    for i in $(seq 1 "$NUM_WORKERS"); do
+        env "${LOCUST_ENV[@]}" \
+            locust -f "$LOCUST_FILE" \
+                --host "$TARGET_HOST" \
+                --worker \
+                --master-host 127.0.0.1 \
+                >> "${RESULTS_DIR}/worker_${i}.log" 2>&1 &
+        WORKER_PIDS+=($!)
+        echo "[rampup] Worker $i started (PID ${WORKER_PIDS[-1]})"
+    done
+
+    # Give workers a moment to start up before master connects
+    sleep 2
+
+    # Master: waits for all workers, then runs the shape
+    env "${LOCUST_ENV[@]}" \
+        locust -f "$LOCUST_FILE" \
+            --host "$TARGET_HOST" \
+            --master \
+            --expect-workers "$NUM_WORKERS" \
+            --headless \
+            --csv "$LOCUST_CSV_PREFIX" \
+            --csv-full-history \
+            2>&1 | tee "$RUN_LOG" || true
+
+    # Workers exit automatically when master stops
+    for pid in "${WORKER_PIDS[@]}"; do
+        wait "$pid" 2>/dev/null || true
+    done
+fi
 
 echo ""
 echo "[rampup] Run complete."
 
 # | ================= Aggregate ================= |
 
-# Docker stats aggregation — same as run_test.sh
 DOCKER_SUMMARY=""
 if [[ "$SKIP_DOCKER_STATS" != "true" && -f "$STATS_CSV" ]]; then
     for container in $CONTAINERS; do
@@ -160,7 +219,6 @@ else
 fi
 DOCKER_SUMMARY=$(echo "$DOCKER_SUMMARY" | tr -d '\r\n')
 
-# Pull aggregated Locust stats
 EMPTY_METRICS=",,,,,,,,,,,,,,,,,,,,,"
 
 extract_row() {
@@ -190,18 +248,18 @@ if [[ ! -f "$MASTER_CSV" ]]; then
     HTTP_HEADER=$(echo "$METRIC_COLS" | sed 's/[^,]*/http_&/g')
     MQTT_HEADER=$(echo "$METRIC_COLS" | sed 's/[^,]*/mqtt_&/g')
     AGG_HEADER=$(echo  "$METRIC_COLS" | sed 's/[^,]*/agg_&/g')
-    echo "scenario,payload_size,timestamp,start_rps,end_rps,step_rps,step_duration_s,per_user_rps,${HTTP_HEADER},${MQTT_HEADER},${AGG_HEADER}${DOCKER_HEADER}" \
+    echo "scenario,payload_size,timestamp,start_rps,end_rps,step_rps,step_duration_s,per_user_rps,num_workers,${HTTP_HEADER},${MQTT_HEADER},${AGG_HEADER}${DOCKER_HEADER}" \
         > "$MASTER_CSV"
 fi
 
-echo "${SCENARIO},${PAYLOAD_SIZE},${TIMESTAMP},${START_RPS},${END_RPS},${STEP_RPS},${STEP_DURATION_S},${PER_USER_RPS},${HTTP_METRICS},${MQTT_METRICS},${AGG_METRICS}${DOCKER_SUMMARY}" \
+echo "${SCENARIO},${PAYLOAD_SIZE},${TIMESTAMP},${START_RPS},${END_RPS},${STEP_RPS},${STEP_DURATION_S},${PER_USER_RPS},${NUM_WORKERS},${HTTP_METRICS},${MQTT_METRICS},${AGG_METRICS}${DOCKER_SUMMARY}" \
     >> "$MASTER_CSV"
 
 echo ""
 echo "[rampup] === DONE ==="
 echo " Results dir : $RESULTS_DIR"
 echo " Row appended: $MASTER_CSV"
-echo " History CSV : ${LOCUST_CSV_PREFIX}_stats_history.csv  ← use this for latency/throughput graph"
+echo " History CSV : ${LOCUST_CSV_PREFIX}_stats_history.csv"
 echo ""
 echo "=== Aggregated Locust row ==="
 echo "$AGG_METRICS"
