@@ -1,5 +1,7 @@
 package edge_control.translation.adapter;
 
+import edge_control.auth.tokens.GatewayTokensRegistry;
+import edge_control.auth.tokens.TokenEntry;
 import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.exceptions.EdgeControlException;
 import edge_control.exceptions.IllegalOperation;
@@ -28,6 +30,10 @@ import java.util.Map;
  * Translates incoming HTTP commands using configured payload templates and mappings,
  * then forwards the translated request to the device's endpoint asynchronously.
  *
+ * If a token is registered for the device in GatewayTokensRegistry, it is added to
+ * the outbound request headers as an Authorization Bearer token. Devices without a
+ * registered token are forwarded without credentials.
+ *
  * If the device is unreachable (IOException), onDeviceUnreachable is called so the
  * queuing layer can handle retries. All other errors result in a 502 response.
  */
@@ -36,9 +42,21 @@ public class HttpDeviceAdapter implements DeviceAdapter {
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
     private static final ObjectMapper MAPPER      = new ObjectMapper();
 
-    // Shared formatter for timing logs, static since it has no instance-specific state
     private static final DateTimeFormatter TIMING_FORMATTER =
             DateTimeFormatter.ofPattern("hh:mm:ss.SSSS").withZone(ZoneId.systemDefault());
+
+    // Token registry — singleton, initialised once at class load.
+    private static final GatewayTokensRegistry TOKEN_REGISTRY;
+    static {
+        GatewayTokensRegistry registry = null;
+        try {
+            registry = GatewayTokensRegistry.getInstance();
+        } catch (EdgeControlException e) {
+            logger.error("Failed to initialise GatewayTokensRegistry: " + e.getMessage()
+                    + " — devices requiring access tokens will be forwarded without credentials.");
+        }
+        TOKEN_REGISTRY = registry;
+    }
 
     private final CommandTranslationEngine translationEngine = new CommandTranslationEngine();
     private final Map<String, HttpCommandDefinition> commandDefinitions = new HashMap<>();
@@ -106,6 +124,9 @@ public class HttpDeviceAdapter implements DeviceAdapter {
      * Handles an inbound HTTP command request by translating it and forwarding it
      * to the device's endpoint asynchronously.
      *
+     * If a token is registered for this device, it is injected into the outbound
+     * headers as "Authorization: Bearer <token>" before forwarding.
+     *
      * On success, the device's response is forwarded back as-is.
      * On IOException (device down), onDeviceUnreachable is called without setting a response,
      * allowing the queuing layer to take over.
@@ -151,11 +172,29 @@ public class HttpDeviceAdapter implements DeviceAdapter {
                 + (translateEnd.toEpochMilli() - translateStart.toEpochMilli()) + "ms (" + reqHash + ")");
         logger.time("Http Adapter: request to be sent (" + reqHash + ")");
 
+        // Build outbound headers from the inbound request, then inject the access
+        // token if one is registered for this device.
+        Map<String, String> outboundHeaders = new HashMap<>(request.getHeaders());
+
+        if (TOKEN_REGISTRY != null) {
+            TokenEntry tokenEntry = TOKEN_REGISTRY.getDecryptedTokenByGatewayId(gatewayDeviceId);
+            if (tokenEntry != null) {
+                outboundHeaders.put("Authorization", "Bearer " + tokenEntry.decryptedToken());
+                logger.debug("Access token injected for device " + gatewayDeviceId);
+            } else {
+                logger.debug("No access token registered for device "
+                        + gatewayDeviceId + ", forwarding without credentials");
+            }
+        } else {
+            logger.warn("Token registry unavailable — forwarding device "
+                    + gatewayDeviceId + " request without credentials");
+        }
+
         HttpForgery.doRequestAsync(
                         commandDefinition.getMethod(),
                         commandDefinition.getEndpoint(),
                         finalPayload.toString(),
-                        request.getHeaders(),
+                        outboundHeaders,
                         commandDefinition.getConnectTimeout(),
                         commandDefinition.getRequestTimeout())
                 .thenAccept(result -> {

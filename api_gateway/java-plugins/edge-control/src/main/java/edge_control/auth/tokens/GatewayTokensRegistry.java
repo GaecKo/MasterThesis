@@ -74,11 +74,11 @@ public class GatewayTokensRegistry {
      * @return Decrypted token, or null if not found
      * @throws EdgeControlException If decryption fails or key is missing
      */
-    public TokenResponse getDecryptedTokenByGatewayId(String gatewayId) throws EdgeControlException {
+    public TokenEntry getDecryptedTokenByGatewayId(String gatewayId) throws EdgeControlException {
         EncryptedToken cached = tokenCache.get(gatewayId);
         if (cached != null) {
             String decryptedToken = crypto.decrypt(cached.encryptedToken());
-            return new TokenResponse(cached.type(), decryptedToken);
+            return new TokenEntry(cached.type(), decryptedToken);
         }
 
         Document doc = repository.findByGatewayId(gatewayId);
@@ -89,7 +89,7 @@ public class GatewayTokensRegistry {
 
         String type = doc.getString("type");
         tokenCache.put(gatewayId, new EncryptedToken(type, encryptedToken));
-        return new TokenResponse(type, crypto.decrypt(encryptedToken));
+        return new TokenEntry(type, crypto.decrypt(encryptedToken));
     }
 
     public boolean deleteTokenEntry(String gatewayId) {

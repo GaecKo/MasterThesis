@@ -1,5 +1,7 @@
 package edge_control.translation.adapter;
 
+import edge_control.auth.tokens.GatewayTokensRegistry;
+import edge_control.auth.tokens.TokenEntry;
 import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.exceptions.EdgeControlException;
 import edge_control.exceptions.IllegalOperation;
@@ -38,21 +40,34 @@ import java.util.concurrent.*;
  *
  * Subscriptions are re-established automatically after reconnection since cleanSession=true
  * wipes them on disconnect.
+ *
+ * An optional access token (JWT or API token) can be configured per device via the
+ * GatewayTokensRegistry. If no token is registered for a device, the broker connection
+ * is made without credentials.
  */
 public class MqttDeviceAdapter implements DeviceAdapter {
 
     private static final EdgeControlLogger logger = EdgeControlLogger.getInstance();
     private static final ObjectMapper MAPPER      = new ObjectMapper();
 
-    // Internal APISIX backendForward route used to push unsolicited device messages upstream
     private static final String BACKEND_FORWARD_URL = "http://localhost:9080/backendForward";
+    private static final String APISIX_CERT_PATH    = "/usr/local/apisix/conf/server.crt";
 
-    // Mosquitto uses the same certificate as APISIX since they share the same gateway VM
-    private static final String APISIX_CERT_PATH = "/usr/local/apisix/conf/server.crt";
-
-    // Shared formatter for timing logs, static since it has no instance-specific state
     private static final DateTimeFormatter TIMING_FORMATTER =
             DateTimeFormatter.ofPattern("hh:mm:ss.SSSS").withZone(ZoneId.systemDefault());
+
+    // Token registry
+    private static final GatewayTokensRegistry TOKEN_REGISTRY;
+    static {
+        GatewayTokensRegistry registry = null;
+        try {
+            registry = GatewayTokensRegistry.getInstance();
+        } catch (EdgeControlException e) {
+            logger.error("Failed to initialise GatewayTokensRegistry: " + e.getMessage()
+                    + ", devices requiring access tokens will be unable to connect.");
+        }
+        TOKEN_REGISTRY = registry;
+    }
 
     // | ================= Parsed config ================= |
 
@@ -81,7 +96,7 @@ public class MqttDeviceAdapter implements DeviceAdapter {
     /**
      * Holds the topic and forwarding configuration for a single MQTT subscription.
      *
-     * @param topic           MQTT topic to subscribe to
+     * @param topic            MQTT topic to subscribe to
      * @param forwardToBackend Whether inbound messages on this topic should be forwarded upstream
      */
     private record MqttSubscriptionConfig(String topic, boolean forwardToBackend) {}
@@ -142,8 +157,8 @@ public class MqttDeviceAdapter implements DeviceAdapter {
                     "MQTT adapter for device " + gatewayDeviceId
                             + " is missing required 'connection' section");
         }
-        JSONObject conn = root.getJSONObject("connection");
 
+        JSONObject conn = root.getJSONObject("connection");
         this.brokerUrl = conn.optString("brokerUrl", "tcp://mosquitto:1883");
 
         // Detect TLS before normalisation so the original scheme is still visible
@@ -181,17 +196,14 @@ public class MqttDeviceAdapter implements DeviceAdapter {
         }
 
         JSONArray subsJson = root.getJSONArray("subscriptions");
-
         for (int i = 0; i < subsJson.length(); i++) {
             JSONObject sub = subsJson.getJSONObject(i);
-
             String topic = sub.optString("topic", null);
             if (topic == null || topic.isBlank()) {
                 throw new CorruptedConfiguration(
                         "MQTT adapter for device " + gatewayDeviceId
                                 + ": subscription[" + i + "] is missing 'topic'");
             }
-
             boolean forwardToBackend = sub.optBoolean("forwardToBackend", false);
             subscriptions.add(new MqttSubscriptionConfig(topic, forwardToBackend));
         }
@@ -215,7 +227,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
 
         JSONObject commands = root.getJSONObject("commands");
         Iterator<String> commandNames = commands.keys();
-
         while (commandNames.hasNext()) {
             String commandName = commandNames.next();
             JSONObject commandJson = commands.getJSONObject(commandName);
@@ -232,6 +243,9 @@ public class MqttDeviceAdapter implements DeviceAdapter {
     /**
      * Creates the Paho MqttClient, configures connection options, and connects to the broker.
      * If TLS is enabled, an SSLSocketFactory is built from the APISIX certificate.
+     * If a token is registered for this device, it is applied as MQTT credentials
+     * (username = gatewayDeviceId, password = token). Devices without a registered token
+     * connect without credentials.
      *
      * MqttCallbackExtended is used instead of MqttCallback so that connectComplete() fires
      * on every reconnect, allowing subscriptions to be restored after a clean-session disconnect.
@@ -249,7 +263,31 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             options.setAutomaticReconnect(true);
             options.setConnectionTimeout(connectionTimeout);
             options.setKeepAliveInterval(keepAliveInterval);
-            options.setMaxReconnectDelay(reconnectDelay * 1000); // ms
+            options.setMaxReconnectDelay(reconnectDelay * 1000);
+
+            // Optional access token, only applied if the registry has one for this device.
+            // If the registry itself failed to initialise, we skip credentials and log a warning.
+            if (TOKEN_REGISTRY != null) {
+                TokenEntry tokenEntry = TOKEN_REGISTRY.getDecryptedTokenByGatewayId(gatewayDeviceId);
+                if (tokenEntry != null) {
+                    char[] pwd = tokenEntry.decryptedToken().toCharArray();
+                    try {
+                        options.setUserName(gatewayDeviceId);
+                        options.setPassword(pwd);
+                        logger.info("Access token applied for device " + gatewayDeviceId);
+                    } finally {
+                        // Zero out the char array immediately after handing it to Paho
+                        // so the plaintext token doesn't linger on the heap
+                        Arrays.fill(pwd, '\0');
+                    }
+                } else {
+                    logger.debug("No access token registered for device "
+                            + gatewayDeviceId + " — connecting without credentials");
+                }
+            } else {
+                logger.warn("Token registry unavailable — connecting device "
+                        + gatewayDeviceId + " without credentials");
+            }
 
             if (useTls) {
                 try {
