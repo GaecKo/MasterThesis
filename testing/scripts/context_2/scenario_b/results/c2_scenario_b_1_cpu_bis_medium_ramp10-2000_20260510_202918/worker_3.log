@@ -1,0 +1,8 @@
+[2026-05-10 20:29:19,296] nuc1-pc/INFO/locust.main: Starting Locust 2.43.4
+[2026-05-10 21:36:02,341] nuc1-pc/INFO/locust.runners: Got quit message from master, shutting down...
+[2026-05-10 21:36:02,460] nuc1-pc/INFO/locust.main: Shutting down (exit code 0)
+[locust/ramp] Building payload pools...
+[locust/ramp] HTTP pool: 500 entries  MQTT pool: 500 entries
+[locust/ramp] Ramp : 10.0 → 2000.0 req/s  step=10.0  200 steps × 20.0s = 4000s
+[locust/ramp] Per-user RPS : 1.0
+[locust/ramp] Test stopped.
