@@ -1,7 +1,5 @@
 package edge_control.translation.adapter;
 
-import edge_control.auth.tokens.GatewayTokensRegistry;
-import edge_control.auth.tokens.TokenEntry;
 import edge_control.exceptions.CorruptedConfiguration;
 import edge_control.exceptions.EdgeControlException;
 import edge_control.exceptions.IllegalOperation;
@@ -53,21 +51,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
     private static final String BACKEND_FORWARD_URL = "http://localhost:9080/backendForward";
     private static final String APISIX_CERT_PATH    = "/usr/local/apisix/conf/server.crt";
 
-    private static final DateTimeFormatter TIMING_FORMATTER =
-            DateTimeFormatter.ofPattern("hh:mm:ss.SSSS").withZone(ZoneId.systemDefault());
-
-    // Token registry
-    private static final GatewayTokensRegistry TOKEN_REGISTRY;
-    static {
-        GatewayTokensRegistry registry = null;
-        try {
-            registry = GatewayTokensRegistry.getInstance();
-        } catch (EdgeControlException e) {
-            logger.error("Failed to initialise GatewayTokensRegistry: " + e.getMessage()
-                    + ", devices requiring access tokens will be unable to connect.");
-        }
-        TOKEN_REGISTRY = registry;
-    }
 
     // | ================= Parsed config ================= |
 
@@ -264,30 +247,6 @@ public class MqttDeviceAdapter implements DeviceAdapter {
             options.setConnectionTimeout(connectionTimeout);
             options.setKeepAliveInterval(keepAliveInterval);
             options.setMaxReconnectDelay(reconnectDelay * 1000);
-
-            // Optional access token, only applied if the registry has one for this device.
-            // If the registry itself failed to initialise, we skip credentials and log a warning.
-            if (TOKEN_REGISTRY != null) {
-                TokenEntry tokenEntry = TOKEN_REGISTRY.getDecryptedTokenByGatewayId(gatewayDeviceId);
-                if (tokenEntry != null) {
-                    char[] pwd = tokenEntry.decryptedToken().toCharArray();
-                    try {
-                        options.setUserName(gatewayDeviceId);
-                        options.setPassword(pwd);
-                        logger.info("Access token applied for device " + gatewayDeviceId);
-                    } finally {
-                        // Zero out the char array immediately after handing it to Paho
-                        // so the plaintext token doesn't linger on the heap
-                        Arrays.fill(pwd, '\0');
-                    }
-                } else {
-                    logger.debug("No access token registered for device "
-                            + gatewayDeviceId + " — connecting without credentials");
-                }
-            } else {
-                logger.warn("Token registry unavailable — connecting device "
-                        + gatewayDeviceId + " without credentials");
-            }
 
             if (useTls) {
                 try {
