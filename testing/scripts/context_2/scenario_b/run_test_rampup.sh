@@ -244,15 +244,16 @@ for container in $CONTAINERS; do
     DOCKER_HEADER="${DOCKER_HEADER},${container}_cpu_avg_pct,${container}_cpu_max_pct,${container}_ram_avg_mib,${container}_ram_max_mib"
 done
 
+HTTP_HEADER=$(echo "$METRIC_COLS" | sed 's/[^,]*/http_&/g')
+MQTT_HEADER=$(echo "$METRIC_COLS" | sed 's/[^,]*/mqtt_&/g')
+AGG_HEADER=$(echo  "$METRIC_COLS" | sed 's/[^,]*/agg_&/g')
+
 if [[ ! -f "$MASTER_CSV" ]]; then
-    HTTP_HEADER=$(echo "$METRIC_COLS" | sed 's/[^,]*/http_&/g')
-    MQTT_HEADER=$(echo "$METRIC_COLS" | sed 's/[^,]*/mqtt_&/g')
-    AGG_HEADER=$(echo  "$METRIC_COLS" | sed 's/[^,]*/agg_&/g')
-    echo "scenario,payload_size,timestamp,start_rps,end_rps,step_rps,step_duration_s,per_user_rps,num_workers,${HTTP_HEADER},${MQTT_HEADER},${AGG_HEADER}${DOCKER_HEADER}" \
+    echo "scenario,payload_size,timestamp,start_rps,end_rps,step_rps,step_duration_s,per_user_rps,${HTTP_HEADER},${MQTT_HEADER},${AGG_HEADER}${DOCKER_HEADER}" \
         > "$MASTER_CSV"
 fi
 
-echo "${SCENARIO},${PAYLOAD_SIZE},${TIMESTAMP},${START_RPS},${END_RPS},${STEP_RPS},${STEP_DURATION_S},${PER_USER_RPS},${NUM_WORKERS},${HTTP_METRICS},${MQTT_METRICS},${AGG_METRICS}${DOCKER_SUMMARY}" \
+echo "${SCENARIO},${PAYLOAD_SIZE},${TIMESTAMP},${START_RPS},${END_RPS},${STEP_RPS},${STEP_DURATION_S},${PER_USER_RPS},${HTTP_METRICS},${MQTT_METRICS},${AGG_METRICS}${DOCKER_SUMMARY}" \
     >> "$MASTER_CSV"
 
 echo ""
