@@ -1,8 +1,0 @@
-[2026-05-13 10:30:43,214] gaecko-ubu/INFO/locust.main: Starting Locust 2.44.0
-[2026-05-13 14:24:06,697] gaecko-ubu/INFO/locust.runners: Got quit message from master, shutting down...
-[2026-05-13 14:24:06,879] gaecko-ubu/INFO/locust.main: Shutting down (exit code 0)
-[locust/ramp] Building payload pools...
-[locust/ramp] HTTP pool: 500 entries  MQTT pool: 500 entries
-[locust/ramp] Ramp : 10.0 → 7000.0 req/s  step=10.0  700 steps × 20.0s = 14000s
-[locust/ramp] Per-user RPS : 1.0
-[locust/ramp] Test stopped.
