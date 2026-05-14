@@ -110,7 +110,7 @@ for key in SCENARIOS:
     cpu, ram = load_docker_stats(key)
     docker_stats[key] = {"cpu": cpu, "ram": ram}
     if cpu is not None:
-        print(f"  {key}: CPU={cpu:.1f}%  RAM={ram:.0f} MiB")
+        print(f"  {key}: CPU={cpu/100:.2f} cores  RAM={ram:.0f} MiB")
     else:
         print(f"  {key}: no docker stats (expected for scenario A)")
 
@@ -180,7 +180,7 @@ ax2.set_facecolor("none")
 # Collect CPU and RAM values aligned to scenario centers
 cpu_x   = [scenario_centers[i] for i, k in enumerate(SCENARIOS)
             if docker_stats[k]["cpu"] is not None]
-cpu_y   = [docker_stats[k]["cpu"] for k in SCENARIOS
+cpu_y   = [docker_stats[k]["cpu"] / 100 for k in SCENARIOS
             if docker_stats[k]["cpu"] is not None]
 ram_y   = [docker_stats[k]["ram"] for k in SCENARIOS
             if docker_stats[k]["ram"] is not None]
@@ -194,23 +194,17 @@ if cpu_x:
              markeredgewidth=1.2,
              label="APISIX CPU %", zorder=5)
 
-    # RAM as T-shaped vertical bars — height proportional to value,
-    # top capped with a small horizontal crossbar and the value as text.
-    # Drawn from y=0 up to a scaled RAM height on the right axis.
-    ram_scale = (max(cpu_y) * 2.2) / max(ram_y)   # scale RAM into right-axis space
-    RAM_MAX_FRAC = 0.5   # RAM bars occupy at most this fraction of the right axis
+    # RAM as T-shaped vertical bars
+    RAM_MAX_FRAC = 0.5
     bar_scale = max(cpu_y) * 2.2 * RAM_MAX_FRAC / max(ram_y)
-    cap_width = 0.08   # half-width of the T crossbar in x-axis units
+    cap_width = 0.08
 
     for x, ram in zip(cpu_x, ram_y):
         bar_top = ram * bar_scale
-        # Vertical stem
         ax2.plot([x, x], [0, bar_top],
                  color=RAM_COLOR, linewidth=1.2, alpha=0.75, zorder=6)
-        # Horizontal crossbar (the top of the T)
         ax2.plot([x - cap_width, x + cap_width], [bar_top, bar_top],
                  color=RAM_COLOR, linewidth=1.5, alpha=0.85, zorder=6)
-        # Value label above the crossbar — vertical text
         ax2.annotate(f"{ram:.0f} MiB",
                      xy=(x, bar_top), xytext=(0, 5),
                      textcoords="offset points",
@@ -218,13 +212,11 @@ if cpu_x:
                      fontsize=7.5, color=RAM_COLOR,
                      fontweight="500", rotation=90)
 
-    ax2.set_ylabel("APISIX CPU %", fontsize=12, color=CPU_COLOR, labelpad=10)
+    ax2.set_ylabel("APISIX CPU cores utilised", fontsize=12, color=CPU_COLOR, labelpad=10)
     ax2.tick_params(axis="y", colors=CPU_COLOR, labelsize=9.5)
-    ax2.set_ylim(bottom=0, top=max(cpu_y) * 2.2)   # keep CPU line in lower half
+    ax2.set_ylim(bottom=0, top=max(cpu_y) * 2.2)
     ax2.spines["right"].set_edgecolor(CPU_COLOR)
     ax2.spines["right"].set_linewidth(0.8)
-
-    # Hide other spines on the twin axis
     for s in ["top", "left", "bottom"]:
         ax2.spines[s].set_visible(False)
 
@@ -262,24 +254,26 @@ mqtt_patch = mpatches.Patch(facecolor=MQTT_FILL, alpha=BOX_ALPHA,
 cpu_line   = plt.Line2D([0], [0], color=CPU_COLOR, linewidth=1.8,
                          linestyle="--", marker="D", markersize=7,
                          markerfacecolor=CPU_COLOR, markeredgecolor="white",
-                         label="APISIX CPU % (median)")
+                         label="APISIX CPU cores utilised (median)")
 ram_patch  = mpatches.Patch(facecolor=RAM_COLOR, alpha=0.8,
                              edgecolor=RAM_COLOR, label="APISIX RAM (annotated)")
 
-legend = ax.legend(
+fig.legend(
     handles=[http_patch, mqtt_patch, cpu_line, ram_patch],
-    loc="lower right", frameon=True, framealpha=0.4,
+    loc="lower center",
+    bbox_to_anchor=(0.5, -0.04),
+    ncol=4,
+    frameon=True, framealpha=0.4,
     facecolor=BG_COLOR, edgecolor=SPINE_COLOR,
     labelcolor=TEXT_COLOR, fontsize=11,
-    title="Metric Legend", title_fontsize=10,
+    title="Legend", title_fontsize=10,
 )
-legend.get_title().set_color(ACCENT_COLOR)
 
 plt.tight_layout(pad=2.0)
+plt.subplots_adjust(bottom=0.12)
 
-# Scale labels just left of the y-axis, horizontal, above and below the threshold line
-# Use ax.annotate in axes-fraction + data coordinates for precise placement
-LABEL_X = 0.004   # axes fraction — just left of the y-axis, left-aligned
+# Scale labels just left of the y-axis
+LABEL_X = 0.004
 
 ax.annotate("↓ linear", xy=(LABEL_X, LINEAR_THRESHOLD),
             xycoords=("axes fraction", "data"),
