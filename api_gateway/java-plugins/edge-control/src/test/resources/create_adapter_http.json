@@ -1,0 +1,52 @@
+{
+  "gatewayDeviceId": "{{HTTP_DEVICE_ID}}",
+  "adapter": "http",
+  "queuing": {
+    "retryIntervalSeconds": 5,
+    "maxTimeToLiveSeconds": 40
+  },
+  "security": {
+    "type": "apiKey",
+    "token": "http-device-token",
+    "expiracyDate": "01/01/2030"
+  },
+  "commands": {
+    "setBatteryOperation": {
+      "name": "setBatteryOperation",
+      "endpoint": "{{HTTP_DEVICE_ENDPOINT}}",
+      "method": "POST",
+      "timeouts": {
+        "connect": 2,
+        "request": 10
+      },
+      "payloadTemplate": {
+        "schedule": [
+          {
+            "type": "setBatteryOperation",
+            "operation": {
+              "dispatchPower": {
+                "activePower": null
+              }
+            },
+            "startAt": null,
+            "endAt": null
+          }
+        ],
+        "assetIdentifiers": null
+      },
+      "mappings": {
+        "activePower":      "schedule[0].operation.dispatchPower.activePower",
+        "reactivePower":    "schedule[0].operation.dispatchPower.reactivePower",
+        "maxRate":          "schedule[0].operation.deliverFCR.maxRate",
+        "startAt":          "schedule[0].startAt",
+        "endAt":            "schedule[0].endAt",
+        "assetIdentifiers": "assetIdentifiers"
+      },
+      "cleanup": {
+        "emptyObjectToNull": true,
+        "removeNulls": true,
+        "removeEmpty": true
+      }
+    }
+  }
+}

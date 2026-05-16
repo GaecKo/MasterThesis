@@ -88,7 +88,7 @@ public class GatewayTokensCrypto {
     }
 
     private SecretKey loadKeyFromEnv() throws EdgeControlException {
-        java.nio.file.Path secretPath = java.nio.file.Paths.get("/run/secrets/token_encryption_key");
+        java.nio.file.Path secretPath = java.nio.file.Paths.get(System.getProperty("TOKEN_KEY_PATH", "/run/secrets/token_encryption_key"));
 
         String base64Key;
         try {

@@ -1,0 +1,56 @@
+{
+  "gatewayDeviceId": "{{MQTT_DEVICE_ID}}",
+  "adapter": "mqtt",
+  "queuing": {
+    "retryIntervalSeconds": 5,
+    "maxTimeToLiveSeconds": 40
+  },
+  "connection": {
+    "brokerUrl": "{{MQTT_BROKER_URL}}",
+    "qos": 0,
+    "keepAliveInterval": 30,
+    "connectionTimeout": 10,
+    "cleanSession": true,
+    "reconnectDelay": 5
+  },
+  "security": {
+    "type": "apiKey",
+    "token": "mqtt-device-token",
+    "expiracyDate": "01/01/2030"
+  },
+  "subscriptions": [
+    {
+      "topic": "devices/{{MQTT_DEVICE_ID}}/telemetry",
+      "forwardToBackend": false
+    }
+  ],
+  "commands": {
+    "setPower": {
+      "name": "setPower",
+      "topic": "devices/{{MQTT_DEVICE_ID}}/commands",
+      "responseTopic": "devices/{{MQTT_DEVICE_ID}}/telemetry",
+      "timeouts": {
+        "response": 10
+      },
+      "payloadTemplate": {
+        "type": "setPower",
+        "operation": {
+          "dispatchPower": {}
+        },
+        "startAt": null,
+        "endAt": null
+      },
+      "mappings": {
+        "activePower":   "operation.dispatchPower.activePower",
+        "reactivePower": "operation.dispatchPower.reactivePower",
+        "startAt":       "startAt",
+        "endAt":         "endAt"
+      },
+      "cleanup": {
+        "removeNulls": true,
+        "removeEmpty": false,
+        "emptyObjectToNull": false
+      }
+    }
+  }
+}

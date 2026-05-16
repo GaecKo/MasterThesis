@@ -1,5 +1,8 @@
 package edge_control.logger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -7,10 +10,8 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.random.RandomGenerator;
 
 public final class EdgeControlLogger {
 
@@ -22,6 +23,8 @@ public final class EdgeControlLogger {
     private static final String LOG_DIR =
             "/usr/local/apisix/java-plugins/edge-control/";
 
+    private static final Logger logger = LoggerFactory.getLogger(EdgeControlLogger.class);
+
     private static final String LOG_FILE =
             LOG_DIR + "/logs";
 
@@ -32,17 +35,21 @@ public final class EdgeControlLogger {
     ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private EdgeControlLogger() {
+        BufferedWriter writer1;
         try {
             File dir = new File(LOG_DIR);
             if (!dir.exists()) {
                 dir.mkdirs();
             }
 
-            writer = new BufferedWriter(new FileWriter(LOG_FILE, true)); // append mode
+            writer1 = new BufferedWriter(new FileWriter(LOG_FILE, true)); // append mode
 
         } catch (IOException e) {
-            throw new RuntimeException("Failed to initialize EdgeControlLogger", e);
+            logger.debug("Failed to initialize EdgeControlLogger " + e + " / disabling logger...");
+            enabled = false;
+            writer1 = null;
         }
+        writer = writer1;
     }
 
     public static void disable() {

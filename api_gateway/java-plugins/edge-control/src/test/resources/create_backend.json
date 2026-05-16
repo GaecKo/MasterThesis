@@ -1,0 +1,11 @@
+{
+  "backenName": "test-backend",
+  "type": "TestRunner",
+  "infoEndpoint": "http://localhost:9999/info",
+  "callbackEndpoint": "http://localhost:9999/callback",
+  "security": {
+    "type": "apiKey",
+    "token": "test-backend-token",
+    "expiracyDate": "01/01/2030"
+  }
+}

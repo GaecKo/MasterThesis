@@ -1,0 +1,22 @@
+{
+  "listOfDevices": [
+    {
+      "deviceName": "device-http-test",
+      "type": "solar-panel",
+      "commands": {
+        "setBatteryOperation": {
+          "name": "setBatteryOperation",
+          "params": {
+            "assetIdentifiers": { "type": "string[]", "description": "Asset IDs", "mandatory": true },
+            "type":             { "type": "string",   "description": "The command", "mandatory": true },
+            "activePower":      { "type": "number",   "description": "Active power in kW", "mandatory": false },
+            "reactivePower":    { "type": "number",   "description": "Reactive power in kVar", "mandatory": false },
+            "maxRate":          { "type": "number",   "description": "Maximum deliverFCR", "mandatory": false },
+            "startAt":          { "type": "string",   "description": "Start datetime", "mandatory": false },
+            "endAt":            { "type": "string",   "description": "End datetime", "mandatory": false }
+          }
+        }
+      }
+    }
+  ]
+}

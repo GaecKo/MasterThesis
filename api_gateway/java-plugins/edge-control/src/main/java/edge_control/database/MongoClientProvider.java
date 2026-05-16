@@ -12,8 +12,10 @@ import com.mongodb.client.MongoDatabase;
 public class MongoClientProvider {
 
     // TODO: move credentials to environment variables or a config file before production
-    private static final String CONNECTION_STRING =
-            "mongodb://root:example@mongodb:27017/?authSource=admin";
+    private static final String CONNECTION_STRING = System.getProperty(
+            "MONGO_URI",
+            "mongodb://root:example@mongodb:27017/?authSource=admin"
+    );
 
     // Single shared client — MongoClient is thread-safe and manages its own connection pool
     private static final MongoClient client = MongoClients.create(CONNECTION_STRING);
