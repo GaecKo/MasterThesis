@@ -95,6 +95,7 @@ In this context, we want to see how our full architecture reacts to overloading.
 | {1, 2, 4} | Peak mechanism | 
 
 > Fixed factors for all scenarios
+
 | API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Security Enabled |
 | :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | :--------------: |
 | T           | T              | T                   | T               | T                   | F                |

@@ -9,6 +9,23 @@
 > **Keywords**: Cloud computing, Security, Renewable Energy
 
 
+---
+
+## Documentation Index
+
+### Deployment
+- [**API Gateway**](api_gateway/README.md) — Docker stack setup, TLS, configuration, ports
+- [**Devices**](devices/README.md) — Simulated HTTP & MQTT IoT devices
+- [**Backend**](backend/README.md) — Simulated HTTP backend
+
+### API exposed routes
+- [**API Routes**](api_gateway/API-ROUTES.md) — All exposed endpoints, authentication, plugins, request schemas
+
+### Plugin
+- [**Edge Control (Java Plugin)**](api_gateway/java-plugins/edge-control/README.md) — Auth, translation, onboarding, backend forwarding logic
+
+---
+
 
 The goal is to develop a security solution and a piece of software that can be deployed easily on a device close to the edge. This device acts as a smart gateway (API gateway) connecting different types of renewable digital assets, supporting different operating systems, firmware, communication technologies, messaging protocols, data formats, and security algorithms to the cloud backend. 
 
