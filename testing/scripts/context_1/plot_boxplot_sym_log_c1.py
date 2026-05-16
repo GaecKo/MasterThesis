@@ -256,7 +256,7 @@ cpu_line   = plt.Line2D([0], [0], color=CPU_COLOR, linewidth=1.8,
                          markerfacecolor=CPU_COLOR, markeredgecolor="white",
                          label="APISIX CPU cores utilised (median)")
 ram_patch  = mpatches.Patch(facecolor=RAM_COLOR, alpha=0.8,
-                             edgecolor=RAM_COLOR, label="APISIX RAM (annotated)")
+                             edgecolor=RAM_COLOR, label="APISIX RAM peak usage (annotated)")
 
 fig.legend(
     handles=[http_patch, mqtt_patch, cpu_line, ram_patch],

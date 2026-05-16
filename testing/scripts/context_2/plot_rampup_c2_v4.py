@@ -196,7 +196,7 @@ for label, paths in FILES.items():
           f"peak={binned['achieved_rps'].max():.0f} req/s | "
           f"p50 max={binned['p50'].max():.0f} ms | "
           f"CPU avg={full_binned['cpu_pct'].mean():.1f}% | "
-          f"RAM avg={full_binned['ram_mib'].mean():.0f} MiB")
+          f"RAM max={full_binned['ram_mib'].max():.0f} MiB")
 
 # | ================= Plot ================= |
 

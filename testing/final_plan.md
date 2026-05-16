@@ -16,12 +16,7 @@ The factors we will make vary throughout the context and scenarios
 ### Network related 
 |  Request/sec | 
 | :-----------:| 
-| [1: 400]     | 
-
-## Load related
-| Packet size     |
-| :-------------: |
-| {Medium, Large} |
+| [1: 7000]     | 
 
 ## Architecture related 
 | API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Device Mockup | Security Enabled |
@@ -42,9 +37,9 @@ In this context, we want to measure the effect of each architecture component on
 
 > **Common factors of this scenario**:
 
-| CPUs | Req/sec        | Packet size  | Device Mockup | Security Enabled    | 
-| :--: | :------------: | :----------: | :-----------: | :--------------:    |
-| 4    | {15, 50, 100}    | Medium       | F           | T (no constraining) |
+| CPUs | Req/sec        |  Device Mockup | Security Enabled    | 
+| :--: | :------------: | :-----------: | :--------------:    |
+| 4    | 100    | F           | T (no constraining) |
 
 -> Security is not constraining: it is enabled so resulting computation of plugins / firewall are done, but don't have any actual limitations 
 
@@ -89,22 +84,15 @@ The API Gateway forwards request to the plugin, which verifies AuthN/AuthZ, then
 | :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | 
 | T           | T              | T                   | T               | T                   | 
 
-### Extra scenario 1: per APISIX component time analysis
-Indicate the time taken per each component
-> Extra metric: Component timing: ms per component 
-| API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | 
-| :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | 
-| T           | T              | T                   | T               | T                   | 
-
 ## Context 2: Overload testing
 In this context, we want to see how our full architecture reacts to overloading. We test that with all components enabled, as the system would be in real context
 
 > **Common factors of this scenario**:
 
 > Varying factors for all scenarios
-| CPUs      | Virtual Users  | Packet size    | 
-| :-------: | :------------: | :------------: | 
-| {1, 2, 4} | Peak mechanism | {Medium, High} | 
+| CPUs      | Virtual Users  | 
+| :-------: | :------------: | 
+| {1, 2, 4} | Peak mechanism | 
 
 > Fixed factors for all scenarios
 | API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Security Enabled |
@@ -124,8 +112,6 @@ We test the full Gateway with real communication to 1 or more devices running on
 | Device Mockup |
 | :-----------: |
 | F             |
-
-> additional metric for this scenario: KB sent, KB received
 
 ### Scenario 2: Full Gateway with mocked devices
 To remove the overhead of end device performances, we don't actually do the final request to the device, rather we mock a 200 / success result 
