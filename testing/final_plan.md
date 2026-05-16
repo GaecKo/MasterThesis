@@ -92,6 +92,7 @@ The API Gateway forwards request to the plugin, which verifies AuthN/AuthZ, then
 ### Extra scenario 1: per APISIX component time analysis
 Indicate the time taken per each component
 > Extra metric: Component timing: ms per component 
+
 | API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | 
 | :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | 
 | T           | T              | T                   | T               | T                   | 
@@ -102,11 +103,13 @@ In this context, we want to see how our full architecture reacts to overloading.
 > **Common factors of this scenario**:
 
 > Varying factors for all scenarios
+
 | CPUs      | Virtual Users  | Packet size    | 
 | :-------: | :------------: | :------------: | 
 | {1, 2, 4} | Peak mechanism | {Medium, High} | 
 
 > Fixed factors for all scenarios
+
 | API Gateway | Plugin Enabled | Plugin does request | AuthN/Z Enabled | Translation Enabled | Security Enabled |
 | :---------: | :------------: | :-----------------: | :-------------: | :-----------------: | :--------------: |
 | T           | T              | T                   | T               | T                   | F                |
