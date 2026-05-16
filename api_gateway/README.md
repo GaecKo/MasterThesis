@@ -53,19 +53,6 @@ chmod +x api_gateway.sh
 
 See each component's README for its specific standalone instructions.
 
----
-
-## Components
-
-| Component | Description | README |
-|---|---|---|
-| API Gateway | APISIX + etcd + MongoDB + Mosquitto | [**API Gateway**](api_gateway/README.md) |
-| Edge Control Plugin | Custom Java plugin for auth & translation | [**Edge Control (Java Plugin)**](api_gateway/java-plugins/edge-control/README.md) |
-| Devices | HTTP and MQTT IoT device simulators | [**Devices**](devices/README.md) |
-| Backend | HTTP backend simulators | [**Backend**](backend/README.md) |
-
----
-
 ## Quick Start (Local)
 
 **Prerequisites:** Docker, Docker Compose, Java 17+, Maven
