@@ -1,5 +1,7 @@
-# Java plugins integration
-The integration of the Java plugins isn't the easiest. Here are the steps to make a Java plugin available in APISIX
+# Java plugins integration - documentation 
+The integration of the Java plugins isn't the easiest. Here are the steps to make a Java plugin available in APISIX. 
+
+This is a documentation doc only - it isn't necessary to reproduce the steps to use the implemented system, but rather an explanation of how the java plugin is made available to apisix. 
 
 ## 1. Build the .jar file of your plugin:
 Place yourself in your plugin directory, such as `java-plugins/protocol-translation`, and run:
@@ -114,47 +116,3 @@ logging:
 ```
 This setup prints a lot, simply remove the whole `logging` entry to lower logs. However, you won't see event the log message you code from your plugin. 
 
-
-
-# Appendix
-## pom.xml
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.1</version>
-        <relativePath/> <!-- lookup parent from repository -->
-    </parent>
-    <groupId>com.example</groupId>
-    <artifactId>protocol-translation</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>protocol-translation</name>
-    <description>protocol-translation</description>
-    <properties>
-        <java.version>11</java.version>
-        <compiler.version>11</compiler.version>
-        <spring-boot.version>2.7.1</spring-boot.version>
-    </properties>
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.apisix</groupId>
-            <artifactId>apisix-runner-starter</artifactId>
-            <version>0.3.0</version>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
-</project>
-
-```
