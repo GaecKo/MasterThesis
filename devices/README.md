@@ -24,6 +24,8 @@ chmod +x mqtt_device.sh
 ./mqtt_device.sh
 ```
 
+> ⚠️ Run these commands from within the right machine! So mostly from the devices VM if you used ./main.sh
+
 ---
 
 ## TLS Setup

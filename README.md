@@ -14,7 +14,7 @@
 ## Documentation Index
 
 ### Deployment
-- [**API Gateway**](api_gateway/README.md) — Docker stack setup, TLS, configuration, ports
+- [**API Gateway**](api_gateway/README.md) — Deployment modes, launchings scripts, Docker stack setup, TLS, configuration, ports
 - [**Devices**](devices/README.md) — Simulated HTTP & MQTT IoT devices
 - [**Backend**](backend/README.md) — Simulated HTTP backend
 

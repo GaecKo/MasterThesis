@@ -86,8 +86,7 @@ The resulting JAR is automatically picked up by the Docker volume mount defined 
 
 ## Logs
 
-
-Plugin logs are written to the `logs/` directory, which is mounted into the container:
+Plugin logs are written to the `logs` file, which is mounted into the container:
 
 ```yaml
 - ./java-plugins/edge-control/logs:/usr/local/apisix/java-plugins/edge-control/
@@ -96,5 +95,12 @@ Plugin logs are written to the `logs/` directory, which is mounted into the cont
 You can tail them directly:
 
 ```bash
-tail -f api_gateway/java-plugins/edge-control/*.log
+tail -f api_gateway/java-plugins/edge-control/logs
 ```
+
+## UI
+APISIX and MongoDB both comes with an integrated UI. 
+* APISIX: displays routes, plugins, config, ...: `http://<API_GATEWAY_IP>:9180/ui`
+* MongoDB: displays DBs, collections, data, ...: `http://<API_GATEWAY_IP>:8081/`
+
+`<API_GATEWAY_IP>` is the IP on which the docker has been launched, so either on the apisix-vm (you can find the corresponding IP using `multipass list`), or directly from your machine, for which you can use `localhost`. 

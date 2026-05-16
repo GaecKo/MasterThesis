@@ -32,9 +32,10 @@ This project supports two deployment modes:
 
 ### Mode 1 — Full VM Setup (recommended for thesis reproduction)
 
-Launches the complete multi-VM environment automatically.
+Launches the complete multi-VM environment automatically. From the main folder (so `../` compared to current dir)
 
 ```bash
+# in main dir
 chmod +x main.sh
 ./main.sh
 ```
@@ -62,10 +63,10 @@ See each component's README for its specific standalone instructions.
 cd api_gateway
 ./api_gateway.sh
 
-# 2. Configure routes and consumers(THis sctipt will be ran automatically by the ./api_gateway.sh script)
+# 2. Configure routes and consumers (This sctipt will be ran automatically by the ./api_gateway.sh script)
 ./configure.sh
 
-# 3. (Optional) Run a simulated device
+# 3. (Optional) Start a simulated device
 cd ../devices/http_device
 ./http_device.sh
 ```
@@ -77,12 +78,29 @@ The gateway will be available at:
 
 ---
 
-## Tear Down
+## Debugging and dev
+**Prerequisites:** Docker, Docker Compose, Java 17+, Maven
 
+### Start the gateway
 ```bash
-# Stop all services
+cd api_gateway
+./api_gateway.sh
+```
+
+### Refresh and apply changes
+```bash
+# still in api_gateway/ dir
+./refresh.sh
+```
+`./refresh.sh` will stop the dockers, recompile the jar file of Edge Control, and restart the gateway.
+
+
+## Tear Down
+In the main directory:
+```bash
+# Stop all VMs
 ./stop.sh
 
-# Full cleanup (removes volumes and containers)
+# Full cleanup (removes VMS, volumes and containers)
 ./cleanup.sh
 ```

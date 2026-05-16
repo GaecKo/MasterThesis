@@ -11,16 +11,20 @@ This folder contains a simulated backend service used to test the API gateway. I
 **Standalone** — run the backend directly on your machine:
 
 ```bash
-cd api_gateway/backends
+cd backend
 chmod +x backend.sh
 ./backend.sh
 ```
+
+> ⚠️ Run these commands from within the right machine! So mostly from the backend VM if you used ./main.sh, or directly on your machine if you want to. 
 
 ---
 
 ## TLS Setup
 
 The backend communicates with the APISIX gateway over TLS. Before starting the container, run the TLS setup script to generate the required certificates and trust the gateway's certificate:
+
+
 
 ```bash
 chmod +x setup_backend_TLS.sh
