@@ -90,6 +90,7 @@ In this context, we want to see how our full architecture reacts to overloading.
 > **Common factors of this scenario**:
 
 > Varying factors for all scenarios
+
 | CPUs      | Virtual Users  | 
 | :-------: | :------------: | 
 | {1, 2, 4} | Peak mechanism | 
