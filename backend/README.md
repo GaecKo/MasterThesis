@@ -22,6 +22,8 @@ chmod +x backend.sh
 
 ## TLS Setup
 
+If you want TLS to be enabled (can be tricky to make work!), some helper scripts exist.
+
 The backend communicates with the APISIX gateway over TLS. Before starting the container, run the TLS setup script to generate the required certificates and trust the gateway's certificate:
 
 

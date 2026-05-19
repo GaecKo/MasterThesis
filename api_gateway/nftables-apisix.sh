@@ -90,6 +90,6 @@ fi
     #     -H "Content-Type: application/json" \
     #     -H "X-API-KEY: YOUR_API_KEY" \
     #     -d '{"gatewayDeviceId":"DEVICE_ID","command":"setBatteryOperation","params":{}}'
-# Test command for MQTT (using mosquitto_pub):
+# Test command for MQTT (using mosquitto_pub and mqtt-spam-test.js in `devices/mqtt/`):
 #     node mqtt-spam-test.js
 

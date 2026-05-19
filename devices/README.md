@@ -29,6 +29,7 @@ chmod +x mqtt_device.sh
 ---
 
 ## TLS Setup
+If you want TLS to be enabled (can be tricky to make work!), some helper scripts exist.
 
 Both devices require a certificate to communicate with the APISIX gateway over TLS. A helper script is provided:
 
@@ -57,15 +58,16 @@ A Node.js device that communicates with the gateway using standard HTTP.
 
 ---
 
-> **Important:** In http_device.sh, the command bellow need to be updated by replacing the **$DEVICES_IP** , **$APISIX_IP** by the correct values and fill the **DEVICE_ID field by the gatewayDeviceId of the device that was added during the onboarding.
+> **Important:** In http_device.sh, the command bellow need to be updated by replacing the **$DEVICES_IP** , **$APISIX_IP** by the correct values and fill the **DEVICE_ID**, **Api-KEY** field by the gatewayDeviceId of the device that was added during the onboarding.
 ```sh
 sudo docker run -d \
     --name http-device-app \
     --network host \
     -e HTTP_DEVICE_IP=$DEVICES_IP \
     -e APISIX_IP=$APISIX_IP \
-    -e INTERVAL_MS=20000 \
-    -e DEVICE_ID=device_382109bd-7428-4cb9-b075-9a0ef2041560 \
+    -e INTERVAL_MS=5000 \
+    -e DEVICE_ID=device_618dd304-29e2-4176-9c77-a399c04b3ff0 \
+    -e API_KEY=lyEDqsfe1ZGvUmDEy5jjKiU1CemXlXh8q8WsQkj1xHE \
     http-device-app
 ```
 
