@@ -2,6 +2,35 @@
 
 This file goes step by step through the deployment and first usage of the entire system.
 
+- [Usage](#usage)
+   * [Main launch](#main-launch)
+   * [API usage with Postman](#api-usage-with-postman)
+   * [Onboarding mechanism ](#onboarding-mechanism)
+      + [HTTP device onboarding](#http-device-onboarding)
+      + [MQTT device onboarding](#mqtt-device-onboarding)
+      + [Backend onboarding](#backend-onboarding)
+      + [Backend Authorizations](#backend-authorizations)
+      + [Devices Authorizations](#devices-authorizations)
+      + [Commands checkup](#commands-checkup)
+   * [Relaunch the devices ](#relaunch-the-devices)
+      + [HTTP device update](#http-device-update)
+         - [Update ID / API Key](#update-id-api-key)
+         - [Send telemtry](#send-telemtry)
+         - [Restart container](#restart-container)
+      + [MQTT device update ](#mqtt-device-update)
+         - [Send telemtry](#send-telemtry-1)
+         - [Restart container](#restart-container-1)
+   * [Protocol translation ](#protocol-translation)
+      + [HTTP translation config](#http-translation-config)
+      + [MQTT translation config](#mqtt-translation-config)
+      + [Issuing command](#issuing-command)
+   * [Check communication](#check-communication)
+      + [Backend received request](#backend-received-request)
+      + [HTTP device request](#http-device-request)
+      + [MQTT device request](#mqtt-device-request)
+   * [Going further](#going-further)
+      + [Plugin development](#plugin-development)
+
 > [!IMPORTANT]
 > The usage is rather simple once setup, but the initial setup (with Postman) can be tricky. **Please read carefully all the instructions**.
 
