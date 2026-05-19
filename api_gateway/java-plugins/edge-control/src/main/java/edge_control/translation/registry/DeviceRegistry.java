@@ -135,8 +135,15 @@ public class DeviceRegistry {
      */
     public synchronized void upsert(DeviceConfig config) throws EdgeControlException {
         // get security object and delete from init config
-        JSONObject deviceSecurity = config.getConfig().getJSONObject("security");
-        config.getConfig().remove("security");
+        JSONObject configJson = config.getConfig();
+
+        JSONObject deviceSecurity;
+        if (configJson.has("security") && !configJson.isNull("security")) {
+            deviceSecurity = configJson.getJSONObject("security");
+            configJson.remove("security");
+        } else {
+            deviceSecurity = null;
+        }
 
         // load security in token registry
         if (deviceSecurity != null) {
