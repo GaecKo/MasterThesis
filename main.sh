@@ -61,6 +61,61 @@ mount_folder() {
 }
 
 ### ============================================================
+###   Function to add IP variables to VM's .bashrc
+### ============================================================
+add_ips_to_bashrc() {
+    local vm=$1
+    local apisix_ip=$2
+    local backend_ip=$3
+    local devices_ip=$4
+    
+    info "Adding IP variables to $vm .bashrc..."
+    
+    # Create the exports block to add
+    local exports_block="# === Auto-generated IP variables for the project ===
+export APISIX_IP='$apisix_ip'
+export BACKEND_IP='$backend_ip'
+export DEVICES_IP='$devices_ip'
+# === End of auto-generated IP variables ==="
+    
+    # Check if the block already exists in .bashrc
+    local check_cmd="
+        if [ -f ~/.bashrc ] && grep -q '# === Auto-generated IP variables for the project ===' ~/.bashrc; then
+            echo 'EXISTS'
+        else
+            echo 'MISSING'
+        fi
+    "
+    
+    local status=$(multipass exec "$vm" -- bash -c "$check_cmd" | tr -d '\r')
+    
+    if [ "$status" = "EXISTS" ]; then
+        warn "IP variables already exist in $vm .bashrc — updating them"
+        # Update existing block
+        local update_cmd="
+            sed -i '/# === Auto-generated IP variables for the project ===/,/# === End of auto-generated IP variables ===/c\\
+$exports_block' ~/.bashrc
+        "
+        multipass exec "$vm" -- bash -c "$update_cmd"
+    else
+        # Append new block
+        local append_cmd="
+            echo '$exports_block' >> ~/.bashrc
+        "
+        multipass exec "$vm" -- bash -c "$append_cmd"
+    fi
+    
+    success "IP variables added to $vm .bashrc"
+    
+    # Also source them in the current session
+    multipass exec "$vm" -- bash -c "
+        export APISIX_IP='$apisix_ip'
+        export BACKEND_IP='$backend_ip'
+        export DEVICES_IP='$devices_ip'
+    "
+}
+
+### ============================================================
 ###   Main script
 ### ============================================================
 
@@ -92,6 +147,22 @@ DEVICES_IP=$(get_vm_ip "devices-vm")
 info "APISIX VM IP: $APISIX_IP"
 info "Backend VM IP: $BACKEND_IP"
 info "Devices VM IP: $DEVICES_IP"
+
+### ============================================================
+###   STEP 3.5: Add IP variables to all VMs' .bashrc
+### ============================================================
+info "=== STEP 3.5: Adding IP variables to all VMs .bashrc ==="
+
+# Add to apisix-vm
+add_ips_to_bashrc "apisix-vm" "$APISIX_IP" "$BACKEND_IP" "$DEVICES_IP"
+
+# Add to backend-vm
+add_ips_to_bashrc "backend-vm" "$APISIX_IP" "$BACKEND_IP" "$DEVICES_IP"
+
+# Add to devices-vm
+add_ips_to_bashrc "devices-vm" "$APISIX_IP" "$BACKEND_IP" "$DEVICES_IP"
+
+success "All VMs have IP variables in their .bashrc"
 
 info "=== STEP 4: Setting up APISIX ==="
 info "Installing OpenJDK 21 on APISIX VM..."
@@ -161,6 +232,9 @@ else
     warn "devices/mqtt_device/mqtt_device.sh not found"
 fi
 
+### ============================================================
+###   Display final information with .bashrc usage
+### ============================================================
 success "Setup complete!"
 echo -e "${YELLOW}Summary:${RESET}"
 echo "  APISIX Gateway IP: $APISIX_IP"
@@ -179,9 +253,9 @@ echo -e "${YELLOW}Test the HTTP Device health:${RESET}"
 echo "  curl http://$DEVICES_IP:8000/health"
 echo ""
 echo -e "${YELLOW}VM Management:${RESET}"
-echo "  multipass shell apisix-vm    # Enter APISIX VM"
-echo "  multipass shell backend-vm   # Enter Backend VM"
-echo "  multipass shell device-vm    # Enter Device VM"
+echo "  multipass shell apisix-vm    # Enter APISIX VM (IP vars pre-loaded)"
+echo "  multipass shell backend-vm   # Enter Backend VM (IP vars pre-loaded)"
+echo "  multipass shell device-vm    # Enter Device VM (IP vars pre-loaded)"
 echo "  multipass exec backend-vm -- docker logs -f backend-app         # see logs of backend app"
-echo "  multipass exec device-vm -- docker logs -f http-device-app     # see logs of  http-device-app"
+echo "  multipass exec device-vm -- docker logs -f http-device-app     # see logs of http-device-app"
 echo "  multipass exec apisix-vm -- docker logs -f apisix               # see logs of apisix app"

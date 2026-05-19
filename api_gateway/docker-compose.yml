@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   etcd:
     image: bitnamilegacy/etcd:3.5.11

@@ -76,7 +76,7 @@ async function sendTelemetry() {
 
 // --- Start HTTP ---
 http.createServer(app).listen(HTTP_PORT, () => {
-  console.log(`HTTP  server running on port ${HTTP_PORT}`);
+  console.log(`HTTP  server running on port ${HTTP_PORT}, deviceId: ${DEVICE_ID}`);
 });
 
 // --- Start HTTPS ---
@@ -98,4 +98,4 @@ console.log("= = = = = = = = = = = = = = = = = = = = = = = = = = =");
 if (!APISIX_IP) {
   console.error("ERROR! APISIX_IP is empty or null... Won't be able to send any telemetry");
 }
-// setInterval(sendTelemetry, INTERVAL);
+setInterval(sendTelemetry, INTERVAL);

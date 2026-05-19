@@ -25,6 +25,41 @@ docker compose version >/dev/null 2>&1 || err "docker compose plugin not found (
   || err "mosquitto.conf not found at ./brokers/mosquitto/mosquitto.conf"
 
 ### ============================================================
+###   Java plugin JAR check and rebuild
+### ============================================================
+JAR_PATH="./java-plugins/edge-control/target/edge-control-0.0.1-SNAPSHOT.jar"
+REFRESH_SCRIPT="./java-plugins/refresh_jar.sh"
+
+info "Checking for Java plugin JAR file..."
+
+if [ ! -f "$JAR_PATH" ]; then
+    warn "JAR file not found at $JAR_PATH, will build it now..."
+
+    # Make sure the script is executable
+    chmod +x "$REFRESH_SCRIPT" 2>/dev/null || warn "Could not chmod $REFRESH_SCRIPT"
+    
+    # Change to java-plugins directory and run the script
+    (cd ./java-plugins && ./refresh_jar.sh)
+    
+    # Check if the script executed successfully
+    if [ $? -eq 0 ]; then
+        success "Successfully executed refresh_jar.sh"
+    else
+        err "refresh_jar.sh execution failed. Please check the script manually."
+    fi
+    
+    # Verify JAR was created
+    if [ ! -f "$JAR_PATH" ]; then
+        err "JAR file still not found after running refresh_jar.sh. Expected at $JAR_PATH"
+    else
+        success "JAR file verified at $JAR_PATH"
+    fi
+    
+else
+    success "JAR file found at $JAR_PATH"
+fi
+
+### ============================================================
 ###   Start stack
 ### ============================================================
 info "Building and starting stack (APISIX, etcd, MongoDB, Mosquitto)..."

@@ -14,19 +14,13 @@ success() { echo -e "${GREEN}[OK]${RESET} $*"; }
 warn()    { echo -e "${YELLOW}[WARN]${RESET} $*"; }
 err()     { echo -e "${RED}[ERROR]${RESET} $*"; exit 1; }
 
-### ============================================================
-###   Paths — derived from the script's own location
-### ============================================================
-BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-info "=== MQTT Device Setup ==="
-info "Base dir : ${BASE_DIR}"
-
 ### ── Sanity checks ──────────────────────────────────────────────────────────
 command -v docker     >/dev/null 2>&1 || err "docker not found"
 [ -f "Dockerfile" ]                   || err "Dockerfile not found at ./Dockerfile"
-[ -n "${APISIX_IP:-}" ]              || err "APISIX_IP env var is not set (e.g. export APISIX_IP=192.168.2.x)"
+[ -n "${APISIX_IP:-}" ]               || err "APISIX_IP env var is not set (e.g. export APISIX_IP=192.168.2.x)"
 
+info "=== MQTT Device Setup ==="
+info "Device VM IP: $DEVICES_IP"
 
 
 ### ── Build image ─────────────────────────────────────────────────────────────
@@ -43,10 +37,10 @@ docker run -d \
   --name mqtt-device-app \
   --network host \
   --restart unless-stopped \
-  -e DEVICE_ID=device_0abe0ca4-273f-4166-9e15-ae3070960df4 \
-  -e API_KEY=lyEDqsfe1ZGvUmDEy5jjKiU1CemXlXh8q8WsQkj1xHE \
+  -e DEVICE_ID=device_a3922169-f24a-40c5-b57a-9a45f7a3541d \
+  -e API_KEY=DTPc-v4Jtku6_qRDbemD_PQ-hfCkrK3Z3UyH6ybkRyg \
   -e BROKER_URL="mqtt://$APISIX_IP:1883" \
-  -e INTERVAL_MS=5000 \
+  -e INTERVAL_MS=10000 \
   mqtt-device-app
 
 ### ── Status ──────────────────────────────────────────────────────────────────
@@ -57,11 +51,3 @@ docker ps --filter "name=mqtt-device-app" \
 
 echo ""
 success "=== MQTT device is running! ==="
-echo ""
-info "Useful commands:"
-echo ""
-echo "  # Follow device logs"
-echo "  docker logs -f mqtt-device-app"
-echo ""
-echo "  # Stop the device"
-echo "  docker rm -f mqtt-device-app"

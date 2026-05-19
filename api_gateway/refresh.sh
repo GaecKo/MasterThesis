@@ -33,6 +33,6 @@ success ".jar rebuilt"
 info "Relaunching docker containers"
 cd ../ 
 ./api_gateway.sh 
-success "APISIX and ETCD containers relaunched"
+success "APISIX, etcd, MongoDB, Mongo Express and Mosquitto containers relaunched"
 
 success "API Gateway refreshed!"

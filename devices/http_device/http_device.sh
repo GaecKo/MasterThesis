@@ -38,15 +38,15 @@ if [ -f "Dockerfile" ]; then
     sudo docker rm -f http-device-app 2>/dev/null || true
     
     # Run with environment variables
-    sudo docker run -d \
-        --name http-device-app \
-        --network host \
-        -e HTTP_DEVICE_IP=$DEVICES_IP \
-        -e APISIX_IP=$APISIX_IP \
-        -e INTERVAL_MS=5000 \
-        -e DEVICE_ID=device_618dd304-29e2-4176-9c77-a399c04b3ff0 \
-        -e API_KEY=lyEDqsfe1ZGvUmDEy5jjKiU1CemXlXh8q8WsQkj1xHE \
-        http-device-app
+sudo docker run -d \
+    --name http-device-app \
+    --network host \
+    -e HTTP_DEVICE_IP=$DEVICES_IP \
+    -e APISIX_IP=$APISIX_IP \
+    -e INTERVAL_MS=10000 \
+    -e DEVICE_ID=device_41619b34-20f4-4b84-9db3-6866c9a6b10e \
+    -e API_KEY=l-TMJ98IcSQnvPQ86H1OgLnesrWFbxR2lAiFERL1Q_g \
+    http-device-app
     
     success "HTTP Device container started"
     
@@ -57,5 +57,7 @@ else
     warn "Dockerfile not found in http_device directory"
 fi
 
-info "HTTP Device setup complete!"
-info "HTTP Device API is accessible at: https://$DEVICES_IP:8000"
+
+
+echo ""
+success "=== HTTP device is running! ==="
