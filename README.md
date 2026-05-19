@@ -13,19 +13,22 @@
 
 ## Documentation Index
 
+### First usage
+- [**USAGE**](USAGE.md) - First usage: goes through the entire setup, first onboarding, and first translations
+
 ### Deployment
-- [**API Gateway**](api_gateway/README.md) — Deployment modes, launchings scripts, Docker stack setup, TLS, configuration, ports
-- [**Devices**](devices/README.md) — Simulated HTTP & MQTT IoT devices
-- [**Backend**](backend/README.md) — Simulated HTTP backend
+- [**API Gateway**](api_gateway/README.md) - Deployment modes, launchings scripts, Docker stack setup, TLS, configuration, ports
+- [**Devices**](devices/README.md) - Simulated HTTP & MQTT IoT devices
+- [**Backend**](backend/README.md) - Simulated HTTP backend
 ### API exposed routes
-- [**API Routes**](api_gateway/API-ROUTES.md) — All exposed endpoints, authentication, plugins, request schemas
+- [**API Routes**](api_gateway/API-ROUTES.md) - All exposed endpoints, authentication, plugins, request schemas
 
 ### Plugin
-- [**Edge Control (Java Plugin)**](api_gateway/java-plugins/edge-control/README.md) — Auth, translation, onboarding, backend forwarding logic
+- [**Edge Control (Java Plugin)**](api_gateway/java-plugins/edge-control/README.md) - Auth, translation, onboarding, backend forwarding logic
 
 ### Testing
- - [**Integration and Unit tests**](api_gateway/java-plugins/edge-control/src/test/README.md) — Integration and Unit tests information
-- [**Perf testing**](testing/final_plan.md) — Performance testing information
+ - [**Integration and Unit tests**](api_gateway/java-plugins/edge-control/src/test/README.md) - Integration and Unit tests information
+- [**Perf testing**](testing/final_plan.md) - Performance testing information
 ---
 
 
