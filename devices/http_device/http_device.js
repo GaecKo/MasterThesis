@@ -11,7 +11,7 @@ const DEVICE_ID     = process.env.DEVICE_ID || 1;
 const HTTP_PORT     = 8000;
 const HTTPS_PORT    = 8443; 
 const INTERVAL      = process.env.INTERVAL_MS || 60000;
-const API_KEY       = 'c6ZiV6EYWNMZe--2eiU6NX22OxQVVhR_ks0-jSwllvM';
+const API_KEY       = process.env.API_KEY || '';
 
 const CERT_PATH = process.env.CERT_PATH || '/certs/device.crt';
 const KEY_PATH  = process.env.KEY_PATH  || '/certs/device.key';
@@ -41,6 +41,7 @@ app.all('*', async (req, res) => {
   // console.log("[" + new Date().toISOString() + "] " + JSON.stringify(req.body));
   nb_req ++;
   console.log("[" + new Date().toISOString() + "] " + nb_req)
+  console.log("Headers: " + JSON.stringify(req.headers))
 
   res.json({
     path: req.path,
@@ -62,7 +63,7 @@ async function sendTelemetry() {
     },
   };
   try {
-    const res = await fetch(`https://nuc4-pc.local:9443/backendForward`, {
+    const res = await fetch(`http://${APISIX_IP}:9080/backendForward`, {
       method  : 'POST',
       headers : { 'Content-Type': 'application/json', 'apikey': API_KEY },
       body    : JSON.stringify(body),

@@ -27,15 +27,7 @@ command -v docker     >/dev/null 2>&1 || err "docker not found"
 [ -f "Dockerfile" ]                   || err "Dockerfile not found at ./Dockerfile"
 [ -n "${APISIX_IP:-}" ]              || err "APISIX_IP env var is not set (e.g. export APISIX_IP=192.168.2.x)"
 
-### ── Copy cert into build context ───────────────────────────────────────────
-info "Copying certificate into build context..."
-[ -f /usr/local/share/ca-certificates/apisix.crt ] \
-  || err "Certificate not found. Run setup_device.sh first."
-[ -f ~/certs/server.crt ] \
-  || err "device.crt not found. Run setup_device_TLS.sh first."
-cp /usr/local/share/ca-certificates/apisix.crt ./apisix.crt
-cp ~/certs/server.crt ./device.crt
-cp ~/certs/server.key ./device.key
+
 
 ### ── Build image ─────────────────────────────────────────────────────────────
 info "Building mqtt-device-app image..."
@@ -51,10 +43,10 @@ docker run -d \
   --name mqtt-device-app \
   --network host \
   --restart unless-stopped \
-  -e DEVICE_ID=device_ce66dadb-8ba5-4989-aeaa-b4f2bb8d15c8 \
-  -e API_KEY=Rgh5Cwca_UHVak_12BCedSIv0C_chETTZy_WqftZrbE \
-  -e BROKER_URL="mqtts://nuc4-pc.local:8883" \
-  -e INTERVAL_MS=20000 \
+  -e DEVICE_ID=device_0abe0ca4-273f-4166-9e15-ae3070960df4 \
+  -e API_KEY=lyEDqsfe1ZGvUmDEy5jjKiU1CemXlXh8q8WsQkj1xHE \
+  -e BROKER_URL="mqtt://$APISIX_IP:1883" \
+  -e INTERVAL_MS=5000 \
   mqtt-device-app
 
 ### ── Status ──────────────────────────────────────────────────────────────────

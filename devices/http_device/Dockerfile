@@ -7,14 +7,14 @@ RUN npm install
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-COPY apisix.crt /usr/local/share/ca-certificates/apisix.crt
-RUN update-ca-certificates
-ENV NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/apisix.crt
+# COPY apisix.crt /usr/local/share/ca-certificates/apisix.crt
+# RUN update-ca-certificates
+# ENV NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/apisix.crt
 
-COPY device.crt /certs/device.crt
-COPY device.key /certs/device.key
-ENV CERT_PATH=/certs/device.crt
-ENV KEY_PATH=/certs/device.key
+# COPY device.crt /certs/device.crt
+# COPY device.key /certs/device.key
+# ENV CERT_PATH=/certs/device.crt
+# ENV KEY_PATH=/certs/device.key
 
 COPY http_device.js .
 

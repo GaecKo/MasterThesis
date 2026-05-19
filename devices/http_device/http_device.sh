@@ -26,14 +26,7 @@ info "=== HTTP device Setup ==="
 info "Device VM IP: $DEVICES_IP"
 
 ### ── Copy certs into build context ──────────────────────────────────────────
-info "Copying certificates into build context..."
-[ -f /usr/local/share/ca-certificates/apisix.crt ] \
-  || err "apisix.crt not found. Run setup_device_TLS.sh first."
-[ -f ~/certs/server.crt ] \
-  || err "device.crt not found. Run setup_device_TLS.sh first."
-cp /usr/local/share/ca-certificates/apisix.crt ./apisix.crt
-cp ~/certs/server.crt ./device.crt
-cp ~/certs/server.key ./device.key
+
 
 info "Building and starting http device container..."
 
@@ -50,8 +43,9 @@ if [ -f "Dockerfile" ]; then
         --network host \
         -e HTTP_DEVICE_IP=$DEVICES_IP \
         -e APISIX_IP=$APISIX_IP \
-        -e INTERVAL_MS=20000 \
-        -e DEVICE_ID=device_382109bd-7428-4cb9-b075-9a0ef2041560 \
+        -e INTERVAL_MS=5000 \
+        -e DEVICE_ID=device_618dd304-29e2-4176-9c77-a399c04b3ff0 \
+        -e API_KEY=lyEDqsfe1ZGvUmDEy5jjKiU1CemXlXh8q8WsQkj1xHE \
         http-device-app
     
     success "HTTP Device container started"

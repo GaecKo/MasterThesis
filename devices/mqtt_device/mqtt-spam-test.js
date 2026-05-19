@@ -2,8 +2,15 @@
 require('dotenv').config();
 const mqtt = require('mqtt');
 
+BROKER_IP = process.env.BROKER_IP || null;
+
+if (!BROKER_IP) {
+  console.error('Error: BROKER_IP environment variable not set');
+  process.exit(1);
+}
+
 // ── Config ─────────────────────────────────────────────
-const BROKER_URL = 'mqtt://10.15.146.150:1883'; // Mosquitto on gateway VM
+const BROKER_URL = `mqtt://${BROKER_IP}:1883`; // Mosquitto on gateway VM
 const TOPIC      = 'devices/test-device/telemetry';
 const INTERVAL_MS = 50;  // 50ms between messages (~20 messages/sec)
 const NUM_MSGS    = 500; // total messages to send
