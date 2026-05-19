@@ -16,6 +16,15 @@ const API_KEY       = process.env.API_KEY || '';
 const CERT_PATH = process.env.CERT_PATH || '/certs/device.crt';
 const KEY_PATH  = process.env.KEY_PATH  || '/certs/device.key';
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const now  = () => new Date().toISOString();
+const rand = (min, max) => parseFloat((Math.random() * (max - min) + min).toFixed(1));
+
+const info  = (...a) => console.log(`\x1b[36m[INFO]\x1b[0m`,  ...a);
+const ok    = (...a) => console.log(`\x1b[32m[OK]\x1b[0m`,    ...a);
+const warn  = (...a) => console.log(`\x1b[33m[WARN]\x1b[0m`,  ...a);
+const error = (...a) => console.error(`\x1b[31m[ERROR]\x1b[0m`, ...a);
+
 function randomTemp() {
   return Math.floor(Math.random() * 10) + 20;
 }
@@ -38,10 +47,10 @@ function sleep(ms) {
 }
 
 app.all('*', async (req, res) => {
-  // console.log("[" + new Date().toISOString() + "] " + JSON.stringify(req.body));
-  nb_req ++;
-  console.log("[" + new Date().toISOString() + "] " + nb_req)
-  console.log("Headers: " + JSON.stringify(req.headers))
+  info(`← Message received: ${JSON.stringify(req.body)}`);
+  // nb_req ++;
+  // console.log("[" + new Date().toISOString() + "] " + nb_req)
+  // console.log("Headers: " + JSON.stringify(req.headers))
 
   res.json({
     path: req.path,
@@ -68,15 +77,15 @@ async function sendTelemetry() {
       headers : { 'Content-Type': 'application/json', 'apikey': API_KEY },
       body    : JSON.stringify(body),
     });
-    console.log(`[telemetry] → sent to nuc4-pc.local:9443/backendForward — status=${res.status}`);
+    info(`→ telemetry sent to ${APISIX_IP}:9443/backendForward — status=${res.status}`);
   } catch (err) {
-    console.error(`[telemetry] → failed to reach nuc4-pc.local:9443/backendForward: ${err}`);
+    error(`→ telemetry failed to reach ${APISIX_IP}:9443/backendForward: ${err}`);
   }
 }
 
 // --- Start HTTP ---
 http.createServer(app).listen(HTTP_PORT, () => {
-  console.log(`HTTP  server running on port ${HTTP_PORT}, deviceId: ${DEVICE_ID}`);
+  info(`HTTP  server running on port ${HTTP_PORT}, deviceId: ${DEVICE_ID}`);
 });
 
 // --- Start HTTPS ---
@@ -86,16 +95,17 @@ try {
     key:  fs.readFileSync(KEY_PATH),
   };
   https.createServer(tlsOptions, app).listen(HTTPS_PORT, () => {
-    console.log(`HTTPS server running on port ${HTTPS_PORT}`);
-    console.log(`Health check: https://${HTTP_DEVICE_IP}:${HTTPS_PORT}/health`);
+    info(`HTTPS server running on port ${HTTPS_PORT}`);
+    info(`Health check: https://${HTTP_DEVICE_IP}:${HTTPS_PORT}/health`);
   });
 } catch (err) {
-  console.error(`[HTTPS] Failed to start — check CERT_PATH / KEY_PATH: ${err.message}`);
-  console.warn(`[HTTPS] Continuing with HTTP only on port ${HTTP_PORT}`);
+  error(`[HTTPS] Failed to start — check CERT_PATH / KEY_PATH: ${err.message}`);
+  info("You can ignore this error if you don't need HTTPS.");
+  warn(`[HTTPS] Continuing with HTTP only on port ${HTTP_PORT}`);
 }
 
 console.log("= = = = = = = = = = = = = = = = = = = = = = = = = = =");
 if (!APISIX_IP) {
-  console.error("ERROR! APISIX_IP is empty or null... Won't be able to send any telemetry");
+  error("ERROR! APISIX_IP is empty or null... Won't be able to send any telemetry");
 }
 setInterval(sendTelemetry, INTERVAL);
