@@ -108,4 +108,4 @@ console.log("= = = = = = = = = = = = = = = = = = = = = = = = = = =");
 if (!APISIX_IP) {
   error("ERROR! APISIX_IP is empty or null... Won't be able to send any telemetry");
 }
-setInterval(sendTelemetry, INTERVAL);
+// setInterval(sendTelemetry, INTERVAL);

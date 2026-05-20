@@ -183,14 +183,14 @@ sudo docker run -d \
 #### Send telemtry
 1. Go to `devices/http_device/`
 2. open `http_device.js`
-3. Uncomment line 101: `// setInterval(sendTelemetry, INTERVAL);`
+3. Uncomment line 111: `// setInterval(sendTelemetry, INTERVAL);`
 4. Save your changes - will be synced with device vm automatically
 
 The device will now send telemetry to the gateway, which will forward it to backend
 
 #### Restart container
 1. Connect to device VM with `multipass shell devices-vm`
-2. Go to directory `cd devices/http_devices/`
+2. Go to directory `cd devices/http_device/`
 3. Relaunch script `./http_device.sh`
 
 
@@ -222,7 +222,7 @@ The device will now send telemetry to the gateway, which will forward it to back
 
 #### Restart container
 1. Connect to device VM with `multipass shell devices-vm`
-2. Go to directory `cd devices/mqtt_devices/`
+2. Go to directory `cd devices/mqtt_device/`
 3. Relaunch script `./mqtt_device.sh`
 
 
