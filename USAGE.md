@@ -230,7 +230,7 @@ The device will now send telemetry to the gateway, which will forward it to back
 The following part will use the **Collections > 2. Protocol Translation** collection
 
 ### HTTP translation config
-To specify the http translation config, go to 1. POST device http and click "Send"
+To specify the http translation config, go to **1. POST device http** and click "Send"
 
 This will create a http adapter for the http device. You should simply see:
 ```json
@@ -238,7 +238,7 @@ Device Translation Created
 ```
 
 ### MQTT translation config
-To specify the mqtt translation config, go to 2. POST device mqtt and click "Send" 
+To specify the mqtt translation config, go to **2. POST device mqtt** and click "Send" 
 
 This will create a mqtt adapter for the mqtt device. You should simply see:
 ```json
@@ -247,7 +247,7 @@ Device Translation Created
 
 ### Issuing command
 You can now issue commands to devices:
-1. Go to 3.a POST command http
+1. Go to **3.a POST command http**
 2. Click on "Send"
 
 You should see something like:
@@ -256,7 +256,7 @@ You should see something like:
 ```
 
 With MQTT:
-1. Go to 3.b POST command mqtt
+1. Go to **3.b POST command mqtt**
 2. Click on "Send"
 
 You should get something like:
@@ -271,12 +271,14 @@ That's it! We now have communication available between all parties.
 ### Backend received request
 The devices are sending telemetry data every 10 seconds each. To check:
 1. Connect to backend-vm: `multipass shell backend-vm`
-2. Check logs of backend server: `docker logs backend-app`
+2. Check logs of backend server: `docker logs -f backend-app`
 3. You should see something like:
 ```json 
 Received request: {"payload":{"temperature":20,"humidity":70,"status":"nominal"},"type":"telemetry","gatewayDeviceId":"device_41619b34-20f4-4b84-9db3-6866c9a6b10e","deviceId":"device_41619b34-20f4-4b84-9db3-6866c9a6b10e","timestamp":"2026-05-19T13:05:22.895Z"}
 Received request: {"payload":{"temperature":27.7,"humidity":51,"status":"nominal"},"type":"telemetry","gatewayDeviceId":"device_a3922169-f24a-40c5-b57a-9a45f7a3541d","deviceId":"device_a3922169-f24a-40c5-b57a-9a45f7a3541d","timestamp":"2026-05-19T13:05:28.750Z"}
 ``` 
+4. You can close the logs with CTRL + C, and exit the VM by entering `exit`
+
 As you can see, both devices see their telemetry sent to the backend. This is because we defined earlier the 2 devices to be authorized to communicate with that backend. 
 
 ### HTTP device request
