@@ -183,7 +183,7 @@ sudo docker run -d \
 #### Send telemtry
 1. Go to `devices/http_device/`
 2. open `http_device.js`
-3. Uncomment line 101: `// setInterval(sendTelemetry, INTERVAL);`
+3. Uncomment line 111: `// setInterval(sendTelemetry, INTERVAL);`
 4. Save your changes - will be synced with device vm automatically
 
 The device will now send telemetry to the gateway, which will forward it to backend
