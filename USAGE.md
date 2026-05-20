@@ -190,7 +190,7 @@ The device will now send telemetry to the gateway, which will forward it to back
 
 #### Restart container
 1. Connect to device VM with `multipass shell devices-vm`
-2. Go to directory `cd devices/http_devices/`
+2. Go to directory `cd devices/http_device/`
 3. Relaunch script `./http_device.sh`
 
 
