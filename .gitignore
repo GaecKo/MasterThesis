@@ -1,6 +1,6 @@
 api_gateway/java-plugins/edge-control/target/*
 api_gateway/java-plugins/edge-control/.idea/*
-api_gateway/java-plugins/edge-control/logs
+api_gateway/java-plugins/edge-control/edge-control.log
 **/**.env
 api_gateway/conf/server.*
 **/**.crt

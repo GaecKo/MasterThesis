@@ -32,8 +32,7 @@ services:
       - "devices-vm.local:192.168.50.8"
     volumes:
       - ./conf/config.yaml:/usr/local/apisix/conf/config.yaml
-      - ./java-plugins/edge-control/target/edge-control-0.0.1-SNAPSHOT.jar:/usr/local/apisix/java-plugins/edge-control/target/edge-control-0.0.1-SNAPSHOT.jar
-      - ./java-plugins/edge-control/logs:/usr/local/apisix/java-plugins/edge-control/logs
+      - ./java-plugins/edge-control:/usr/local/apisix/java-plugins/edge-control
       # - ./conf/server.crt:/usr/local/apisix/conf/server.crt:ro
       # - ./conf/server.key:/usr/local/apisix/conf/server.key:ro
     ulimits:

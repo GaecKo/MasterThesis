@@ -315,5 +315,5 @@ If you want to make changes to the code, we highly recommand a workflow as such:
 2. Use the `refresh.sh` script from the `apisix-vm` to refresh the `.jar` file. This will automatically make your changes pushed on the stack 
 3. Test with Postman, don't hesistate to modify the content of the request from within the "Body" tab of requests. 
 4. Check the logs of apisix (1. `multipass shell apisix-vm`, 2. `docker logs -f apisix`), which contain many information (most isn't usefull, but can be good in case of plugin error)
-5. Check the logs of the Java plugin (1. `multipass shell apisix-vm`, 2. `tail -f api_gateway/java-plugins/edge-control/logs`), correspond to a file to which all the classes write their logs 
+5. Check the logs of the Java plugin (1. `multipass shell apisix-vm`, 2. `tail -f api_gateway/java-plugins/edge-control/edge-control.log`), correspond to a file to which all the classes write their logs 
 

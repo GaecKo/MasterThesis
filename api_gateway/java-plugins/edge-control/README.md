@@ -86,16 +86,16 @@ The resulting JAR is automatically picked up by the Docker volume mount defined 
 
 ## Logs
 
-Plugin logs are written to the `logs` file, which is mounted into the container:
+Plugin logs are written to the `edge-control.log` file, which is mounted into the container:
 
 ```yaml
-- ./java-plugins/edge-control/logs:/usr/local/apisix/java-plugins/edge-control/
+- ./java-plugins/edge-control/edge-control.log:/usr/local/apisix/java-plugins/edge-control/
 ```
 
 You can tail them directly:
 
 ```bash
-tail -f api_gateway/java-plugins/edge-control/logs
+tail -f api_gateway/java-plugins/edge-control/edge-control.log
 ```
 
 ## UI

@@ -26,7 +26,7 @@ public final class EdgeControlLogger {
     private static final Logger logger = LoggerFactory.getLogger(EdgeControlLogger.class);
 
     private static final String LOG_FILE =
-            LOG_DIR + "/logs";
+            LOG_DIR + "edge-control.log";
 
     private final BufferedWriter writer;
 
@@ -37,16 +37,18 @@ public final class EdgeControlLogger {
     private EdgeControlLogger() {
         BufferedWriter writer1;
         try {
-            File dir = new File(LOG_DIR);
-            if (!dir.exists()) {
-                dir.mkdirs();
+            File logFile = new File(LOG_FILE);
+
+            // Check if file exists, create if it doesn't
+            if (!logFile.exists()) {
+                logFile.createNewFile();
             }
 
-            writer1 = new BufferedWriter(new FileWriter(LOG_FILE, true)); // append mode
+            writer1 = new BufferedWriter(new FileWriter(logFile, true));
 
         } catch (IOException e) {
-            logger.debug("Failed to initialize EdgeControlLogger " + e + " / disabling logger...");
-            enabled = false;
+            logger.debug("Failed to initialize EdgeControlLogger " + e + ", disabling logger...");
+            disable();
             writer1 = null;
         }
         writer = writer1;
