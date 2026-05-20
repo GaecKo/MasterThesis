@@ -222,7 +222,7 @@ The device will now send telemetry to the gateway, which will forward it to back
 
 #### Restart container
 1. Connect to device VM with `multipass shell devices-vm`
-2. Go to directory `cd devices/mqtt_devices/`
+2. Go to directory `cd devices/mqtt_device/`
 3. Relaunch script `./mqtt_device.sh`
 
 
