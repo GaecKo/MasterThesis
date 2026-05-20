@@ -25,6 +25,29 @@ docker compose version >/dev/null 2>&1 || err "docker compose plugin not found (
   || err "mosquitto.conf not found at ./brokers/mosquitto/mosquitto.conf"
 
 ### ============================================================
+###   Token encryption key setup
+### ============================================================
+TOKEN_KEY_FILE="./token_encryption_key.txt"
+
+info "Checking for token encryption key file..."
+
+if [ ! -f "$TOKEN_KEY_FILE" ]; then
+    warn "Token encryption key file not found, generating new key..."
+    
+    # Generate a random base64 key and save to file
+    openssl rand -base64 32 > "$TOKEN_KEY_FILE"
+    
+    # Check if key generation was successful
+    if [ $? -eq 0 ] && [ -s "$TOKEN_KEY_FILE" ]; then
+        success "Token encryption key generated and saved to $TOKEN_KEY_FILE"
+    else
+        err "Failed to generate token encryption key"
+    fi
+else
+    success "Token encryption key file found at $TOKEN_KEY_FILE"
+fi
+
+### ============================================================
 ###   Java plugin JAR check and rebuild
 ### ============================================================
 JAR_PATH="./java-plugins/edge-control/target/edge-control-0.0.1-SNAPSHOT.jar"
