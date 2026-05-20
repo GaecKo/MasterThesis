@@ -89,11 +89,53 @@ done
 echo ""
 
 ### ============================================================
+###   Wait for etcd to be ready
+### ============================================================
+info "Waiting for etcd to be ready..."
+
+max_retries=30
+retry_count=0
+
+while [ $retry_count -lt $max_retries ]; do
+    if docker compose exec -T etcd etcdctl endpoint health 2>/dev/null | grep -q "healthy"; then
+        success "etcd is ready"
+        break
+    fi
+    
+    retry_count=$((retry_count + 1))
+    if [ $retry_count -eq $max_retries ]; then
+        err "etcd failed to become ready after ${max_retries} attempts"
+    fi
+    
+    sleep 2
+done
+
+### ============================================================
+###   Wait for APISIX admin API to be ready
+### ============================================================
+info "Waiting for APISIX admin API to be ready..."
+
+max_retries=30
+retry_count=0
+
+while [ $retry_count -lt $max_retries ]; do
+    # Check if APISIX admin API is responding (even if it returns an error about missing route, it's ready)
+    if curl -s -o /dev/null -w "%{http_code}" "http://localhost:9180/apisix/admin/routes" 2>/dev/null | grep -q "200\|401\|403"; then
+        success "APISIX admin API is ready"
+        break
+    fi
+    
+    retry_count=$((retry_count + 1))
+    if [ $retry_count -eq $max_retries ]; then
+        err "APISIX admin API failed to become ready after ${max_retries} attempts"
+    fi
+    
+    sleep 2
+done
+
+### ============================================================
 ###   Launch configuration script
 ### ============================================================
-info "Waiting 10 sec before configuring api-gateway..."
-sleep 10
-
 info "Launching configuration script (configure.sh)"
 ./configure.sh
 
