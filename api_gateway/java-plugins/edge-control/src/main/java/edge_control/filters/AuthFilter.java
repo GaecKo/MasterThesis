@@ -117,6 +117,17 @@ public class AuthFilter implements PluginFilter {
         // remove apikey header from request
         request.getHeaders().remove("apikey");
 
+        boolean isBackendForward = request.getPath().endsWith("/backendForward");
+        boolean isCommand = request.getPath().endsWith("/command");
+        if ((gatewayId.startsWith("backend_") && isBackendForward)
+                || (gatewayId.startsWith("device_") && isCommand)) {
+            
+            ExceptionHandler.handleException(response, new IllegalOperation("Unauthorized access"));
+            requestHandler.skipChain(request);
+            chain.filter(request, response);
+            return;
+        }
+
         JSONObject body = new JSONObject(request.getBody());
 
         if (gatewayId.startsWith("backend_")) {
