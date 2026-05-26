@@ -23,8 +23,7 @@ class HttpCommandDefinitionTest {
                         .put("emptyObjectToNull", true))
                 .put("timeouts", new JSONObject()
                         .put("connect", 3)
-                        .put("request", 7))
-                .put("security", "mtls");
+                        .put("request", 7));
 
         HttpCommandDefinition definition = new HttpCommandDefinition("setPower", commandJson);
 
@@ -34,7 +33,6 @@ class HttpCommandDefinitionTest {
         assertThat(definition.removeNulls()).isTrue();
         assertThat(definition.removeEmpty()).isTrue();
         assertThat(definition.emptyObjectToNull()).isTrue();
-        assertThat(definition.getSecurity()).isEqualTo("mtls");
         assertThat(definition.getConnectTimeout()).isEqualTo(Duration.ofSeconds(3));
         assertThat(definition.getRequestTimeout()).isEqualTo(Duration.ofSeconds(7));
 
@@ -170,7 +168,6 @@ class HttpCommandDefinitionTest {
         assertThat(definition.emptyObjectToNull()).isFalse();
         assertThat(definition.getConnectTimeout()).isEqualTo(Duration.ofSeconds(0));
         assertThat(definition.getRequestTimeout()).isEqualTo(Duration.ofSeconds(0));
-        assertThat(definition.getSecurity()).isNull();
     }
 
     @Test

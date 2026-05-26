@@ -35,7 +35,6 @@ public class HttpCommandDefinition implements CommandDefinition {
 
     private final Duration connectTimeout;
     private final Duration requestTimeout;
-    private final String security;
 
     private final JsonNode payloadTemplate;
     private final Map<String, CompiledPath> compiledMappings;
@@ -125,7 +124,6 @@ public class HttpCommandDefinition implements CommandDefinition {
             this.requestTimeout = Duration.ofSeconds(0);
         }
 
-        this.security = commandJson.optString("security", null);
     }
 
     // | ================= Validation helpers ================= |
@@ -162,7 +160,6 @@ public class HttpCommandDefinition implements CommandDefinition {
     @Override public boolean removeNulls()       { return removeNulls; }
     @Override public boolean removeEmpty()       { return removeEmpty; }
     @Override public boolean emptyObjectToNull() { return emptyObjectToNull; }
-    @Override public String getSecurity()        { return security; }
     public Duration getConnectTimeout()          { return connectTimeout; }
     public Duration getRequestTimeout()          { return requestTimeout; }
 
