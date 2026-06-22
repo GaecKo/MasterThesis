@@ -1,5 +1,8 @@
 # Usage
 
+> [!NOTE]
+> 📹 **Video walkthrough available!** The following video demonstrates all the steps described in this file end-to-end, showing the full system working:  [Watch the video](https://eur03.safelinks.protection.outlook.com/?url=https%3A%2F%2Fyoutu.be%2FalUKspJJSNE%3Fsi%3DV2a1uvZ1xwx3njcv&data=05%7C02%7Celie.khoury%40student.uclouvain.be%7C9e1880f9336549b0e74608decea46477%7C7ab090d4fa2e4ecfbc7c4127b4d582ec%7C1%7C0%7C639175402608576711%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=4cmUxEiJmx%2F4x04vm6pn8xa4A%2FxyO1iq9C7Y%2BsuN7O4%3D&reserved=0)
+
 This file goes step by step through the deployment and first usage of the entire system.
 
 - [Usage](#usage)
