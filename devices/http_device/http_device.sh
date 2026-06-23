@@ -12,6 +12,8 @@ RESET="\033[0m"
 info()    { echo -e "${CYAN}[INFO]${RESET} $*"; }
 success() { echo -e "${GREEN}[OK]${RESET} $*"; }
 warn()    { echo -e "${YELLOW}[WARN]${RESET} $*"; }
+err()     { echo -e "${RED}[ERROR]${RESET} $*"; exit 1; }
+
 
 ### ── Sanity checks ──────────────────────────────────────────────────────────
 command -v docker     >/dev/null 2>&1 || err "docker not found"

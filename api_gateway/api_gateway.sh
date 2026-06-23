@@ -62,7 +62,7 @@ if [ ! -f "$JAR_PATH" ]; then
     chmod +x "$REFRESH_SCRIPT" 2>/dev/null || warn "Could not chmod $REFRESH_SCRIPT"
     
     # Change to java-plugins directory and run the script
-    (cd ./java-plugins && ./refresh_jar.sh)
+    (cd ./java-plugins && ./refresh_jar.sh > /dev/null 2>&1)
     
     # Check if the script executed successfully
     if [ $? -eq 0 ]; then
@@ -138,7 +138,7 @@ done
 ###   Launch configuration script
 ### ============================================================
 info "Launching configuration script (configure.sh)"
-./configure.sh
+./configure.sh > /dev/null 2>&1
 
 success "Configuration script executed"
 success "API Gateway launched and configured!"

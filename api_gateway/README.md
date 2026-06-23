@@ -12,6 +12,7 @@ api_gateway/
 ├── refresh.sh              # Refresh the api gateway docker container
 ├── nftables-apisix.sh      # Firewall script         
 ├── configure.sh            # Exposed routes configuration
+├── stop_gateway.sh         # Stop the gateway dockers
 ├── setup_gateway_TLS.sh    # TLS setup for the api gateway
 ├── docker-compose.yml      # Full service stack definition
 ├── Dockerfile              # Custom APISIX image (includes Java plugin)
@@ -117,11 +118,19 @@ cd api_gateway
 
 
 ## Tear Down
-In the main directory:
+### Full VM setup
+In the main directory, to remove all VMs etc:
 ```bash
 # Stop all VMs
 ./stop.sh
 
 # Full cleanup (removes VMS, volumes and containers)
 ./cleanup.sh
+```
+
+### Gateway tech stack
+In the `api_gateway` directory:
+```
+# stop all dockers
+./stop_gateway.sh
 ```
